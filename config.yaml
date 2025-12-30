@@ -11,5 +11,7 @@ subscriptions:
       alias: 符号回归（示例）
     - keyword: Symbolic || Regression
       alias: S or R
+    - keyword: 'author: feifei li'
+      alias: 李菲菲
   llm_queries: []
   tracked_papers: []
