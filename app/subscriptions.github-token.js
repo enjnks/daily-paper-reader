@@ -168,71 +168,44 @@ window.SubscriptionsGithubToken = (function () {
     }
   };
 
-  // 根据本地存储的 Token 推断仓库 owner/name
-  const getRepoInfo = () => {
-    const tokenData = loadGithubToken();
-    if (!tokenData || !tokenData.token) return null;
-
-    let owner = '';
-    let repo = '';
-
-    if (tokenData.repo && tokenData.repo.includes('/')) {
-      const parts = tokenData.repo.split('/');
-      owner = parts[0];
-      repo = parts[1];
-    } else {
-      // 兜底：从当前 URL 推断
-      const currentUrl = window.location.href;
-      const githubPagesMatch = currentUrl.match(
-        /https?:\/\/([^.]+)\.github\.io\/([^\/]+)/,
-      );
-      if (githubPagesMatch) {
-        owner = githubPagesMatch[1];
-        repo = githubPagesMatch[2];
-      }
+  // 优先从密钥配置（secret.private 解密后的 decoded_secret_private）中获取 GitHub Token；
+  // 若不存在，则回退到旧的本地存储 Token。
+  const getTokenForConfig = () => {
+    const secret = window.decoded_secret_private || {};
+    if (secret.github && secret.github.token) {
+      return secret.github.token;
     }
-
-    if (!owner || !repo) return null;
-    return {
-      owner,
-      repo,
-      token: tokenData.token,
-    };
+    const tokenData = loadGithubToken();
+    if (tokenData && tokenData.token) {
+      return tokenData.token;
+    }
+    return null;
   };
 
-  // 通用 GitHub API 调用封装
-  const githubApiRequest = async (path, options = {}) => {
-    const info = getRepoInfo();
-    if (!info) {
-      throw new Error('未配置有效的 GitHub Token 或仓库信息');
-    }
-    const url =
-      path.startsWith('http') ?
-        path :
-        `https://api.github.com${path}`;
-    const headers = Object.assign(
-      {
-        Authorization: `token ${info.token}`,
-        Accept: 'application/vnd.github.v3+json',
-      },
-      options.headers || {},
-    );
-    const res = await fetch(url, { ...options, headers });
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
+  // 基于 Token 推断仓库 owner/name（复用 verifyGithubToken 的逻辑）
+  const resolveRepoInfoFromToken = async (token) => {
+    const result = await verifyGithubToken(token);
+    if (!result.valid) {
       throw new Error(
-        `GitHub API 调用失败：${res.status} ${res.statusText} - ${text}`,
+        `GitHub Token 验证失败：${result.error || '原因未知'}`,
       );
     }
-    return res.json();
+    if (!result.repo || !result.repo.includes('/')) {
+      throw new Error('无法从 GitHub Token 推断有效的仓库信息');
+    }
+    const parts = result.repo.split('/');
+    const owner = parts[0];
+    const repo = parts[1];
+    return { owner, repo, token };
   };
 
   // 读取 config.yaml 并解析为 JS 对象
   const loadConfig = async () => {
-    const info = getRepoInfo();
-    if (!info) {
-      throw new Error('未配置有效的 GitHub Token 或仓库信息');
+    const token = getTokenForConfig();
+    if (!token) {
+      throw new Error('未配置有效的 GitHub Token，请先完成首页的新配置指引。');
     }
+    const info = await resolveRepoInfoFromToken(token);
     const res = await fetch(
       `https://api.github.com/repos/${info.owner}/${info.repo}/contents/config.yaml`,
       {
@@ -276,10 +249,11 @@ window.SubscriptionsGithubToken = (function () {
 
   // 更新 config.yaml：接收一个 updater(config) 回调，返回新的 config 对象
   const updateConfig = async (updater, commitMessage = 'chore: update config.yaml from dashboard') => {
-    const info = getRepoInfo();
-    if (!info) {
-      throw new Error('未配置有效的 GitHub Token 或仓库信息');
+    const token = getTokenForConfig();
+    if (!token) {
+      throw new Error('未配置有效的 GitHub Token，请先完成首页的新配置指引。');
     }
+    const info = await resolveRepoInfoFromToken(token);
     const { config: current, sha } = await loadConfig();
     const next = typeof updater === 'function' ? updater({ ...(current || {}) }) || current : current;
     const yaml = window.jsyaml || window.jsYaml || window.jsYAML;
@@ -315,10 +289,11 @@ window.SubscriptionsGithubToken = (function () {
 
   // 使用给定的 config 对象保存到远端 config.yaml（用于“保存”按钮）
   const saveConfig = async (configObject, commitMessage = 'chore: save dashboard config from panel') => {
-    const info = getRepoInfo();
-    if (!info) {
-      throw new Error('未配置有效的 GitHub Token 或仓库信息');
+    const token = getTokenForConfig();
+    if (!token) {
+      throw new Error('未配置有效的 GitHub Token，请先完成首页的新配置指引。');
     }
+    const info = await resolveRepoInfoFromToken(token);
     // 仅用于获取当前文件的 sha
     const { sha } = await loadConfig();
     const yaml = window.jsyaml || window.jsYaml || window.jsYAML;
@@ -353,10 +328,10 @@ window.SubscriptionsGithubToken = (function () {
     return res.json();
   };
 
-  const init = (dom) => {
-    const {
-      githubAuthBtn,
-      githubTokenSection,
+    const init = (dom) => {
+      const {
+        githubAuthBtn, // 现在可能为 null，仅用于兼容旧调用
+        githubTokenSection,
       githubTokenInput,
       githubTokenToggleBtn,
       githubTokenVerifyBtn,
@@ -381,8 +356,9 @@ window.SubscriptionsGithubToken = (function () {
       `;
     };
 
-    // 更新登录按钮状态
+    // 更新登录按钮状态（兼容旧逻辑；若没有按钮则直接忽略）
     const updateAuthButtonStatus = () => {
+      if (!githubAuthBtn) return;
       const tokenData = loadGithubToken();
       if (tokenData && tokenData.token && tokenData.verified) {
         githubAuthBtn.textContent = '登录成功';
@@ -411,7 +387,7 @@ window.SubscriptionsGithubToken = (function () {
       }
     };
 
-    // 登录按钮点击事件 - 切换显示 Token 配置区域
+    // 登录按钮点击事件 - 旧逻辑（当前已无按钮，这里仅保留兼容）
     if (githubAuthBtn && !githubAuthBtn._bound) {
       githubAuthBtn._bound = true;
       githubAuthBtn.addEventListener('click', () => {
@@ -420,7 +396,6 @@ window.SubscriptionsGithubToken = (function () {
 
           const tokenData = loadGithubToken();
           if (tokenData && tokenData.verified) {
-            // 已登录成功：自动填入 Token，并展示成功提示
             if (githubTokenInput) {
               githubTokenInput.value = tokenData.token || '';
             }
@@ -502,7 +477,7 @@ window.SubscriptionsGithubToken = (function () {
           `;
           hideTokenInfo();
 
-          // 验证失败时，将顶部按钮状态改为「验证失败」红色按钮，给予更明确提示
+          // 验证失败时，如果有顶部按钮，则将其状态改为「验证失败」红色按钮
           if (githubAuthBtn) {
             githubAuthBtn.textContent = '验证失败';
             githubAuthBtn.style.background = '#dc3545';

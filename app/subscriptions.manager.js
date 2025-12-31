@@ -29,31 +29,9 @@ window.SubscriptionsManager = (function () {
         <div id="arxiv-search-panel-header">
           <div style="font-weight:600;">后台管理</div>
           <div style="display:flex; gap:8px; align-items:center;">
-            <button id="github-auth-btn" class="arxiv-tool-btn" style="padding:2px 10px; background:#6c757d; color:white;">未登录</button>
             <button id="arxiv-config-save-btn" class="arxiv-tool-btn" style="padding:2px 10px; background:#17a2b8; color:white;">保存</button>
             <button id="arxiv-search-close-btn" class="arxiv-tool-btn" style="padding:2px 6px;">关闭</button>
           </div>
-        </div>
-        
-        <!-- GitHub Token 管理区域 -->
-        <div id="github-token-section" style="display:none; background:#fff3cd; padding:12px; border-radius:6px; margin-bottom:12px; border:1px solid #ffc107;">
-          <div style="font-weight:500; margin-bottom:8px; font-size:14px;">GitHub Token 配置</div>
-          <div style="font-size:12px; color:#856404; margin-bottom:8px; line-height:1.5;">
-            <strong>⚠️ 隐私说明：</strong>密钥仅保存在浏览器本地存储，不会上传到云端。<br>
-            <strong>所需权限：</strong>repo（仓库读写）、workflow（工作流）<br>
-            <strong>注意：</strong>请确保该 Token 有权限管理当前 GitHub Pages 所在仓库
-          </div>
-          <div style="display:flex; gap:8px; margin-bottom:8px;">
-            <input id="github-token-input" type="password" 
-              placeholder="输入 GitHub Personal Access Token" 
-              style="flex:1; padding:8px; border:1px solid #ccc; border-radius:4px; font-size:12px;" />
-            <button id="github-token-toggle-visibility" class="arxiv-tool-btn" style="padding:6px 10px;">👁️</button>
-          </div>
-          <div style="display:flex; gap:8px; align-items:center;">
-            <button id="github-token-verify-btn" class="arxiv-tool-btn" style="flex:1; padding:8px; background:#28a745; color:white; font-weight:500;">验证并保存</button>
-            <button id="github-token-clear-btn" class="arxiv-tool-btn" style="padding:8px 12px; background:#dc3545; color:white;">清除</button>
-          </div>
-          <div id="github-token-message" style="margin-top:8px; font-size:12px; line-height:1.5;"></div>
         </div>
 
         <div id="arxiv-subscriptions">
@@ -191,49 +169,6 @@ window.SubscriptionsManager = (function () {
     closeBtn = document.getElementById('arxiv-search-close-btn');
     resultsEl = document.getElementById('arxiv-search-results');
     msgEl = document.getElementById('arxiv-search-msg');
-
-    // GitHub Token 交给专用模块
-    if (window.SubscriptionsGithubToken) {
-      const githubAuthBtn = document.getElementById('github-auth-btn');
-      const githubTokenSection =
-        document.getElementById('github-token-section');
-      const githubTokenInput = document.getElementById('github-token-input');
-      const githubTokenToggleBtn = document.getElementById(
-        'github-token-toggle-visibility',
-      );
-      const githubTokenVerifyBtn = document.getElementById(
-        'github-token-verify-btn',
-      );
-      const githubTokenClearBtn = document.getElementById(
-        'github-token-clear-btn',
-      );
-      const githubTokenMessage = document.getElementById(
-        'github-token-message',
-      );
-      const githubTokenInfo =
-        document.getElementById('github-token-info');
-      const githubUserName =
-        document.getElementById('github-user-name');
-      const githubTokenExpiry = document.getElementById(
-        'github-token-expiry',
-      );
-      const githubRepoName =
-        document.getElementById('github-repo-name');
-
-      window.SubscriptionsGithubToken.init({
-        githubAuthBtn,
-        githubTokenSection,
-        githubTokenInput,
-        githubTokenToggleBtn,
-        githubTokenVerifyBtn,
-        githubTokenClearBtn,
-        githubTokenMessage,
-        githubTokenInfo,
-        githubUserName,
-        githubTokenExpiry,
-        githubRepoName,
-      });
-    }
 
     const reloadAll = () => {
       // 仅基于本地草稿配置重新渲染，不触发远程加载

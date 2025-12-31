@@ -258,6 +258,82 @@
     return bytes;
   }
 
+  // 将生成好的 secret.private 提交到当前 GitHub 仓库根目录
+  async function saveSecretPrivateToGithubRepo(token, payload) {
+    try {
+      const { owner, repo } = await detectGithubRepoFromToken(token);
+      const filePath = 'secret.private';
+
+      // 先尝试获取现有文件，拿到 sha（如果不存在则忽略 404）
+      let existingSha = null;
+      try {
+        const getRes = await fetch(
+          `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(
+            filePath,
+          )}`,
+          {
+            headers: {
+              Authorization: `token ${token}`,
+              Accept: 'application/vnd.github.v3+json',
+            },
+          },
+        );
+        if (getRes.ok) {
+          const info = await getRes.json().catch(() => null);
+          if (info && info.sha) {
+            existingSha = info.sha;
+          }
+        } else if (getRes.status !== 404) {
+          const txt = await getRes.text().catch(() => '');
+          throw new Error(
+            `读取远程 secret.private 失败：HTTP ${getRes.status} ${getRes.statusText} - ${txt}`,
+          );
+        }
+      } catch (e) {
+        console.error('[SECRET] 预读远程 secret.private 失败：', e);
+        throw e;
+      }
+
+      const contentJson = JSON.stringify(payload, null, 2);
+      const contentB64 = btoa(unescape(encodeURIComponent(contentJson)));
+      const body = {
+        message: existingSha
+          ? 'chore: update secret.private via web setup'
+          : 'chore: init secret.private via web setup',
+        content: contentB64,
+      };
+      if (existingSha) {
+        body.sha = existingSha;
+      }
+
+      const putRes = await fetch(
+        `https://api.github.com/repos/${owner}/${repo}/contents/${encodeURIComponent(
+          filePath,
+        )}`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `token ${token}`,
+            Accept: 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(body),
+        },
+      );
+      if (!putRes.ok) {
+        const txt = await putRes.text().catch(() => '');
+        throw new Error(
+          `提交 secret.private 到仓库失败：HTTP ${putRes.status} ${putRes.statusText} - ${txt}`,
+        );
+      }
+
+      return true;
+    } catch (e) {
+      console.error('[SECRET] 保存 secret.private 到 GitHub 仓库失败：', e);
+      return false;
+    }
+  }
+
   async function deriveAesGcmKey(password, saltBytes, usages) {
     const enc = new TextEncoder();
     const baseKey = await crypto.subtle.importKey(
@@ -771,7 +847,7 @@
           }
           genBtn.disabled = true;
 
-          // 1) 将总结大模型相关配置写入 GitHub Secrets（若失败则给出提示，但不阻塞后续流程）
+          // 1) 将总结大模型相关配置写入 GitHub Secrets（失败则中止后续流程）
           const secretsOk = await saveSummarizeSecretsToGithub(
             githubToken,
             platoKey,
@@ -779,11 +855,12 @@
           );
           if (!secretsOk && errorEl) {
             errorEl.textContent =
-              '⚠️ 无法自动写入 GitHub Secrets，请稍后在 GitHub 仓库 Settings → Secrets 中手动创建 Summarized_* 与 Reranker_* Secrets。';
+              '❌ 写入 GitHub Secrets 失败，请检查网络、Token 权限（需 repo + workflow）或稍后重试。';
             errorEl.style.color = '#c00';
+            return;
           }
 
-          // 2) 生成本地 secret.private 备份，便于多端漫游和手动提交到仓库
+          // 2) 生成本地 secret.private 备份
           const payload = await createEncryptedSecret(password, plainConfig);
           window.decoded_secret_private = plainConfig;
           setMode('full');
@@ -799,6 +876,20 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
           }, 0);
+
+          // 3) 将 secret.private 提交到 GitHub 仓库根目录
+          const commitOk = await saveSecretPrivateToGithubRepo(
+            githubToken,
+            payload,
+          );
+          if (!commitOk) {
+            if (errorEl) {
+              errorEl.textContent =
+                '❌ 已生成本地 secret.private，但同步到 GitHub 仓库失败，请检查浏览器控制台日志。';
+              errorEl.style.color = '#c00';
+            }
+            return;
+          }
 
           hide();
 
@@ -950,17 +1041,11 @@
         });
         let hasSecret = false;
         if (resp.ok) {
-          const ct = (resp.headers.get('content-type') || '').toLowerCase();
-          if (ct.includes('application/json')) {
-            try {
-              // 尝试解析为 JSON，如果失败则认为不是合法的 secret.private
-              await resp.clone().json();
-              hasSecret = true;
-            } catch {
-              hasSecret = false;
-            }
-          } else {
-            // 返回的不是 JSON（例如 200 + HTML），也视为不存在 secret.private
+          try {
+            // 不再依赖 content-type，只要能成功解析为 JSON，就认为是合法的 secret.private
+            await resp.clone().json();
+            hasSecret = true;
+          } catch {
             hasSecret = false;
           }
         }

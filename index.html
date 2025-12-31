@@ -31,8 +31,9 @@
   <!-- YAML 解析：用于在前端读写 config.yaml -->
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
 
-  <!-- Libsodium：用于在前端加密写入 GitHub Secrets -->
-  <script src="https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.13/dist/modules/libsodium-wrappers.js"></script>
+  <!-- Libsodium：用于在前端加密写入 GitHub Secrets（核心库 + 浏览器包装） -->
+  <script src="https://cdn.jsdelivr.net/npm/libsodium@0.7.10/dist/modules/libsodium.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/libsodium-wrappers@0.7.9/dist/modules/libsodium-wrappers.js"></script>
 
   <!-- 自定义样式，包含评论区、订阅浮层、侧边栏拖拽等 UI -->
   <link rel="stylesheet" href="app/app.css">
