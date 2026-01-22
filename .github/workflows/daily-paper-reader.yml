@@ -71,14 +71,16 @@ jobs:
           python -m pip install uv
           uv pip install --system -r /tmp/req.txt
 
-      - name: Run pipeline
+      - name: Run Retrieval and Embedding
+        env:
+          HF_HOME: ${{ github.workspace }}/hf_cache
+          HF_HUB_DISABLE_SYMLINKS: 1
         run: |
-          RUN_ENRICH="${{ github.event.inputs.run_enrich }}"
-          ARGS=""
-          if [ "$RUN_ENRICH" = "true" ]; then
-            ARGS="--run-enrich"
-          fi
-          python src/main.py $ARGS --embedding-device cpu --embedding-batch-size 8
+          echo "Cleaning any previous local cache..."
+          rm -rf ${{ github.workspace }}/hf_cache
+
+          echo "Running main script..."
+          /opt/hostedtoolcache/Python/3.11.14/x64/bin/python src/main.py
 
       - name: Mark HF cache healthy
         if: ${{ success() }}
