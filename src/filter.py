@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 # 通用向量检索工具：封装 sentence-transformers 的向量计算与粗筛逻辑
 
+import os
 import numpy as np
 from typing import Any, Dict, List
 import time
 from datetime import datetime, timezone
+
+os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS", "1")
 
 import torch
 from sentence_transformers import SentenceTransformer
