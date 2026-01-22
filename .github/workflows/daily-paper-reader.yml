@@ -26,6 +26,7 @@ jobs:
       BLT_REWRITE_MODEL: gemini-3-flash-preview
       BLT_RERANK_MODEL: qwen3-reranker-4b
       BLT_FILTER_MODEL: gemini-3-flash-preview-nothinking
+      HF_HUB_DISABLE_SYMLINKS: "1"
       HF_HOME: ~/.cache/huggingface
       TRANSFORMERS_CACHE: ~/.cache/huggingface
       PYTHONUNBUFFERED: "1"
@@ -57,7 +58,8 @@ jobs:
           open("/tmp/req.txt", "w", encoding="utf-8").write("\n".join(lines))
           PY
           python -m pip install --upgrade pip
-          python -m pip install -r /tmp/req.txt
+          python -m pip install uv
+          uv pip install --system -r /tmp/req.txt
 
       - name: Run pipeline
         run: |
