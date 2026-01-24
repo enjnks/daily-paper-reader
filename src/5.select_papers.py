@@ -703,10 +703,6 @@ def main() -> None:
     log(f"[INFO] arxiv_paper_setting mode={mode_text} days_window={carryover_days}")
 
     scored_papers = build_scored_papers(papers, llm_ranked)
-    if not scored_papers:
-        log("[WARN] no scored papers found, skip.")
-        return
-
     group_start(f"Step 5 - select {os.path.basename(input_path)}")
     log(f"[INFO] scored_papers={len(scored_papers)}")
 
@@ -719,6 +715,40 @@ def main() -> None:
         carryover_days,
     )
     candidates = build_candidates(scored_papers, carryover_items, seen_ids)
+
+    if not candidates:
+        log("[INFO] 没有候选论文（新论文=0 且 carryover=0），将写入空推荐结果并更新 carryover。")
+        os.makedirs(output_dir, exist_ok=True)
+        for mode in modes:
+            output_path = os.path.join(output_dir, f"arxiv_papers_{TODAY_STR}.{mode}.json")
+            empty = {
+                "mode": mode,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "stats": {
+                    "mode": mode,
+                    "tag_count": tag_count,
+                    "deep_divecandidates": 0,
+                    "deep_cap": None,
+                    "deep_selected": 0,
+                    "quick_candidates": 0,
+                    "quick_skim_target": int((MODES.get(mode) or {}).get("quick_base") or 0) + tag_count,
+                    "quick_selected": 0,
+                },
+                "deep_dive": [],
+                "quick_skim": [],
+            }
+            save_json(empty, output_path)
+
+        carryover_payload = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_date": TODAY_STR,
+            "carryover_days": carryover_days,
+            "items": [],
+        }
+        save_json(carryover_payload, CARRYOVER_PATH)
+        group_end()
+        return
+
     recommended_ids: set = set()
 
     for mode in modes:

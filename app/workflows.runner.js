@@ -53,7 +53,7 @@ window.DPRWorkflowRunner = (function () {
     }
   };
 
-  const resolveRepoFromUrl = () => {
+  const resolveRepoFromUrl = async (token) => {
     const currentUrl = window.location.href || '';
     const githubPagesMatch = currentUrl.match(
       /https?:\/\/([^.]+)\.github\.io\/([^\/]+)/,
@@ -61,6 +61,21 @@ window.DPRWorkflowRunner = (function () {
     if (githubPagesMatch) {
       return { owner: githubPagesMatch[1], repo: githubPagesMatch[2] };
     }
+
+    // 非 GitHub Pages URL：回退到「Token 对应的用户 + daily-paper-reader」作为默认目标仓库
+    try {
+      const userRes = await ghFetch(token, 'https://api.github.com/user');
+      if (userRes.ok) {
+        const user = await userRes.json();
+        const login = (user && user.login) ? String(user.login) : '';
+        if (login) {
+          return { owner: login, repo: 'daily-paper-reader' };
+        }
+      }
+    } catch {
+      // ignore
+    }
+
     return { owner: '', repo: '' };
   };
 
@@ -192,9 +207,9 @@ window.DPRWorkflowRunner = (function () {
       setStatus('未检测到 GitHub Token：请在“密钥配置”或“GitHub Token”处完成配置。', '#c00');
       return;
     }
-    const { owner, repo } = resolveRepoFromUrl();
+    const { owner, repo } = await resolveRepoFromUrl(token);
     if (!owner || !repo) {
-      setStatus('无法从当前 URL 推断 owner/repo，请确认使用 xxx.github.io/仓库名/ 访问。', '#c00');
+      setStatus('无法推断目标仓库：请确认 GitHub Token 有效，或使用 xxx.github.io/仓库名/ 访问。', '#c00');
       return;
     }
 
@@ -381,4 +396,3 @@ window.DPRWorkflowRunner = (function () {
     open,
   };
 })();
-

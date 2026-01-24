@@ -567,13 +567,17 @@ def main() -> None:
     archive_dir = os.path.join(ROOT_DIR, "archive", date_str, "recommend")
     recommend_path = os.path.join(archive_dir, f"arxiv_papers_{date_str}.{mode}.json")
     if not os.path.exists(recommend_path):
-        raise FileNotFoundError(f"missing recommend file: {recommend_path}")
+        log(f"[WARN] recommend 文件不存在（今天可能没有新论文）：{recommend_path}，将跳过 Step 6。")
+        return
 
     payload = {}
     with open(recommend_path, "r", encoding="utf-8") as f:
         payload = json.load(f)
     deep_list = payload.get("deep_dive") or []
     quick_list = payload.get("quick_skim") or []
+    if not deep_list and not quick_list:
+        log("[INFO] 推荐列表为空，将跳过生成 docs 与更新侧边栏。")
+        return
 
     deep_entries: List[Tuple[str, str, List[Tuple[str, str]]]] = []
     quick_entries: List[Tuple[str, str, List[Tuple[str, str]]]] = []
