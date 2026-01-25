@@ -55,8 +55,18 @@ window.$docsify = {
       // Zotero 元数据更新函数：可被 Docsify 生命周期和聊天模块重复调用
       const updateZoteroMetaFromPage = (paperId, vmRouteFile) => {
         try {
-          const titleEl = document.querySelector('.markdown-section h1');
-          let title = titleEl ? titleEl.innerText : document.title;
+          // 优先使用自定义标题条（避免 h1 被隐藏/改造后 innerText 不稳定）
+          const dprEn = document.querySelector('.dpr-title-en');
+          const dprCn = document.querySelector('.dpr-title-cn');
+          let title = '';
+          if (dprEn && (dprEn.textContent || '').trim()) {
+            title = (dprEn.textContent || '').trim();
+          } else if (dprCn && (dprCn.textContent || '').trim()) {
+            title = (dprCn.textContent || '').trim();
+          } else {
+            const titleEl = document.querySelector('.markdown-section h1');
+            title = titleEl ? (titleEl.textContent || '').trim() : document.title;
+          }
           if (title) {
             // 清理标题中的多余空白与插件注入内容
             title = title.replace(/\s+/g, ' ').trim();
@@ -742,6 +752,658 @@ window.$docsify = {
         });
       };
 
+      // 侧边栏/正文的论文页标题条：英文右侧，中文左侧，中间竖线
+      const isPaperRouteFile = (file) => {
+        const f = String(file || '');
+        return /^\d{6}\/\d{2}\/.+\.md$/i.test(f);
+      };
+
+      const fitTextToBox = (el, minPx, maxPx) => {
+        if (!el) return;
+        let size = maxPx;
+        el.style.fontSize = `${size}px`;
+        // 逐步缩小直到不溢出或达到最小值
+        // 注意：scrollHeight > clientHeight 表示溢出（包含被 line-clamp 截断的情况）
+        while (size > minPx && el.scrollHeight > el.clientHeight + 1) {
+          size -= 1;
+          el.style.fontSize = `${size}px`;
+        }
+      };
+
+      const applyPaperTitleBar = () => {
+        const file = vm && vm.route ? vm.route.file : '';
+        if (!isPaperRouteFile(file)) {
+          document.body.classList.remove('dpr-paper-page');
+          return;
+        }
+        document.body.classList.add('dpr-paper-page');
+
+        const section = document.querySelector('.markdown-section');
+        if (!section) return;
+
+        // 防止重复插入
+        const existing = section.querySelector('.dpr-title-bar');
+        if (existing) existing.remove();
+
+        const h1s = Array.from(section.querySelectorAll('h1'));
+        if (!h1s.length) return;
+
+        const enTitle = (h1s[0].textContent || '').trim();
+        const cnTitle = (h1s[1] ? (h1s[1].textContent || '').trim() : '').trim();
+
+        // 隐藏原始 h1，但保留在 DOM 里供复制/SEO/元信息提取兜底
+        h1s.forEach((h) => h.classList.add('dpr-title-hidden'));
+
+        const bar = document.createElement('div');
+        bar.className = 'dpr-title-bar';
+        bar.innerHTML = `
+          <div class="dpr-title-cn">${escapeHtml(cnTitle || '')}</div>
+          <div class="dpr-title-sep" aria-hidden="true"></div>
+          <div class="dpr-title-en">${escapeHtml(enTitle || '')}</div>
+        `;
+        if (!cnTitle) {
+          bar.classList.add('dpr-title-single');
+        }
+
+        section.insertBefore(bar, section.firstChild);
+
+        // 字体自适应：让标题条高度稳定，长标题自动缩小
+        requestAnimationFrame(() => {
+          const cnEl = bar.querySelector('.dpr-title-cn');
+          const enEl = bar.querySelector('.dpr-title-en');
+          if (cnEl && cnTitle) fitTextToBox(cnEl, 14, 22);
+          if (enEl && enTitle) fitTextToBox(enEl, 13, 20);
+        });
+      };
+
+      // 论文页导航：左右滑动 / 键盘方向键切换论文
+      const DPR_NAV_STATE = {
+        paperHrefs: [],
+        currentHref: '',
+        lastNavTs: 0,
+        lastNavSource: '', // 'click' | 'key' | 'wheel' | 'swipe' | ''
+      };
+
+      const DPR_SIDEBAR_CENTER_STATE = {
+        lastHref: '',
+        lastTs: 0,
+      };
+
+      const DPR_SIDEBAR_ACTIVE_INDICATOR = {
+        el: null,
+        parent: null,
+        justMoved: false,
+      };
+
+      const getSidebarScrollEl = () => {
+        const nav = document.querySelector('.sidebar-nav');
+        if (!nav) return null;
+        const candidates = [
+          nav,
+          nav.closest('.sidebar'),
+          nav.parentElement,
+          document.querySelector('.sidebar'),
+        ].filter(Boolean);
+        for (const el of candidates) {
+          try {
+            if (el.scrollHeight > el.clientHeight + 4) return el;
+          } catch {
+            // ignore
+          }
+        }
+        return nav;
+      };
+
+      const ensureSidebarActiveIndicator = () => {
+        const nav = document.querySelector('.sidebar-nav');
+        if (!nav) return null;
+
+        if (
+          DPR_SIDEBAR_ACTIVE_INDICATOR.el &&
+          DPR_SIDEBAR_ACTIVE_INDICATOR.parent === nav &&
+          nav.contains(DPR_SIDEBAR_ACTIVE_INDICATOR.el)
+        ) {
+          return { el: DPR_SIDEBAR_ACTIVE_INDICATOR.el, newlyCreated: false };
+        }
+
+        // 清理旧的（例如热更新/重复初始化场景）
+        try {
+          if (DPR_SIDEBAR_ACTIVE_INDICATOR.el && DPR_SIDEBAR_ACTIVE_INDICATOR.el.remove) {
+            DPR_SIDEBAR_ACTIVE_INDICATOR.el.remove();
+          }
+        } catch {
+          // ignore
+        }
+
+        const indicator = document.createElement('div');
+        indicator.className = 'dpr-sidebar-active-indicator';
+        indicator.setAttribute('aria-hidden', 'true');
+        // 刚创建时先禁用 transition，避免出现“从 sidebar 顶部滑下来”的二次动效
+        indicator.style.transition = 'none';
+        // 放在最前面，确保在所有 li 下面
+        nav.insertBefore(indicator, nav.firstChild);
+        DPR_SIDEBAR_ACTIVE_INDICATOR.el = indicator;
+        DPR_SIDEBAR_ACTIVE_INDICATOR.parent = nav;
+        return { el: indicator, newlyCreated: true };
+      };
+
+      const moveSidebarActiveIndicatorToEl = (li, options = {}) => {
+        if (!li) return;
+        const { animate = true } = options || {};
+        const ensured = ensureSidebarActiveIndicator();
+        if (!ensured || !ensured.el) return;
+        const indicator = ensured.el;
+        const newlyCreated = ensured.newlyCreated;
+
+        // 只对论文条目启用（避免日期分组标题等）
+        if (!li.classList || !li.classList.contains('sidebar-paper-item')) return;
+
+        const x = li.offsetLeft;
+        const y = li.offsetTop;
+        const w = li.offsetWidth;
+        const h = li.offsetHeight;
+
+        // 新建/或要求不动画时：先关 transition，直接定位到最终位置，再恢复 transition
+        if (newlyCreated || !animate) {
+          indicator.style.transition = 'none';
+        }
+
+        indicator.style.width = `${w}px`;
+        indicator.style.height = `${h}px`;
+        indicator.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+
+        if (newlyCreated || !animate) {
+          requestAnimationFrame(() => {
+            indicator.style.transition = '';
+          });
+        }
+      };
+
+      const moveSidebarActiveIndicatorToHref = (href, options = {}) => {
+        const targetHref = normalizeHref(href);
+        if (!targetHref) return;
+        const nav = document.querySelector('.sidebar-nav');
+        if (!nav) return;
+        const link = nav.querySelector(`a[href="${targetHref}"]`);
+        if (!link) return;
+        const li = link.closest('li');
+        moveSidebarActiveIndicatorToEl(li, options);
+      };
+
+      const DPR_TRANSITION = {
+        // 'enter-from-left' | 'enter-from-right' | ''
+        pendingEnter: '',
+      };
+
+      const normalizeHref = (href) => {
+        const raw = String(href || '').trim();
+        if (!raw) return '';
+        // 统一成 "#/xxxx" 形式
+        if (raw.startsWith('#/')) return raw;
+        if (raw.startsWith('#')) return '#/' + raw.slice(1).replace(/^\//, '');
+        return '#/' + raw.replace(/^\//, '');
+      };
+
+      const isPaperHref = (href) => {
+        const h = normalizeHref(href);
+        // 只匹配论文页：#/YYYYMM/DD/slug
+        return /^#\/\d{6}\/\d{2}\/.+/i.test(h);
+      };
+
+      const collectPaperHrefsFromSidebar = () => {
+        const nav = document.querySelector('.sidebar-nav');
+        if (!nav) return [];
+        const links = Array.from(nav.querySelectorAll('a[href]'));
+        const out = [];
+        const seen = new Set();
+        links.forEach((a) => {
+          const href = a.getAttribute('href') || '';
+          if (!isPaperHref(href)) return;
+          const norm = normalizeHref(href);
+          if (seen.has(norm)) return;
+          seen.add(norm);
+          out.push(norm);
+        });
+        return out;
+      };
+
+      const updateNavState = () => {
+        DPR_NAV_STATE.paperHrefs = collectPaperHrefsFromSidebar();
+        const file = vm && vm.route ? vm.route.file : '';
+        if (file && isPaperRouteFile(file)) {
+          DPR_NAV_STATE.currentHref = normalizeHref('#/' + String(file).replace(/\.md$/i, ''));
+        } else {
+          DPR_NAV_STATE.currentHref = '';
+        }
+      };
+
+      const centerSidebarOnHref = (href) => {
+        const targetHref = normalizeHref(href);
+        if (!targetHref) return;
+        if (targetHref === DPR_SIDEBAR_CENTER_STATE.lastHref) return;
+        const nav = document.querySelector('.sidebar-nav');
+        if (!nav) return;
+
+        const link =
+          nav.querySelector(`a[href="${targetHref}"]`) ||
+          nav.querySelector(`a[href="${targetHref.replace(/^#\//, '#/')}"]`);
+        if (!link) return;
+
+        const item = link.closest('li') || link;
+        const scrollEl = getSidebarScrollEl();
+        if (!scrollEl || scrollEl.scrollHeight <= scrollEl.clientHeight + 4) {
+          DPR_SIDEBAR_CENTER_STATE.lastHref = targetHref;
+          return;
+        }
+
+        const scrollRect = scrollEl.getBoundingClientRect();
+        const itemRect = item.getBoundingClientRect();
+
+        const currentTop = scrollEl.scrollTop;
+        const deltaTop = itemRect.top - scrollRect.top;
+        const targetTop =
+          currentTop + deltaTop - (scrollRect.height / 2 - itemRect.height / 2);
+
+        const clamped = Math.max(
+          0,
+          Math.min(targetTop, scrollEl.scrollHeight - scrollEl.clientHeight),
+        );
+
+        DPR_SIDEBAR_CENTER_STATE.lastTs = Date.now();
+        DPR_SIDEBAR_CENTER_STATE.lastHref = targetHref;
+
+        // 居中时只需要“滚动”动画，不做额外高亮动画
+        const duration = prefersReducedMotion() ? 0 : DPR_TRANSITION_MS;
+        animateScrollTop(scrollEl, clamped, duration);
+      };
+
+      const centerSidebarOnCurrent = () => {
+        // 优先跟随 Docsify 的“active”状态（这才是你看到的选中项）
+        const nav = document.querySelector('.sidebar-nav');
+        if (nav) {
+          const activeLi = nav.querySelector('li.active');
+          const activeLink = nav.querySelector('a.active');
+          const el = activeLi || activeLink;
+          if (el) {
+            const href = (activeLink && activeLink.getAttribute('href')) || '';
+            // 如果拿得到 href，就走 href 去重；否则用一个稳定的占位 key
+            const key = href ? normalizeHref(href) : '__active__';
+            if (key && key === DPR_SIDEBAR_CENTER_STATE.lastHref) return;
+
+            const scrollEl = getSidebarScrollEl();
+            if (!scrollEl) return;
+
+            const scrollRect = scrollEl.getBoundingClientRect();
+            const itemRect = el.getBoundingClientRect();
+
+            const currentTop = scrollEl.scrollTop;
+            const deltaTop = itemRect.top - scrollRect.top;
+            const targetTop =
+              currentTop +
+              deltaTop -
+              (scrollRect.height / 2 - itemRect.height / 2);
+
+            const clamped = Math.max(
+              0,
+              Math.min(targetTop, scrollEl.scrollHeight - scrollEl.clientHeight),
+            );
+
+            DPR_SIDEBAR_CENTER_STATE.lastTs = Date.now();
+            DPR_SIDEBAR_CENTER_STATE.lastHref = key;
+
+            const duration = prefersReducedMotion() ? 0 : DPR_TRANSITION_MS;
+            animateScrollTop(scrollEl, clamped, duration);
+            return;
+          }
+        }
+
+        // 兜底：按当前路由 href 匹配
+        const href = DPR_NAV_STATE.currentHref || '';
+        if (!href) return;
+        centerSidebarOnHref(href);
+      };
+
+      const shouldIgnoreKeyNav = (event) => {
+        if (!event) return true;
+        if (event.defaultPrevented) return true;
+        if (event.metaKey || event.ctrlKey || event.altKey) return true;
+        const target = event.target;
+        if (!target) return false;
+        const tag = (target.tagName || '').toUpperCase();
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return true;
+        if (target.isContentEditable) return true;
+        return false;
+      };
+
+      const navigateByDelta = (delta) => {
+        const list = DPR_NAV_STATE.paperHrefs || [];
+        if (!list.length) return;
+        const now = Date.now();
+        if (now - (DPR_NAV_STATE.lastNavTs || 0) < 450) return;
+        DPR_NAV_STATE.lastNavTs = now;
+
+        const current = DPR_NAV_STATE.currentHref;
+        // 首页：右键/左滑（delta=+1）跳到最新一天第一篇
+        if (!current) {
+          if (delta > 0) {
+            triggerPageNav(list[0], 'forward');
+          }
+          return;
+        }
+
+        const idx = list.indexOf(current);
+        if (idx === -1) return;
+        const nextIdx = idx + delta;
+        if (nextIdx < 0 || nextIdx >= list.length) return;
+        triggerPageNav(list[nextIdx], delta > 0 ? 'forward' : 'backward');
+      };
+
+      const prefersReducedMotion = () => {
+        try {
+          return (
+            window.matchMedia &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches
+          );
+        } catch {
+          return false;
+        }
+      };
+
+      // 统一“sidebar 居中滚动”和“页面切换”的动画时长，确保观感一致
+      const DPR_TRANSITION_MS = 320;
+      try {
+        document.documentElement.style.setProperty(
+          '--dpr-transition-ms',
+          `${DPR_TRANSITION_MS}ms`,
+        );
+      } catch {
+        // ignore
+      }
+
+      const DPR_SIDEBAR_SCROLL_ANIM = {
+        rafId: 0,
+      };
+
+      const easeInOutCubic = (t) => {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      };
+
+      const animateScrollTop = (el, targetTop, durationMs) => {
+        if (!el) return;
+
+        try {
+          if (DPR_SIDEBAR_SCROLL_ANIM.rafId) {
+            cancelAnimationFrame(DPR_SIDEBAR_SCROLL_ANIM.rafId);
+            DPR_SIDEBAR_SCROLL_ANIM.rafId = 0;
+          }
+        } catch {
+          // ignore
+        }
+
+        const to = Math.max(
+          0,
+          Math.min(targetTop, el.scrollHeight - el.clientHeight),
+        );
+        const from = el.scrollTop;
+        const delta = to - from;
+        if (Math.abs(delta) < 1 || !durationMs) {
+          el.scrollTop = to;
+          return;
+        }
+
+        const start =
+          (window.performance && performance.now && performance.now()) ||
+          Date.now();
+        const step = (now) => {
+          const t = Math.min(1, (now - start) / durationMs);
+          const p = easeInOutCubic(t);
+          el.scrollTop = from + delta * p;
+          if (t < 1) {
+            DPR_SIDEBAR_SCROLL_ANIM.rafId = requestAnimationFrame(step);
+          } else {
+            DPR_SIDEBAR_SCROLL_ANIM.rafId = 0;
+          }
+        };
+        DPR_SIDEBAR_SCROLL_ANIM.rafId = requestAnimationFrame(step);
+      };
+
+      const triggerPageNav = (href, direction) => {
+        const target = normalizeHref(href);
+        if (!target) return;
+
+        // 先把 sidebar 的“选中高亮层”滑动到目标条目，和页面切换同步
+        moveSidebarActiveIndicatorToHref(target, { animate: true });
+        DPR_SIDEBAR_ACTIVE_INDICATOR.justMoved = true;
+
+        // 通过左右键/滑动切换时：提前把 sidebar 滚到目标项附近，提升“跟手”观感
+        if (DPR_NAV_STATE.lastNavSource !== 'click') {
+          centerSidebarOnHref(target);
+        }
+
+        // 决定入场方向：forward => 新页从右进；backward => 新页从左进
+        DPR_TRANSITION.pendingEnter =
+          direction === 'backward' ? 'enter-from-left' : 'enter-from-right';
+
+        if (prefersReducedMotion()) {
+          window.location.hash = target;
+          return;
+        }
+
+        const section = document.querySelector('.markdown-section');
+        if (!section) {
+          window.location.hash = target;
+          return;
+        }
+
+        const exitClass =
+          direction === 'backward' ? 'dpr-page-exit-right' : 'dpr-page-exit-left';
+
+        section.classList.add('dpr-page-exit', exitClass);
+        // 等退场动画结束后再切换路由
+        setTimeout(() => {
+          window.location.hash = target;
+        }, DPR_TRANSITION_MS);
+      };
+
+      const PREFETCH_STATE = {
+        cache: new Map(),
+      };
+
+      const hrefToMdUrl = (href) => {
+        const h = normalizeHref(href);
+        const m = h.match(/^#\/(.+)$/);
+        if (!m) return '';
+        const file = m[1].replace(/\/$/, '') + '.md';
+        return 'docs/' + file;
+      };
+
+      const prefetchHref = async (href) => {
+        const url = hrefToMdUrl(href);
+        if (!url) return;
+        const key = url;
+        const now = Date.now();
+        const prev = PREFETCH_STATE.cache.get(key);
+        if (prev && now - prev.ts < 5 * 60 * 1000) return; // 5 分钟内不重复拉取
+        try {
+          const res = await fetch(url, { cache: 'force-cache' });
+          if (!res.ok) return;
+          // 读一下 body，确保写入浏览器缓存（同时做内存缓存兜底）
+          const text = await res.text();
+          PREFETCH_STATE.cache.set(key, { ts: now, len: text.length });
+        } catch {
+          // ignore
+        }
+      };
+
+      const prefetchAdjacent = () => {
+        const list = DPR_NAV_STATE.paperHrefs || [];
+        if (!list.length) return;
+        const current = DPR_NAV_STATE.currentHref;
+        if (!current) {
+          // 首页：预取最新一天第一篇
+          prefetchHref(list[0]);
+          return;
+        }
+        const idx = list.indexOf(current);
+        if (idx === -1) return;
+        const prev = idx > 0 ? list[idx - 1] : '';
+        const next = idx + 1 < list.length ? list[idx + 1] : '';
+        if (prev) prefetchHref(prev);
+        if (next) prefetchHref(next);
+      };
+
+      const ensureNavHandlers = () => {
+        if (window.__dprNavBound) return;
+        window.__dprNavBound = true;
+
+        const toggleGoodForCurrent = () => {
+          const current = DPR_NAV_STATE.currentHref || '';
+          if (!current) return;
+          const m = current.match(/^#\/(.+)$/);
+          if (!m) return;
+          const paperId = m[1];
+
+          const state = loadReadState();
+          const cur = state[paperId];
+          // 空格：在 good 与 read 之间切换
+          if (cur === 'good') {
+            state[paperId] = 'read';
+          } else {
+            state[paperId] = 'good';
+          }
+          saveReadState(state);
+          markSidebarReadState(null);
+        };
+
+        // 键盘：左右方向键
+        window.addEventListener('keydown', (e) => {
+          const key = e.key || '';
+          if (shouldIgnoreKeyNav(e)) return;
+          if (key === ' ') {
+            // 空格键：切换“不错（绿色勾）”
+            e.preventDefault();
+            toggleGoodForCurrent();
+            return;
+          }
+          if (key !== 'ArrowLeft' && key !== 'ArrowRight') return;
+          // 只在当前页面聚焦时工作：浏览器已聚焦窗口即可
+          e.preventDefault();
+          DPR_NAV_STATE.lastNavSource = 'key';
+          navigateByDelta(key === 'ArrowRight' ? +1 : -1);
+        });
+
+        // 点击论文链接也走同一套“整页切换”动效（避免只有滑动/方向键有动画）
+        document.addEventListener('click', (e) => {
+          try {
+            if (!e || e.defaultPrevented) return;
+            // 仅拦截普通左键点击，避免影响新标签页/复制链接等行为
+            if (typeof e.button === 'number' && e.button !== 0) return;
+            if (e.metaKey || e.ctrlKey || e.altKey || e.shiftKey) return;
+
+            const link = e.target && e.target.closest ? e.target.closest('a[href]') : null;
+            if (!link) return;
+            const href = link.getAttribute('href') || '';
+            if (!isPaperHref(href)) return;
+
+            const target = normalizeHref(href);
+            if (!target) return;
+            if (target === (DPR_NAV_STATE.currentHref || '')) return;
+
+            // 鼠标点击 sidebar：不触发“居中”逻辑
+            DPR_NAV_STATE.lastNavSource = 'click';
+
+            // 推断方向：按侧边栏顺序判断“前进/后退”
+            let direction = 'forward';
+            const list = DPR_NAV_STATE.paperHrefs || [];
+            const cur = DPR_NAV_STATE.currentHref || '';
+            if (list.length && cur) {
+              const curIdx = list.indexOf(cur);
+              const tgtIdx = list.indexOf(target);
+              if (curIdx !== -1 && tgtIdx !== -1) {
+                direction = tgtIdx < curIdx ? 'backward' : 'forward';
+              }
+            }
+
+            // 只在论文页启用动效拦截，避免首页点击出现“无动画但有延迟”的体验
+            if (document.body && document.body.classList.contains('dpr-paper-page') && !prefersReducedMotion()) {
+              e.preventDefault();
+              triggerPageNav(target, direction);
+            }
+          } catch {
+            // ignore
+          }
+        });
+
+        // 鼠标/触控板横向滚动：切换论文，并阻止浏览器的“整页滑动/回退动效”
+        document.addEventListener(
+          'wheel',
+          (e) => {
+            if (shouldIgnoreKeyNav(e)) return;
+            const dx = e.deltaX || 0;
+            const dy = e.deltaY || 0;
+            if (Math.abs(dx) < 28) return;
+            if (Math.abs(dx) < Math.abs(dy) * 1.2) return;
+            e.preventDefault();
+            // dx < 0：向左滑 => 下一篇
+            // dx > 0：向右滑 => 上一篇
+            DPR_NAV_STATE.lastNavSource = 'wheel';
+            navigateByDelta(dx < 0 ? +1 : -1);
+          },
+          { passive: false },
+        );
+
+        // 触摸滑动：左右切换
+        let startX = 0;
+        let startY = 0;
+        let startAt = 0;
+        let lockHorizontal = false;
+        const threshold = 60;
+
+        const onTouchStart = (e) => {
+          const t = e.touches && e.touches[0];
+          if (!t) return;
+          startX = t.clientX;
+          startY = t.clientY;
+          startAt = Date.now();
+          lockHorizontal = false;
+        };
+
+        const onTouchMove = (e) => {
+          const t = e.touches && e.touches[0];
+          if (!t) return;
+          const dx = t.clientX - startX;
+          const dy = t.clientY - startY;
+          if (Math.abs(dx) < 18) return;
+          if (Math.abs(dx) > Math.abs(dy) * 1.2) {
+            lockHorizontal = true;
+          }
+          if (lockHorizontal) {
+            // 阻止浏览器的横向滑动/回退动效，让切换更“丝滑”
+            e.preventDefault();
+          }
+        };
+
+        const onTouchEnd = (e) => {
+          const t = e.changedTouches && e.changedTouches[0];
+          if (!t) return;
+          const dx = t.clientX - startX;
+          const dy = t.clientY - startY;
+          const dt = Date.now() - startAt;
+          // 排除长按、轻微滑动、明显上下滚动
+          if (dt > 900) return;
+          if (Math.abs(dx) < threshold) return;
+          if (Math.abs(dx) < Math.abs(dy) * 1.2) return;
+          // dx < 0：向左滑 => 下一篇（相当于 ArrowRight）
+          // dx > 0：向右滑 => 上一篇（相当于 ArrowLeft）
+          DPR_NAV_STATE.lastNavSource = 'swipe';
+          navigateByDelta(dx < 0 ? +1 : -1);
+        };
+
+        document.addEventListener('touchstart', onTouchStart, { passive: true });
+        document.addEventListener('touchmove', onTouchMove, { passive: false });
+        document.addEventListener('touchend', onTouchEnd, { passive: true });
+      };
+
       // --- Docsify 生命周期钩子 ---
       hook.doneEach(function () {
         // 当前路由对应的“论文 ID”（简单用文件名去掉 .md）
@@ -760,6 +1422,34 @@ window.$docsify = {
         const mainContent = document.querySelector('.markdown-section');
         if (mainContent) {
           renderMathInEl(mainContent);
+        }
+
+        // 论文页标题条排版（只对 docs/YYYYMM/DD/*.md 生效）
+        applyPaperTitleBar();
+
+        // 论文页左右切换：更新导航列表并绑定事件（只绑定一次）
+        updateNavState();
+        ensureNavHandlers();
+        // 预取相邻论文的 Markdown（利用浏览器 cache，让切换更丝滑）
+        prefetchAdjacent();
+
+        // 页面入场动画：根据上一跳的方向做滑入
+        const section = document.querySelector('.markdown-section');
+        if (section) {
+          // 清理上一次退场残留（防止极端情况下没清掉）
+          section.classList.remove('dpr-page-exit', 'dpr-page-exit-left', 'dpr-page-exit-right');
+          const enter = DPR_TRANSITION.pendingEnter;
+          DPR_TRANSITION.pendingEnter = '';
+          if (enter && !prefersReducedMotion()) {
+            section.classList.add('dpr-page-enter', enter);
+            requestAnimationFrame(() => {
+              // 触发 transition 到“静止态”
+              section.classList.add('dpr-page-enter-active');
+              setTimeout(() => {
+                section.classList.remove('dpr-page-enter', 'dpr-page-enter-active', 'enter-from-left', 'enter-from-right');
+              }, DPR_TRANSITION_MS + 40);
+            });
+          }
         }
 
         if (!isHomePage && window.PrivateDiscussionChat) {
@@ -785,6 +1475,34 @@ window.$docsify = {
           // 首页也需要应用已有的“已读高亮”，但不新增记录
           markSidebarReadState(null);
         }
+
+        // 让滑动高亮层跟随当前 active 项（点击、路由变化后会更新 active 类）
+        try {
+          const nav = document.querySelector('.sidebar-nav');
+          if (nav) {
+            const activeLi = nav.querySelector('li.active.sidebar-paper-item');
+            if (activeLi) {
+              // 路由加载完成后：直接“贴齐”到实际 active 位置，避免出现二次滑动
+              moveSidebarActiveIndicatorToEl(activeLi, { animate: false });
+            }
+          }
+        } catch {
+          // ignore
+        } finally {
+          DPR_SIDEBAR_ACTIVE_INDICATOR.justMoved = false;
+        }
+
+        // 自动把当前论文在 sidebar 中滚动到居中位置，便于连续阅读
+        if (DPR_NAV_STATE.lastNavSource !== 'click') {
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              centerSidebarOnCurrent();
+            });
+          });
+        }
+
+        // 本次 doneEach 的来源只用于控制“是否居中”，用完即清理
+        DPR_NAV_STATE.lastNavSource = '';
 
         // ----------------------------------------------------
         // H. Zotero 元数据注入逻辑 (带延时和唤醒)

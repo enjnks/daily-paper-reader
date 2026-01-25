@@ -174,7 +174,6 @@ body.close #paper-chat-container::after {
   /* 强制限制：左边界不能小于侧边栏右边界 */
   min-width: 300px;
   bottom: 24px;
-  transform: translateX(-50%);
   max-width: min(820px, calc(100vw - var(--sidebar-width, 260px) - 40px));
   width: calc(100% - 120px);
   display: flex;
@@ -191,6 +190,7 @@ body.close #paper-chat-container::after {
   /* 默认用于 sidebar 展开/收起时的平滑过渡 */
   transition: left 0.25s ease-out, transform 0.25s ease-out,
     max-width 0.25s ease-out;
+  transform: translateX(-50%);
   overflow: hidden; /* 遮住内部内容的左右和下边，配合圆角 */
 }
 
@@ -590,7 +590,6 @@ body.dpr-resizing .content {
 body.close .chat-footer {
   left: 50%;
 }
-
 .chat-footer #chat-llm-model-select {
   padding: 6px 14px;
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -842,6 +841,116 @@ body.close #sidebar-resizer {
   box-sizing: border-box !important;
 }
 
+/* 论文页标题条：英文右侧、中文左侧，中间竖线，整体高度约 3 行 */
+body.dpr-paper-page .dpr-title-bar {
+  display: flex;
+  align-items: stretch;
+  gap: 14px;
+  padding: 10px 12px;
+  margin: 0 0 10px 0;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  background: #fff;
+  height: 96px; /* 固定高度：约 3 行（受 line-height 影响） */
+  overflow: hidden;
+}
+
+body.dpr-paper-page .dpr-title-cn,
+body.dpr-paper-page .dpr-title-en {
+  flex: 1 1 0;
+  min-width: 0;
+  line-height: 1.22;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
+}
+
+body.dpr-paper-page .dpr-title-cn {
+  text-align: left;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+body.dpr-paper-page .dpr-title-en {
+  text-align: right;
+  font-weight: 600;
+  color: #1f1f1f;
+}
+
+body.dpr-paper-page .dpr-title-sep {
+  width: 1px;
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 1px;
+}
+
+/* 只有一个标题时：占满左侧，右侧隐藏 */
+body.dpr-paper-page .dpr-title-bar.dpr-title-single .dpr-title-sep,
+body.dpr-paper-page .dpr-title-bar.dpr-title-single .dpr-title-en {
+  display: none;
+}
+
+/* 隐藏原始 h1（保留在 DOM 中供解析/复制兜底），避免重复显示 */
+body.dpr-paper-page .markdown-section h1.dpr-title-hidden {
+  position: absolute;
+  left: -99999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+/* 论文页“整页切换”动效：左右滑动/方向键切换时，正文区域做轻量滑入滑出 */
+body.dpr-paper-page .markdown-section.dpr-page-exit,
+body.dpr-paper-page .markdown-section.dpr-page-enter {
+  will-change: transform, opacity;
+}
+
+/* 退场：当前页淡出 + 向左右微移 */
+body.dpr-paper-page .markdown-section.dpr-page-exit {
+  transition: transform var(--dpr-transition-ms, 320ms) ease-out,
+    opacity var(--dpr-transition-ms, 320ms) ease-out;
+  opacity: 0;
+}
+body.dpr-paper-page .markdown-section.dpr-page-exit.dpr-page-exit-left {
+  transform: translateX(-36px);
+}
+body.dpr-paper-page .markdown-section.dpr-page-exit.dpr-page-exit-right {
+  transform: translateX(36px);
+}
+
+/* 入场：新页从左右微移位置淡入，active 时过渡到静止态 */
+body.dpr-paper-page .markdown-section.dpr-page-enter {
+  transition: none;
+  opacity: 0;
+}
+body.dpr-paper-page .markdown-section.dpr-page-enter.enter-from-left {
+  transform: translateX(-36px);
+}
+body.dpr-paper-page .markdown-section.dpr-page-enter.enter-from-right {
+  transform: translateX(36px);
+}
+body.dpr-paper-page .markdown-section.dpr-page-enter.dpr-page-enter-active {
+  transition: transform var(--dpr-transition-ms, 320ms)
+      cubic-bezier(0.2, 0.9, 0.2, 1),
+    opacity var(--dpr-transition-ms, 320ms) cubic-bezier(0.2, 0.9, 0.2, 1);
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.dpr-paper-page .markdown-section.dpr-page-exit,
+  body.dpr-paper-page .markdown-section.dpr-page-enter,
+  body.dpr-paper-page .markdown-section.dpr-page-enter.dpr-page-enter-active {
+    transition: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+
 article.markdown-section {
   max-width: 1200px !important;
   width: 100% !important;
@@ -857,6 +966,14 @@ article.markdown-section {
     margin-left: 0 !important;
     padding-left: 0 !important;
     justify-content: flex-start !important;
+  }
+
+  /* 小屏：减少横向“整页滑动/回退”动效带来的干扰 */
+  html,
+  body {
+    overflow-x: hidden;
+    overscroll-behavior-x: none;
+    touch-action: pan-y;
   }
 
   .markdown-section,
@@ -1013,6 +1130,55 @@ article.markdown-section {
   /* 为椭圆背景预留左右内边距，避免文字紧贴边缘，同时给右侧小蓝点留出空间 */
   padding-left: 10px;
   padding-right: 18px;
+  background-color: transparent; /* 背景统一用伪元素/滑动高亮层，便于控制层级 */
+}
+
+/* hover 底色改为伪元素：让“滑动高亮层”可以盖住 hover（层级更深） */
+.sidebar-nav li.sidebar-paper-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  background-color: #f5f5f5; /* hover：浅灰 */
+  border-radius: 20px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
+  transition: opacity 120ms ease-out;
+}
+
+/* 选中态滑动高亮层：一个元素在 sidebar 内平滑移动，覆盖整行 */
+.sidebar-nav {
+  position: relative;
+}
+.sidebar-nav .dpr-sidebar-active-indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-radius: 20px;
+  background-color: #f0f0f0; /* 选中：深一点的灰色 */
+  pointer-events: none;
+  z-index: 1; /* 高于 hover 伪元素 */
+  transform: translate3d(0, 0, 0);
+  transition: transform var(--dpr-transition-ms, 320ms) ease-out,
+    height var(--dpr-transition-ms, 320ms) ease-out,
+    width var(--dpr-transition-ms, 320ms) ease-out;
+}
+
+.sidebar-nav li.sidebar-paper-item {
+  position: relative;
+  z-index: 2; /* 让文字/图标在高亮层之上 */
+}
+
+/* 确保文字/图标始终在 hover 浅灰层之上（避免被 ::before 盖住） */
+.sidebar-nav li.sidebar-paper-item > a,
+.sidebar-nav li.sidebar-paper-item .sidebar-paper-rating-icons {
+  position: relative;
+  z-index: 2;
 }
 .sidebar-nav li.sidebar-paper-item > a {
   text-decoration: none;
@@ -1026,17 +1192,24 @@ article.markdown-section {
 /* 悬停：浅灰色圆角背景（作用在整行 li 上） */
 .sidebar-nav li.sidebar-paper-item:hover {
   border-right: none;
-  background-color: #f5f5f5; /* 浅灰色 */
-  border-radius: 20px;
+}
+.sidebar-nav li.sidebar-paper-item:hover::before {
+  opacity: 1;
 }
 /* 正在阅读：加粗文字 + 更深的灰色圆角背景（作用在整行 li 上） */
 .sidebar-nav li.sidebar-paper-item.active {
   border-right: none;
-  background-color: #f0f0f0; /* 比 hover 稍深的灰色 */
+  background-color: transparent; /* 选中底色由滑动高亮层提供 */
   border-radius: 20px;
+}
+.sidebar-nav li.sidebar-paper-item.active:hover {
+  /* active 项 hover 时，浅灰 hover 仍会出现，但会被深灰滑动层覆盖 */
 }
 .sidebar-nav li.sidebar-paper-item.active > a {
   font-weight: 600;
+}
+.sidebar-nav li.sidebar-paper-item.active .dpr-sidebar-title {
+  font-weight: 700;
 }
 
 /* 覆盖 Docsify 默认样式：鼠标移到侧边栏链接上不出现下划线 */
