@@ -525,14 +525,12 @@ def split_sidebar_tag(tag: str) -> Tuple[str, str]:
 def extract_sidebar_tags(paper: Dict[str, Any], max_tags: int = 6) -> List[Tuple[str, str]]:
     """
     侧边栏展示的标签：
-    - 优先 llm_tags（更贴近最终推荐意图），并追加 tags（粗召回标签）作为补充
+    - 只使用 llm_tags（与文章页 `**Tags**` 保持一致），避免出现“侧边栏与正文不对应”
     - 去重 + 限制数量，避免侧边栏过长
     """
     raw: List[str] = []
     if isinstance(paper.get("llm_tags"), list):
         raw.extend([str(t) for t in (paper.get("llm_tags") or [])])
-    if isinstance(paper.get("tags"), list):
-        raw.extend([str(t) for t in (paper.get("tags") or [])])
 
     seen_labels = set()
     kw: List[Tuple[str, str]] = []
@@ -830,6 +828,11 @@ def main() -> None:
     parser.add_argument("--date", type=str, default=TODAY_STR, help="date string YYYYMMDD.")
     parser.add_argument("--mode", type=str, default=None, help="mode for recommend file.")
     parser.add_argument("--docs-dir", type=str, default=None, help="override docs dir.")
+    parser.add_argument(
+        "--sidebar-only",
+        action="store_true",
+        help="只更新 docs/_sidebar.md（不生成/不重写论文 Markdown，避免触发 LLM 调用）。",
+    )
     args = parser.parse_args()
 
     date_str = args.date or TODAY_STR
@@ -864,17 +867,32 @@ def main() -> None:
     deep_entries: List[Tuple[str, str, List[Tuple[str, str]]]] = []
     quick_entries: List[Tuple[str, str, List[Tuple[str, str]]]] = []
 
-    log_substep("6.2", "生成精读区文章", "START")
-    for paper in deep_list:
-        pid, title = process_paper(paper, "deep", date_str, docs_dir)
-        deep_entries.append((pid, title, extract_sidebar_tags(paper)))
-    log_substep("6.2", "生成精读区文章", "END")
+    if args.sidebar_only:
+        log_substep("6.2", "跳过生成文章（仅更新侧边栏）", "SKIP")
+        for paper in deep_list:
+            title = (paper.get("title") or "").strip()
+            arxiv_id = str(paper.get("id") or paper.get("paper_id") or "").strip()
+            _, _, pid = prepare_paper_paths(docs_dir, date_str, title, arxiv_id)
+            deep_entries.append((pid, title, extract_sidebar_tags(paper)))
 
-    log_substep("6.3", "生成速读区文章", "START")
-    for paper in quick_list:
-        pid, title = process_paper(paper, "quick", date_str, docs_dir)
-        quick_entries.append((pid, title, extract_sidebar_tags(paper)))
-    log_substep("6.3", "生成速读区文章", "END")
+        for paper in quick_list:
+            title = (paper.get("title") or "").strip()
+            arxiv_id = str(paper.get("id") or paper.get("paper_id") or "").strip()
+            _, _, pid = prepare_paper_paths(docs_dir, date_str, title, arxiv_id)
+            quick_entries.append((pid, title, extract_sidebar_tags(paper)))
+        log_substep("6.3", "跳过生成文章（仅更新侧边栏）", "SKIP")
+    else:
+        log_substep("6.2", "生成精读区文章", "START")
+        for paper in deep_list:
+            pid, title = process_paper(paper, "deep", date_str, docs_dir)
+            deep_entries.append((pid, title, extract_sidebar_tags(paper)))
+        log_substep("6.2", "生成精读区文章", "END")
+
+        log_substep("6.3", "生成速读区文章", "START")
+        for paper in quick_list:
+            pid, title = process_paper(paper, "quick", date_str, docs_dir)
+            quick_entries.append((pid, title, extract_sidebar_tags(paper)))
+        log_substep("6.3", "生成速读区文章", "END")
 
     sidebar_path = os.path.join(docs_dir, "_sidebar.md")
     log_substep("6.4", "更新侧边栏", "START")
