@@ -198,36 +198,6 @@ def translate_title_and_abstract_to_zh(title: str, abstract: str) -> Tuple[str, 
     return zh_title, zh_abstract
 
 
-def quick_summary_invalid_reason(text: str) -> str:
-    s = (text or "").strip()
-    if not s:
-        return "empty"
-    lines = [l.strip() for l in s.splitlines() if l.strip()]
-    want = {"**问题**", "**方法**", "**结论**"}
-    got = set()
-    for l in lines:
-        for k in want:
-            if l.startswith(k):
-                got.add(k)
-    if got != want:
-        missing = sorted(list(want - got))
-        return f"missing_fields:{','.join(missing)}"
-
-    def line_ok(prefix: str) -> bool:
-        line = next((l for l in lines if l.startswith(prefix)), "")
-        if not line:
-            return False
-        return line.endswith(("。", "！", "？", ".", "!", "?"))
-
-    bad = []
-    for k in ("**问题**", "**方法**", "**结论**"):
-        if not line_ok(k):
-            bad.append(k)
-    if bad:
-        return f"bad_punctuation:{','.join(bad)}"
-    return "unknown"
-
-
 def extract_section_tail(md_text: str, heading: str) -> str:
     """
     从 md 中提取某个自动生成段落（heading）后的尾部内容。
@@ -388,29 +358,34 @@ def generate_deep_summary(md_file_path: str, txt_file_path: str, max_retries: in
     return last or None
 
 
-def generate_quick_summary(title: str, abstract: str, max_retries: int = 3) -> str | None:
+def generate_glance_overview(title: str, abstract: str, max_retries: int = 3) -> str | None:
+    """
+    生成论文速览（包含 TLDR、Motivation、Method、Result、Conclusion）。
+    使用 JSON 结构化输出，确保返回完整的五个字段。
+    """
     if LLM_CLIENT is None:
-        if abstract:
-            return abstract.strip()[:200]
+        log("[WARN] 未配置 LLM_CLIENT，跳过速览生成。")
         return None
 
-    system_prompt = "你是论文速读助手，请用中文输出一个简短速览摘要。"
+    system_prompt = "你是论文速览助手，请用中文简洁地总结论文的关键信息。"
     payload = {"title": title, "abstract": abstract}
     user_text = json.dumps(payload, ensure_ascii=False)
     user_prompt = (
-        "请基于上面的 JSON，输出一个中文速览摘要，严格返回 JSON（不要输出任何其它文字）：\n"
-        "{\"problem\":\"...\",\"method\":\"...\",\"conclusion\":\"...\"}\n"
-        "要求：每个字段尽量一句话。"
+        "请基于上面的 JSON 中的 title 和 abstract，输出一个中文速览摘要，严格返回 JSON（不要输出任何其它文字）：\n"
+        "{\"tldr\":\"...\",\"motivation\":\"...\",\"method\":\"...\",\"result\":\"...\",\"conclusion\":\"...\"}\n"
+        "要求：每个字段尽量一句话概括，简洁明了。"
     )
 
     schema = {
         "type": "object",
         "properties": {
-            "problem": {"type": "string"},
+            "tldr": {"type": "string"},
+            "motivation": {"type": "string"},
             "method": {"type": "string"},
+            "result": {"type": "string"},
             "conclusion": {"type": "string"},
         },
-        "required": ["problem", "method", "conclusion"],
+        "required": ["tldr", "motivation", "method", "result", "conclusion"],
         "additionalProperties": False,
     }
     use_json_object = "gemini" in (getattr(LLM_CLIENT, "model", "") or "").lower()
@@ -419,7 +394,7 @@ def generate_quick_summary(title: str, abstract: str, max_retries: int = 3) -> s
     else:
         response_format = {
             "type": "json_schema",
-            "json_schema": {"name": "quick_summary", "schema": schema, "strict": True},
+            "json_schema": {"name": "glance_overview", "schema": schema, "strict": True},
         }
 
     messages = [
@@ -434,26 +409,30 @@ def generate_quick_summary(title: str, abstract: str, max_retries: int = 3) -> s
                 LLM_CLIENT,
                 messages,
                 temperature=0.2,
-                max_tokens=1024,
+                max_tokens=2048,
                 response_format=response_format,
             )
             obj = json.loads(content)
             if not isinstance(obj, dict):
                 continue
-            problem = str(obj.get("problem") or "").strip()
+            tldr = str(obj.get("tldr") or "").strip()
+            motivation = str(obj.get("motivation") or "").strip()
             method = str(obj.get("method") or "").strip()
+            result = str(obj.get("result") or "").strip()
             conclusion = str(obj.get("conclusion") or "").strip()
-            if not (problem and method and conclusion):
+            if not (tldr and motivation and method and result and conclusion):
                 continue
             return "\n".join(
                 [
-                    f"**问题**：{ensure_single_sentence_end(problem)}",
-                    f"**方法**：{ensure_single_sentence_end(method)}",
-                    f"**结论**：{ensure_single_sentence_end(conclusion)}",
+                    f"**TLDR**：{ensure_single_sentence_end(tldr)} \\",
+                    f"**Motivation**：{ensure_single_sentence_end(motivation)} \\",
+                    f"**Method**：{ensure_single_sentence_end(method)} \\",
+                    f"**Result**：{ensure_single_sentence_end(result)} \\",
+                    f"**Conclusion**：{ensure_single_sentence_end(conclusion)}",
                 ]
             )
         except Exception as e:
-            log(f"[WARN] 速读总结失败（第 {attempt} 次）：{e}")
+            log(f"[WARN] 速览生成失败（第 {attempt} 次）：{e}")
             time.sleep(2 * attempt)
     return None
 
@@ -663,6 +642,16 @@ def build_markdown_content(
     lines.append("")
     lines.append("---")
     lines.append("")
+    
+    # 插入速览内容（如果存在）
+    glance = paper.get("_glance_overview", "").strip()
+    if glance:
+        lines.append("## 速览")
+        lines.append(glance)
+        lines.append("")
+        lines.append("---")
+        lines.append("")
+    
     lines.append("## Abstract")
     lines.append(abstract_en)
     if zh_abstract:
@@ -682,6 +671,12 @@ def process_paper(
     title = (paper.get("title") or "").strip()
     arxiv_id = str(paper.get("id") or paper.get("paper_id") or "").strip()
     md_path, txt_path, paper_id = prepare_paper_paths(docs_dir, date_str, title, arxiv_id)
+    abstract_en = (paper.get("abstract") or "").strip()
+
+    # 为所有论文生成速览内容
+    glance = generate_glance_overview(title, abstract_en)
+    if glance:
+        paper["_glance_overview"] = glance
 
     if os.path.exists(md_path):
         # 修复模式：若自动总结/速览存在“被截断”的迹象，则仅重生成该段落，不改动前面正文
@@ -700,11 +695,25 @@ def process_paper(
             if os.getenv("DPR_DEBUG_STEP6") == "1":
                 log(f"[DEBUG][STEP6] fixed TLDR trailing slash: {os.path.basename(md_path)}")
 
+        # 检查是否需要更新速览内容到现有文件
+        if glance and "## 速览" not in existing:
+            # 在 Abstract 前插入速览
+            abstract_idx = existing.find("## Abstract")
+            if abstract_idx != -1:
+                before = existing[:abstract_idx].rstrip()
+                after = existing[abstract_idx:]
+                updated = f"{before}\n\n## 速览\n{glance}\n\n---\n\n{after}"
+                with open(md_path, "w", encoding="utf-8") as f:
+                    f.write(updated)
+                existing = updated
+
         if section == "deep":
+            # 精读区：检查是否已有详细总结
             tail = extract_section_tail(existing, "论文详细总结（自动生成）")
             if tail:
                 return paper_id, title
 
+            # 生成详细总结
             pdf_url = str(paper.get("link") or paper.get("pdf_url") or "").strip()
             ensure_text_content(pdf_url, txt_path)
             summary = generate_deep_summary(md_path, txt_path)
@@ -712,27 +721,13 @@ def process_paper(
                 upsert_auto_block(md_path, "论文详细总结（自动生成）", summary)
             return paper_id, title
         else:
-            tail = extract_section_tail(existing, "速览摘要（自动生成）")
-            # 若已经有速览摘要且不是 TLDR 回退，则保持不变
-            if tail and not tail.lstrip().startswith("**TLDR**"):
-                return paper_id, title
-            if os.getenv("DPR_DEBUG_STEP6") == "1" and tail:
-                log(f"[DEBUG][STEP6] quick_summary needs fix: {os.path.basename(md_path)} reason={quick_summary_invalid_reason(tail)} tail={tail[-40:]!r}")
-
-            abstract_en = (paper.get("abstract") or "").strip()
-            summary = generate_quick_summary(title, abstract_en)
-            if not summary:
-                tldr = (paper.get("llm_tldr_cn") or paper.get("llm_tldr") or "").strip()
-                if tldr:
-                    summary = f"**TLDR**：{ensure_single_sentence_end(tldr)}"
-            if summary:
-                upsert_auto_block(md_path, "速览摘要（自动生成）", summary)
+            # 速读区：不生成详细总结，只保留速览和摘要
             return paper_id, title
 
+    # 新文件：生成完整内容
     pdf_url = str(paper.get("link") or paper.get("pdf_url") or "").strip()
     ensure_text_content(pdf_url, txt_path)
 
-    abstract_en = (paper.get("abstract") or "").strip()
     zh_title, zh_abstract = translate_title_and_abstract_to_zh(title, abstract_en)
     tags_html = build_tags_html(section, paper.get("llm_tags") or [])
     content = build_markdown_content(paper, section, zh_title, zh_abstract, tags_html)
@@ -741,18 +736,12 @@ def process_paper(
     with open(md_path, "w", encoding="utf-8") as f:
         f.write(content)
 
+    # 精读区：生成详细总结
     if section == "deep":
         summary = generate_deep_summary(md_path, txt_path)
         if summary:
             upsert_auto_block(md_path, "论文详细总结（自动生成）", summary)
-    else:
-        summary = generate_quick_summary(title, abstract_en)
-        if not summary:
-            tldr = (paper.get("llm_tldr_cn") or paper.get("llm_tldr") or "").strip()
-            if tldr:
-                summary = f"**TLDR**：{ensure_single_sentence_end(tldr)}"
-        if summary:
-            upsert_auto_block(md_path, "速览摘要（自动生成）", summary)
+    # 速读区：不生成额外的总结，只保留速览和摘要
 
     return paper_id, title
 

@@ -793,8 +793,14 @@ window.$docsify = {
         const h1s = Array.from(section.querySelectorAll('h1'));
         if (!h1s.length) return;
 
-        const enTitle = (h1s[0].textContent || '').trim();
-        const cnTitle = (h1s[1] ? (h1s[1].textContent || '').trim() : '').trim();
+        // 约定：如果有两个 h1，则第一个为英文、第二个为中文；
+        // 如果只有一个 h1，则认为是“单标题”，放在左侧（cn 区），避免 dpr-title-single 隐藏右侧后变空白。
+        let enTitle = (h1s[0].textContent || '').trim();
+        let cnTitle = (h1s[1] ? (h1s[1].textContent || '').trim() : '').trim();
+        if (h1s.length === 1) {
+          cnTitle = enTitle;
+          enTitle = '';
+        }
 
         // 隐藏原始 h1，但保留在 DOM 里供复制/SEO/元信息提取兜底
         h1s.forEach((h) => h.classList.add('dpr-title-hidden'));
