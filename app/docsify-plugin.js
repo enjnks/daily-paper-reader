@@ -884,7 +884,7 @@ window.$docsify = {
             const v = obj[k];
             if (v === true || v === 'read') {
               normalized[k] = 'read';
-            } else if (v === 'good' || v === 'bad') {
+            } else if (v === 'good' || v === 'bad' || v === 'blue' || v === 'orange') {
               normalized[k] = v;
             }
           });
@@ -901,6 +901,272 @@ window.$docsify = {
         } catch {
           // ignore
         }
+      };
+
+      // ---------- Share to GitHub Gist ----------
+      const loadGithubTokenForGist = () => {
+        try {
+          const secret = window.decoded_secret_private || {};
+          if (secret.github && secret.github.token) {
+            const t = String(secret.github.token || '').trim();
+            if (t) return t;
+          }
+        } catch {
+          // ignore
+        }
+        try {
+          if (!window.localStorage) return null;
+          const raw = window.localStorage.getItem('github_token_data');
+          if (!raw) return null;
+          const obj = JSON.parse(raw) || {};
+          const t = String(obj.token || '').trim();
+          return t || null;
+        } catch {
+          return null;
+        }
+      };
+
+      const joinUrlPath = (a, b) => {
+        const aa = String(a || '');
+        const bb = String(b || '');
+        if (!aa) return bb.replace(/^\/+/, '');
+        if (!bb) return aa;
+        const left = aa.endsWith('/') ? aa : `${aa}/`;
+        const right = bb.replace(/^\/+/, '');
+        return `${left}${right}`;
+      };
+
+      const getDocsifyBasePath = () => {
+        const bp =
+          window.$docsify && typeof window.$docsify.basePath === 'string'
+            ? window.$docsify.basePath
+            : 'docs/';
+        return String(bp || 'docs/');
+      };
+
+      const buildDocsUrl = (rel) => {
+        try {
+          const baseHref = window.location.href.split('#')[0];
+          return new URL(rel, baseHref).toString();
+        } catch {
+          return rel;
+        }
+      };
+
+      const fetchPaperMarkdownById = async (paperId) => {
+        const rel = joinUrlPath(getDocsifyBasePath(), `${paperId}.md`);
+        const url = buildDocsUrl(rel);
+        const res = await fetch(url, { cache: 'no-store' });
+        if (!res.ok) throw new Error(`无法读取文章 Markdown（HTTP ${res.status}）`);
+        return await res.text();
+      };
+
+      const loadChatHistoryForPaper = async (paperId) => {
+        if (!paperId) return [];
+        // IndexedDB 优先：dpr_chat_db_v1 / paper_chats
+        if (typeof indexedDB !== 'undefined') {
+          try {
+            const db = await new Promise((resolve) => {
+              const req = indexedDB.open('dpr_chat_db_v1', 1);
+              req.onupgradeneeded = (e) => {
+                const d = e.target.result;
+                if (!d.objectStoreNames.contains('paper_chats')) {
+                  d.createObjectStore('paper_chats', { keyPath: 'paperId' });
+                }
+              };
+              req.onsuccess = (e) => resolve(e.target.result);
+              req.onerror = () => resolve(null);
+            });
+            if (db) {
+              return await new Promise((resolve) => {
+                try {
+                  const tx = db.transaction('paper_chats', 'readonly');
+                  const store = tx.objectStore('paper_chats');
+                  const r = store.get(paperId);
+                  r.onsuccess = () => {
+                    const rec = r.result;
+                    resolve(rec && Array.isArray(rec.messages) ? rec.messages : []);
+                  };
+                  r.onerror = () => resolve([]);
+                } catch {
+                  resolve([]);
+                }
+              });
+            }
+          } catch {
+            // ignore
+          }
+        }
+        // 兜底：旧版 localStorage
+        try {
+          if (!window.localStorage) return [];
+          const raw = window.localStorage.getItem('dpr_chat_history_v1');
+          if (!raw) return [];
+          const obj = JSON.parse(raw) || {};
+          const list = obj[paperId];
+          return Array.isArray(list) ? list : [];
+        } catch {
+          return [];
+        }
+      };
+
+      const buildShareMarkdown = (paperId, pageMd, chatMessages) => {
+        const parts = [];
+        parts.push(`<!-- Shared by Daily Paper Reader -->`);
+        parts.push(``);
+        parts.push(`原始页面：${String(window.location.origin || '')}/#/${paperId}`);
+        parts.push(`生成时间：${new Date().toISOString()}`);
+        parts.push(``);
+        parts.push(`---`);
+        parts.push(``);
+        parts.push(pageMd || '');
+        parts.push(``);
+        parts.push(`---`);
+        parts.push(``);
+        parts.push(`## 💬 Chat History（本机记录）`);
+        parts.push(``);
+        if (!chatMessages || !chatMessages.length) {
+          parts.push(`暂无对话。`);
+          return parts.join('\n');
+        }
+        chatMessages.forEach((m) => {
+          const role = m && m.role ? String(m.role) : 'unknown';
+          const time = m && m.time ? String(m.time) : '';
+          const content = m && m.content ? String(m.content) : '';
+          if (role === 'thinking') {
+            parts.push(`<details>`);
+            parts.push(`<summary>🧠 思考过程 ${time ? `(${time})` : ''}</summary>`);
+            parts.push(``);
+            parts.push('```');
+            parts.push(content);
+            parts.push('```');
+            parts.push(`</details>`);
+            parts.push(``);
+            return;
+          }
+          const label = role === 'ai' ? '🤖 AI' : role === 'user' ? '👤 你' : role;
+          parts.push(`### ${label}${time ? ` (${time})` : ''}`);
+          parts.push(content);
+          parts.push(``);
+        });
+        return parts.join('\n');
+      };
+
+      const ensureShareModal = () => {
+        let overlay = document.getElementById('dpr-gist-share-overlay');
+        if (overlay) return overlay;
+        overlay = document.createElement('div');
+        overlay.id = 'dpr-gist-share-overlay';
+        overlay.innerHTML = `
+          <div class="dpr-gist-share-modal" role="dialog" aria-modal="true">
+            <div class="dpr-gist-share-title">分享链接</div>
+            <div class="dpr-gist-share-row">
+              <input class="dpr-gist-share-input" type="text" readonly />
+              <button class="dpr-gist-share-copy" type="button">复制</button>
+            </div>
+            <div class="dpr-gist-share-hint"></div>
+          </div>
+        `;
+        overlay.addEventListener('pointerdown', (e) => {
+          // 点空白处关闭
+          if (e && e.target === overlay) {
+            overlay.classList.remove('show');
+          }
+        });
+        document.addEventListener('keydown', (e) => {
+          if (e && e.key === 'Escape') overlay.classList.remove('show');
+        });
+        document.body.appendChild(overlay);
+
+        const copyBtn = overlay.querySelector('.dpr-gist-share-copy');
+        if (copyBtn) {
+          copyBtn.addEventListener('click', async () => {
+            const input = overlay.querySelector('.dpr-gist-share-input');
+            const v = input ? String(input.value || '') : '';
+            if (!v) return;
+            try {
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                await navigator.clipboard.writeText(v);
+              } else {
+                input.focus();
+                input.select();
+                document.execCommand('copy');
+              }
+              const hint = overlay.querySelector('.dpr-gist-share-hint');
+              if (hint) hint.textContent = '已复制';
+            } catch {
+              const hint = overlay.querySelector('.dpr-gist-share-hint');
+              if (hint) hint.textContent = '复制失败，请手动复制';
+            }
+          });
+        }
+        return overlay;
+      };
+
+      const showShareModal = (url, hintText) => {
+        const overlay = ensureShareModal();
+        const input = overlay.querySelector('.dpr-gist-share-input');
+        const hint = overlay.querySelector('.dpr-gist-share-hint');
+        if (input) input.value = url || '';
+        if (hint) hint.textContent = hintText || '';
+        overlay.classList.add('show');
+      };
+
+      const createGist = async (token, filename, content) => {
+        const res = await fetch('https://api.github.com/gists', {
+          method: 'POST',
+          headers: {
+            Authorization: `token ${token}`,
+            Accept: 'application/vnd.github.v3+json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            description: '论文分享（Daily Paper Reader）',
+            public: false,
+            files: {
+              [filename]: { content },
+            },
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          const msg = data && data.message ? String(data.message) : '';
+          // GitHub 对不支持/无权限的 token（尤其是 fine-grained PAT 不支持 Gist）经常返回 404 Not Found
+          if (res.status === 404) {
+            throw new Error(
+              'Not Found（常见原因：你用的是 Fine-grained PAT，GitHub Gist API 不支持；请改用 Classic PAT 并勾选 gist 权限）',
+            );
+          }
+          if (res.status === 401) {
+            throw new Error('未授权（Token 无效或已过期）');
+          }
+          if (res.status === 403) {
+            throw new Error(
+              `权限不足（需要 Classic PAT 勾选 gist 权限）。${msg ? `详情：${msg}` : ''}`.trim(),
+            );
+          }
+          throw new Error(msg || `HTTP ${res.status}`);
+        }
+        return data;
+      };
+
+      const sharePaperToGist = async (paperId) => {
+        const token = loadGithubTokenForGist();
+        if (!token) {
+          showShareModal('', '未检测到 GitHub Token，请先在首页配置 GitHub Token。');
+          return;
+        }
+        const pageMd = await fetchPaperMarkdownById(paperId);
+        const chat = await loadChatHistoryForPaper(paperId);
+        const content = buildShareMarkdown(paperId, pageMd, chat);
+
+        // 文件名：paperId 最后一段 + .md
+        const slug = String(paperId || 'paper').split('/').slice(-1)[0] || 'paper';
+        const filename = `${slug}.md`;
+        const data = await createGist(token, filename, content);
+        const url = data && data.html_url ? String(data.html_url) : '';
+        const preview = data && data.id ? `https://gist.io/${data.id}` : '';
+        showShareModal(url, preview ? `精美预览：${preview}` : '');
       };
 
 	      const markSidebarReadState = (currentPaperId) => {
@@ -921,11 +1187,17 @@ window.$docsify = {
             'sidebar-paper-read',
             'sidebar-paper-good',
             'sidebar-paper-bad',
+            'sidebar-paper-blue',
+            'sidebar-paper-orange',
           );
           if (status === 'good') {
             li.classList.add('sidebar-paper-good');
           } else if (status === 'bad') {
             li.classList.add('sidebar-paper-bad');
+          } else if (status === 'blue') {
+            li.classList.add('sidebar-paper-blue');
+          } else if (status === 'orange') {
+            li.classList.add('sidebar-paper-orange');
           } else if (status) {
             li.classList.add('sidebar-paper-read');
           }
@@ -942,11 +1214,17 @@ window.$docsify = {
 	          // 标记这是一个具体论文条目，方便样式细化（避免整天标题一起高亮）
 	          li.classList.add('sidebar-paper-item');
 
-	          // 为侧边栏条目追加“不错 / 一般”圆圈图标按钮
+          // 为侧边栏条目追加“书签标记”按钮（绿/蓝/橙/红）
 	          let actionWrapper = li.querySelector('.sidebar-paper-rating-icons');
 	          let goodIcon = actionWrapper
 	            ? actionWrapper.querySelector('.sidebar-paper-rating-icon.good')
 	            : null;
+            let blueIcon = actionWrapper
+              ? actionWrapper.querySelector('.sidebar-paper-rating-icon.blue')
+              : null;
+            let orangeIcon = actionWrapper
+              ? actionWrapper.querySelector('.sidebar-paper-rating-icon.orange')
+              : null;
 	          let badIcon = actionWrapper
 	            ? actionWrapper.querySelector('.sidebar-paper-rating-icon.bad')
 	            : null;
@@ -956,52 +1234,95 @@ window.$docsify = {
 
 	            goodIcon = document.createElement('button');
 	            goodIcon.className = 'sidebar-paper-rating-icon good';
-	            goodIcon.title = '标记为「不错」';
-	            goodIcon.innerHTML = '✓';
+	            goodIcon.title = '标记为「绿色书签」';
+	            goodIcon.setAttribute('aria-label', '绿色书签');
+	            goodIcon.innerHTML = '';
+
+              blueIcon = document.createElement('button');
+              blueIcon.className = 'sidebar-paper-rating-icon blue';
+              blueIcon.title = '标记为「蓝色书签」';
+              blueIcon.setAttribute('aria-label', '蓝色书签');
+              blueIcon.innerHTML = '';
+
+              orangeIcon = document.createElement('button');
+              orangeIcon.className = 'sidebar-paper-rating-icon orange';
+              orangeIcon.title = '标记为「橙色书签」';
+              orangeIcon.setAttribute('aria-label', '橙色书签');
+              orangeIcon.innerHTML = '';
+
+              const shareIcon = document.createElement('button');
+              shareIcon.className = 'sidebar-paper-share-icon';
+              shareIcon.title = '分享（生成 GitHub Gist 链接）';
+              shareIcon.setAttribute('aria-label', '分享');
+              shareIcon.textContent = '⤴';
 
 	            badIcon = document.createElement('button');
 	            badIcon.className = 'sidebar-paper-rating-icon bad';
-	            badIcon.title = '标记为「一般」';
-	            badIcon.innerHTML = '✕';
+	            badIcon.title = '标记为「红色书签」';
+	            badIcon.setAttribute('aria-label', '红色书签');
+	            badIcon.innerHTML = '';
+
+              const setStateAndRefresh = (value) => {
+                const latestState = loadReadState();
+                const current = latestState[paperIdFromHref];
+                if (current === value) {
+                  latestState[paperIdFromHref] = 'read';
+                } else {
+                  latestState[paperIdFromHref] = value;
+                }
+                saveReadState(latestState);
+                markSidebarReadState(null);
+                requestAnimationFrame(() => {
+                  syncSidebarActiveIndicator({ animate: false });
+                });
+              };
 
 	            goodIcon.addEventListener('click', (e) => {
 	              e.preventDefault();
 	              e.stopPropagation();
-	              const latestState = loadReadState();
-	              const current = latestState[paperIdFromHref];
-	              if (current === 'good') {
-	                latestState[paperIdFromHref] = 'read';
-	              } else {
-	                latestState[paperIdFromHref] = 'good';
-	              }
-	              saveReadState(latestState);
-	              // 重新应用整棵侧边栏的已读/评价样式，确保当前选中项立即刷新
-	              markSidebarReadState(null);
-	              // 同步“滑动高亮层”颜色，避免 good->bad 或 bad->good 切换时出现底色叠加
-	              requestAnimationFrame(() => {
-	                syncSidebarActiveIndicator({ animate: false });
-	              });
+	              setStateAndRefresh('good');
 	            });
+
+              blueIcon.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setStateAndRefresh('blue');
+              });
+
+              orangeIcon.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setStateAndRefresh('orange');
+              });
+
+              shareIcon.addEventListener('click', async (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (shareIcon.disabled) return;
+                const old = shareIcon.textContent;
+                shareIcon.disabled = true;
+                shareIcon.textContent = '...';
+                try {
+                  await sharePaperToGist(paperIdFromHref);
+                } catch (err) {
+                  const msg = String(err && err.message ? err.message : err);
+                  showShareModal('', `上传失败：${msg}`);
+                } finally {
+                  shareIcon.disabled = false;
+                  shareIcon.textContent = old || '⤴';
+                }
+              });
 
 	            badIcon.addEventListener('click', (e) => {
 	              e.preventDefault();
 	              e.stopPropagation();
-	              const latestState = loadReadState();
-	              const current = latestState[paperIdFromHref];
-	              if (current === 'bad') {
-	                latestState[paperIdFromHref] = 'read';
-	              } else {
-	                latestState[paperIdFromHref] = 'bad';
-	              }
-	              saveReadState(latestState);
-	              markSidebarReadState(null);
-	              // 同步“滑动高亮层”颜色，避免 good->bad 或 bad->good 切换时出现底色叠加
-	              requestAnimationFrame(() => {
-	                syncSidebarActiveIndicator({ animate: false });
-	              });
+	              setStateAndRefresh('bad');
 	            });
 
+              actionWrapper.appendChild(shareIcon);
 	            actionWrapper.appendChild(goodIcon);
+              actionWrapper.appendChild(blueIcon);
+              actionWrapper.appendChild(orangeIcon);
 	            actionWrapper.appendChild(badIcon);
 	            a.parentNode.insertBefore(actionWrapper, a.nextSibling);
 	          }
@@ -1010,6 +1331,8 @@ window.$docsify = {
 	          try {
 	            const s = state[paperIdFromHref];
 	            if (goodIcon) goodIcon.classList.toggle('active', s === 'good');
+              if (blueIcon) blueIcon.classList.toggle('active', s === 'blue');
+              if (orangeIcon) orangeIcon.classList.toggle('active', s === 'orange');
 	            if (badIcon) badIcon.classList.toggle('active', s === 'bad');
 	          } catch {
 	            // ignore
@@ -1196,7 +1519,7 @@ window.$docsify = {
         if (!ensured || !ensured.el) return;
         const indicator = ensured.el;
         // 避免后续复用时残留 good/bad 配色
-        indicator.classList.remove('is-good', 'is-bad');
+        indicator.classList.remove('is-good', 'is-bad', 'is-blue', 'is-orange');
         indicator.style.opacity = '0';
         indicator.style.width = '0';
         indicator.style.height = '0';
@@ -1230,7 +1553,7 @@ window.$docsify = {
 
         // 先清空上一条目的配色状态，避免出现“取消勾选/叉选后仍残留底色”
         try {
-          indicator.classList.remove('is-good', 'is-bad');
+          indicator.classList.remove('is-good', 'is-bad', 'is-blue', 'is-orange');
         } catch {
           // ignore
         }
@@ -1258,8 +1581,17 @@ window.$docsify = {
           const isGood =
             li.classList && li.classList.contains('sidebar-paper-good');
           const isBad = li.classList && li.classList.contains('sidebar-paper-bad');
-          indicator.classList.toggle('is-good', !!isGood && !isBad);
-          indicator.classList.toggle('is-bad', !!isBad && !isGood);
+          const isBlue =
+            li.classList && li.classList.contains('sidebar-paper-blue');
+          const isOrange =
+            li.classList && li.classList.contains('sidebar-paper-orange');
+
+          // 单选：如果同时存在（理论上不应发生），按优先级取第一个
+          const any = isGood || isBad || isBlue || isOrange;
+          indicator.classList.toggle('is-good', !!isGood && any && !isBad && !isBlue && !isOrange);
+          indicator.classList.toggle('is-bad', !!isBad && any && !isGood && !isBlue && !isOrange);
+          indicator.classList.toggle('is-blue', !!isBlue && any && !isGood && !isBad && !isOrange);
+          indicator.classList.toggle('is-orange', !!isOrange && any && !isGood && !isBad && !isBlue);
         } catch {
           // ignore
         }

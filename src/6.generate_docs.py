@@ -913,10 +913,19 @@ def process_paper(
     arxiv_id = str(paper.get("id") or paper.get("paper_id") or "").strip()
     md_path, txt_path, paper_id = prepare_paper_paths(docs_dir, date_str, title, arxiv_id)
     abstract_en = (paper.get("abstract") or "").strip()
+    pdf_url = str(paper.get("link") or paper.get("pdf_url") or "").strip()
 
     glance = ""
 
     if os.path.exists(md_path):
+        # 即使是 glance-only，也要确保生成/补齐 .txt（用于前端聊天上下文等）
+        if glance_only and pdf_url:
+            try:
+                ensure_text_content(pdf_url, txt_path)
+            except Exception:
+                # 不阻塞文档生成流程：txt 拉取失败时继续（避免因为网络/源站问题导致整批中断）
+                pass
+
         # 修复模式：若自动总结/速览存在“被截断”的迹象，则仅重生成该段落，不改动前面正文
         try:
             with open(md_path, "r", encoding="utf-8") as f:
@@ -996,6 +1005,12 @@ def process_paper(
 
     # 新文件：如果只需要速览，则不拉取 PDF/Jina 文本，直接用元数据生成页面
     if glance_only:
+        # 速览模式也需要生成/补齐全文 txt（优先 jina，失败则 pymupdf 兜底）
+        if pdf_url:
+            try:
+                ensure_text_content(pdf_url, txt_path)
+            except Exception:
+                pass
         glance = generate_glance_overview(title, abstract_en) or build_glance_fallback(paper)
         if glance:
             paper["_glance_overview"] = glance
