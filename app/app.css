@@ -227,7 +227,7 @@ body.close #paper-chat-container::after {
 
 /* 大屏幕下：在左侧 sidebar 底部增加一条纯白遮罩带，
    避免论文列表文字出现在底部按钮所在的行 */
-@media (min-width: 769px) {
+@media (min-width: 1024px) {
   .sidebar::after {
     content: '';
     position: fixed;
@@ -866,7 +866,7 @@ body.close .chat-footer {
   transform: translateY(-1px);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   .chat-footer-controls {
     display: flex;
   }
@@ -1066,6 +1066,13 @@ body.close #sidebar-resizer {
   box-sizing: border-box !important;
 }
 
+/* 微宽屏/窄屏：正文左右留白收紧，避免内容区域过窄 */
+@media (max-width: 1023px) {
+  .markdown-section {
+    padding: 22px 18px 200px 18px !important;
+  }
+}
+
 /* 论文页标题条：英文右侧、中文左侧，中间竖线，整体高度约 3 行 */
 body.dpr-paper-page .dpr-title-bar {
   display: flex;
@@ -1118,6 +1125,29 @@ body.dpr-paper-page .dpr-title-sep {
 body.dpr-paper-page .dpr-title-bar.dpr-title-single .dpr-title-sep,
 body.dpr-paper-page .dpr-title-bar.dpr-title-single .dpr-title-en {
   display: none;
+}
+
+/* 极窄屏：标题条改为上下布局，减少"卡片里只剩一条窄列"的观感 */
+@media (max-width: 767px) {
+  body.dpr-paper-page .dpr-title-bar {
+    height: auto;
+    flex-direction: column;
+    gap: 8px;
+    overflow: visible;
+  }
+
+  body.dpr-paper-page .dpr-title-sep {
+    display: none;
+  }
+
+  body.dpr-paper-page .dpr-title-cn,
+  body.dpr-paper-page .dpr-title-en {
+    flex: none !important;  /* 取消 flex: 1 1 0，避免高度塌陷 */
+    -webkit-line-clamp: 4;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 }
 
 /* 隐藏原始 h1（保留在 DOM 中供解析/复制兜底），避免重复显示 */
@@ -1216,21 +1246,23 @@ article.markdown-section {
 
 /* 移动端布局适配：在小屏幕下让内容区域占满宽度，并简化左右留白，
    同时将浮动聊天输入框与底部工具条改为相对视口居中，不改变 Docsify 自带的侧边栏开合行为 */
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   .content {
     margin-left: 0 !important;
     padding-left: 0 !important;
     justify-content: flex-start !important;
+    align-items: flex-start !important;
+    width: 100% !important;
     overflow-x: hidden !important;
   }
 
-  /* 小屏：减少横向“整页滑动/回退”动效带来的干扰 */
+  /* 小屏：减少横向"整页滑动/回退"动效带来的干扰 */
   html,
   body {
     overflow-x: hidden;
     overscroll-behavior-x: none;
     touch-action: pan-y;
-    /* 移动端体验：不展示滚动条（仍可滚动），避免 F12/窄屏下总有“横/竖条”干扰视觉 */
+    /* 移动端体验：不展示滚动条（仍可滚动），避免 F12/窄屏下总有"横/竖条"干扰视觉 */
     scrollbar-width: none;
   }
 
@@ -1244,10 +1276,12 @@ article.markdown-section {
   article.markdown-section {
     max-width: 100% !important;
     padding: 16px 16px 160px 16px !important;
+    margin: 0 !important;
+    width: 100% !important;
     overflow-x: hidden;
   }
 
-  /* 小屏：正文里长公式/表格/代码块容易触发“整页横向溢出”，统一做兜底约束 */
+  /* 小屏：正文里长公式/表格/代码块容易触发"整页横向溢出"，统一做兜底约束 */
   article.markdown-section img,
   article.markdown-section video,
   article.markdown-section canvas,
@@ -1309,7 +1343,7 @@ article.markdown-section {
 }
 
 /* 小屏幕下：展开侧边栏时占满全屏宽度，便于专注浏览论文列表 */
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   .sidebar {
     left: 0 !important;
     width: 100% !important;
@@ -1322,6 +1356,11 @@ article.markdown-section {
 
   body.close .sidebar {
     transform: translateX(-100%) !important;
+  }
+
+  /* 窄屏/微宽屏统一为“侧边栏覆盖正文”的行为：正文不再为 sidebar 预留 margin */
+  .content {
+    margin-left: 0 !important;
   }
 
   .sidebar::-webkit-scrollbar {
@@ -1340,10 +1379,62 @@ article.markdown-section {
     height: 0;
   }
 
-  /* 移动端取消“负 margin 撑满整行”的技巧，避免超出视口导致横向滚动条 */
+  /* 移动端取消"负 margin 撑满整行"的技巧，避免超出视口导致横向滚动条 */
   .sidebar-nav li > a.dpr-sidebar-item-link {
     margin-left: 0 !important;
     margin-right: 0 !important;
+  }
+}
+
+/* 极窄屏（<768px）：覆盖 Docsify vue.css 默认的 768px 断点，保持与 768-1023px 一致的行为
+   注意：Docsify 在 <768px 时逻辑是反转的（body.close = sidebar 显示），需要强制覆盖 */
+@media screen and (max-width: 767px) {
+  /* 覆盖 Docsify 给 body 设置的 padding-left */
+  body,
+  body.close,
+  body.ready {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+  }
+
+  main {
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* sidebar 默认展开时全屏覆盖 */
+  .sidebar {
+    left: 0 !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    transform: translateX(0) !important;
+    transition: transform 0.25s ease-out !important;
+  }
+
+  /* body.close 时 sidebar 收起（向左滑出） */
+  body.close .sidebar {
+    transform: translateX(-100%) !important;
+  }
+
+  /* 内容区始终从左边缘开始，覆盖 Docsify 的反转逻辑 */
+  .content,
+  section.content,
+  body .content,
+  body.close .content,
+  body.ready .content,
+  body.close section.content,
+  body.ready section.content {
+    margin-left: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    padding-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    position: static !important;
+    transform: none !important;
   }
 }
 
@@ -1387,7 +1478,7 @@ article.markdown-section {
 }
 
 /* 大屏下：收起侧边栏时按当前实际宽度整块滑出视口，避免拖宽后仍残留一条 */
-@media (min-width: 769px) {
+@media (min-width: 1024px) {
   body.close .sidebar {
     transform: translateX(calc(-1 * var(--sidebar-width, 260px))) !important;
   }
@@ -2012,7 +2103,7 @@ article.markdown-section {
   background: transparent;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   #sidebar-resizer {
     display: none;
   }
@@ -2075,7 +2166,7 @@ article.markdown-section {
 }
 
 /* 窄屏下（无论侧边栏是否展开），缩小左下角菜单按钮和齿轮按钮尺寸 */
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   .sidebar-toggle {
     width: 22px !important;
     height: 22px;
@@ -2096,7 +2187,7 @@ article.markdown-section {
 }
 
 /* 小屏下彻底隐藏左下角最初的两个全局按钮，只保留聊天区里的两个按钮 */
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   .sidebar-toggle,
   .custom-toggle-btn {
     display: none !important;
@@ -2557,5 +2648,23 @@ article.markdown-section {
 @media (max-width: 600px) {
   .paper-glance-row {
     grid-template-columns: 1fr;
+  }
+}
+
+/* 极窄屏（<=767px）：禁用关键布局动画，避免从 768 断点切换时出现明显“滑动/跳动” */
+@media (max-width: 767px) {
+  :root {
+    /* 统一把侧边栏相关的过渡时长压到 0，避免出现“收起/展开/位移”的动画 */
+    --dpr-transition-ms: 0ms;
+  }
+
+  .sidebar,
+  .content,
+  #paper-chat-container::before,
+  #paper-chat-container::after,
+  #paper-chat-container .input-area,
+  .chat-footer,
+  .sidebar-toggle {
+    transition: none !important;
   }
 }

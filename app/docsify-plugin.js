@@ -501,13 +501,14 @@ window.$docsify = {
 
           const width =
             window.innerWidth || document.documentElement.clientWidth || 0;
-          if (width > 768) return;
+          // 统一“微宽屏 + 窄屏”为同一套逻辑：<1024 时点击条目后自动收起 sidebar（全屏列表 → 正文）
+          if (width >= 1024) return;
 
           // 让 Docsify 先完成路由跳转，再收起侧边栏
           setTimeout(() => {
             const body = document.body;
             if (!body) return;
-            body.classList.remove('close'); // 移除表示“展开”的 close 类，隐藏侧边栏
+            body.classList.add('close'); // 添加 close 类，收起侧边栏
           }, 0);
         });
       };

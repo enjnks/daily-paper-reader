@@ -11,7 +11,8 @@
 // 2. 侧边栏宽度拖拽脚本
 (function() {
   function setupSidebarResizer() {
-    if (window.innerWidth <= 768) return;
+    // 统一“微宽屏 + 窄屏”为同一套逻辑：<1024 时为覆盖式 sidebar，不提供拖拽调宽
+    if (window.innerWidth < 1024) return;
     if (document.getElementById('sidebar-resizer')) return;
 
     var resizer = document.createElement('div');
@@ -59,9 +60,32 @@
   }
 
   var resizeTimer = null;
+  // 侧边栏自动展开/收起的阈值（与 docsify-plugin.js 中的 SIDEBAR_AUTO_COLLAPSE_WIDTH 保持一致）
+  var SIDEBAR_COLLAPSE_THRESHOLD = 1024;
+  // 记录上一次的窗口宽度状态，避免重复触发
+  var lastWasWide = window.innerWidth >= SIDEBAR_COLLAPSE_THRESHOLD;
+
+  // 页面加载时根据屏幕宽度设置 sidebar 初始状态
+  function initSidebarState() {
+    var body = document.body;
+    if (window.innerWidth < SIDEBAR_COLLAPSE_THRESHOLD) {
+      // 小屏幕默认收起 sidebar
+      if (!body.classList.contains('close')) {
+        body.classList.add('close');
+      }
+    }
+  }
+
+  // 在 DOM 加载完成后初始化 sidebar 状态
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initSidebarState);
+  } else {
+    initSidebarState();
+  }
+
   window.addEventListener('resize', function () {
     var resizer = document.getElementById('sidebar-resizer');
-    if (window.innerWidth <= 768) {
+    if (window.innerWidth < 1024) {
       if (resizer) resizer.style.display = 'none';
     } else {
       if (resizer) {
@@ -69,6 +93,30 @@
       } else {
         setupSidebarResizer();
       }
+    }
+
+    // 根据窗口宽度自动同步 sidebar 展开/收起状态
+    // Docsify 中 body.close 类存在 = sidebar 收起，不存在 = sidebar 展开
+    var isWide = window.innerWidth >= SIDEBAR_COLLAPSE_THRESHOLD;
+    var body = document.body;
+    if (isWide !== lastWasWide) {
+      if (isWide) {
+        // 窗口变宽，自动展开 sidebar（移除 close 类）
+        if (body.classList.contains('close')) {
+          body.classList.remove('close');
+        }
+      } else {
+        // 窗口变窄，自动收起 sidebar（添加 close 类）
+        if (!body.classList.contains('close')) {
+          body.classList.add('close');
+        }
+      }
+      lastWasWide = isWide;
+    }
+
+    // 即时同步选中区域的尺寸
+    if (window.syncSidebarActiveIndicator) {
+      window.syncSidebarActiveIndicator({ animate: false });
     }
 
     // 为窗口调整过程加上 dpr-resizing，禁用输入框/底部条的过渡，让动画更跟手
