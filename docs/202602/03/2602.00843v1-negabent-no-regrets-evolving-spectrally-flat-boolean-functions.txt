@@ -1,0 +1,234 @@
+Title: NegaBent, No Regrets: Evolving Spectrally Flat Boolean Functions
+
+URL Source: https://arxiv.org/pdf/2602.00843v1
+
+Published Time: Tue, 03 Feb 2026 01:55:15 GMT
+
+Number of Pages: 9
+
+Markdown Content:
+# NegaBent, No Regrets: Evolving Spectrally Flat Boolean Functions 
+
+## Claude Carlet 1,2 , Marko Ðurasevic 3, Ermes Franch 2, Domagoj Jakobovic 3, Luca Mariot 4, and Stjepan Picek 3,5 1 University of Paris 8, Saint-Denis, France 
+
+2 University of Bergen, Bergen, Norway 
+
+claude.carlet@gmail.com, ermes.franch@uib.no 
+
+3 Faculty of Electrical Engineering and Computing, University of Zagreb, Unska 3, Zagreb, Croatia ,
+
+marko.durasevic@fer.hr, domagoj.jakobovic@fer.hr 
+
+4 Semantics, Cybersecurity and Services Group, University of Twente, 7522 NB Enschede, The Netherlands ,
+
+l.mariot@utwente.nl 
+
+5 Digital Security Group, Radboud University, Postbus 9010, 6500 GL Nijmegen, The Netherlands ,
+
+stjepan@computer.org 
+
+## February 3, 2026 
+
+Abstract 
+
+Negabent Boolean functions are defined by having a flat magnitude spectrum un-der the nega-Hadamard transform. They exist in both even and odd dimensions, and the subclass of functions that are simultaneously bent and negabent (bent-negabent) has attracted interest due to the combined optimal periodic and negaperiodic spectral properties. In this work, we investigate how evolutionary algorithms can be used to evolve (bent-)negabent Boolean functions. Our experimental results indicate that evolutionary algorithms, especially genetic programming, are a suitable approach for evolving negabent Boolean functions, and we successfully evolve such functions in all dimensions we consider. 
+
+Keywords Boolean functions, Negabentness, Nonlinearity, Evolutionary Algorithms 
+
+# 1 Introduction 
+
+Boolean functions have an important role in diverse domains, like cryptography [ 1], coding theory [ 9 , 10 ], sequence design [ 12 ], and combinatorics [ 18 ]. Naturally, to 1
+
+> arXiv:2602.00843v1 [cs.NE] 31 Jan 2026
+
+be useful, Boolean functions need to fulfill a number of properties, where having high nonlinearity is among the most common ones [ 1 ]. Since the search space of all Boolean functions is large already for moderate input size n (22n
+
+), one needs to approach constructing Boolean functions with good properties in a structured way. Today, two common approaches are to use algebraic constructions and metaheuristics/heuristics. In even dimensions, Boolean functions can be maximally nonlinear, and such func-tions are called bent. Negabent functions are an analogous notion for the nega-Hadamard transform, motivated in part by local unitary transforms in quantum-information settings and also studied for their cryptographic/coding relevance [ 22 , 21 ]. A Boolean function that is both bent and negabent is called bent-negabent and combines optimality under two distinct spectral views. Negabent and bent-negabent functions have been studied for their spectral/transform properties, connections to negaperiodic correlation, and ap-pearance in generalized bent frameworks motivated by quantum/stabilizer analysis [ 17 ]. In cryptographic design, they are relevant as structured candidates for high nonlinearity and good correlation behavior, and as building blocks in classes where multiple spectral constraints are desired (e.g., combining different transform flatness notions) [20]. 
+
+Related Work. Using metaheuristics to evolve Boolean functions is a well-accepted and powerful approach. Moreover, obtaining high nonlinearity represents the most usual task [ 5 ]. Bent Boolean functions are a common target for metaheuristics because they have practical relevance and a well-defined maximal possible nonlinearity, allowing one to clearly assess how well the optimization process works. For instance, Fuller et al. used evolutionary algorithms to design bent Boolean functions more than 20 years ago [ 6]. However, current results indicate that evolving a bent Boolean function is not necessarily difficult, and the main problem is the computational complexity of evaluating the nonlinearity property. To alleviate that problem, Hrbacek and Dvorak used Cartesian Genetic Programming to speed up the evolution process and evolve large bent Boolean functions [ 7]. On the other hand, Picek and Jakobovic proposed an evolutionary algorithm approach to evolve secondary constructions of bent Boolean functions [ 14 ]. Husa and Dobai proposed using linear genetic programming to evolve bent Boolean functions, citing better performance than genetic programming for larger sizes [ 8]. Besides considering general bent Boolean functions, several works consider bentness in specific settings. For instance, Picek et al. evolved quaternary bent Boolean functions [ 15 ], while Mariot et al. considered hyper-bent Boolean functions [ 11 ]. Carlet et al. considered evolving rotation symmetric self-dual bent functions [ 3 ] and homogenous bent functions [ 2 ]. Interestingly, evolving highly nonlinear Boolean functions in odd dimensions is a much less considered topic, and we point interested readers to a recent work indicating evolutionary algorithms as performing well (and on level of specialized heuristics) [4]. 
+
+Main Contributions. In this work, we consider the problem of evolving negabent Boolean functions. More precisely, for even dimensions, we evolve bent-negabent Boolean functions, and for odd dimensions, we evolve highly nonlinear negabent Boolean functions. Unlike bentness (which excludes affine functions except in trivial cases), all affine Boolean functions are negabent [ 19 ]. This has consequences for evo-lutionary search since negabentness alone does not guarantee high nonlinearity, as the search could simply produce affine functions (which are linear). In our experiments, we employ two solution encodings and one fitness function and show that this problem 2is well within the reach of evolutionary algorithms. Indeed, we find highly (maxi-mally) nonlinear negabent Boolean functions for each tested odd and even dimension, respectively. 
+
+# 2 Boolean Functions - Representations and Properties 
+
+We denote by F2 = {0, 1} the finite field with two elements, equipped with XOR and logical AND, respectively, as the sum and multiplication operations. The n-dimensional vector space over F2 is denoted by Fn
+
+> 2
+
+, consisting of all 2n binary vectors of length n.Given a, b ∈ Fn
+
+> 2
+
+, their inner product equals a · b = Lni=1 aibi in Fn
+
+> 2
+
+. A Boolean function of n variables is a mapping f : Fn 
+
+> 2
+
+→ F2.A Boolean function f can be uniquely represented by its truth table. The truth table of a Boolean function f is the list of pairs (x, f (x)) of input vectors x ∈ Fn 
+
+> 2
+
+and function outputs f (x) ∈ F2.A Boolean function f can also be uniquely represented by the Walsh-Hadamard transform Wf : Fn 
+
+> 2
+
+→ Z. The Walsh-Hadamard transform measures the correlation between f and the linear functions a · x, for all a ∈ Fn
+
+> 2
+
+:
+
+Wf (a) = ∑
+
+> x∈Fn
+> 2
+
+(−1) f (x)⊕a·x, (1) where the sum is calculated in Z. To calculate the Walsh-Hadamard spectrum, it is common to use an efficient butterfly algorithm with complexity O(n2n).The minimum Hamming distance between a Boolean function f and all affine functions is the nonlinearity of f , calculated from the Walsh-Hadamard spectrum as [ 1]: 
+
+nl f = 2n−1 − 12 max 
+
+> a∈Fn
+> 2
+
+|Wf (a)| . (2) For every n-variable Boolean function, the function f satisfies the covering radius bound: 
+
+nl f ≤ 2n−1 − 2 n 
+
+> 2−1
+
+. (3) Notice that Eq. (3) cannot be tight when n is odd. In other words, maximal nonlinearity is possible for even n only (such functions are called bent Boolean functions). The maximal possible nonlinearity for odd-sized Boolean functions lies between [ 1]: 2n−1 − 2 n−12 and 2⌊2n−2 − 2 n 
+
+> 2−2
+
+⌋, which will also represent the nonlinearity range for negabent functions in an odd number of variables. Let i2 = −1. We define the nega-Hadamard transform by 
+
+Nf (a) = ∑
+
+> x∈Fn
+> 2
+
+(−1) f (x)⊕a·xiwt (x), a ∈ Fn
+
+> 2
+
+, (4) where wt (x) is the Hamming weight [ 22 ]. A Boolean function f is negabent if and only if |Nf (a)| = 2 n 
+
+> 2
+
+for all a ∈ Fn 
+
+> 2
+
+[ 22 , 21 ]. In an even dimension n, a function is bent-negabent if and only if it is bent and negabent. When n is even, testing negabentness reduces to a standard bent test [22, 13]. 3Then f is negabent if and only if f ⊕ σ2 is bent. Here, for x = ( x1, . . . , xn) ∈ Fn
+
+> 2
+
+,define 
+
+σ2(x) = M 
+
+> 1≤i<j≤n
+
+xix j.
+
+Moreover, if f is a bent-negabent function, then f ⊕ σ2 is also bent-negabent [22]. For odd n, the function f (x) is negabent if f (x) ⊕ σ2(x) ⊕ σ1(x)y is bent in (n + 1)
+
+variables, where x ∈ Fn 
+
+> 2
+
+and y ∈ F2 [22]. Here, for x = ( x1, . . . , xn) ∈ Fn
+
+> 2
+
+:
+
+σ1(x) = 
+
+> nM
+> j=1
+
+x j.
+
+Note that all affine functions 1 (both with an even and an odd number of variables) are negabent [ 13 ]. For even n ≥ 2, bent functions have maximum nonlinearity and are not affine; as such, nontrivial bent-negabent functions are non-affine. 
+
+# 3 Experimental Setup 
+
+## 3.1 Bitstring Encoding 
+
+A straightforward option for encoding a Boolean function is the bitstring, which rep-resents the function’s truth table (TT). For a Boolean function with n inputs, the truth table is coded as a bitstring with a length of 2n. For each evaluation, the truth table is taken and tested for the bent-negabent property, depending on whether the number of variables is odd or even, as described in the previous section. 
+
+## 3.2 Symbolic Encoding 
+
+The second approach in our experiments uses tree-based genetic programming (GP) to represent a Boolean function in its symbolic form. In this case, a candidate solution is represented by a tree whose leaf nodes correspond to the input variables x1, · · · , xn ∈ F2.The internal nodes are Boolean operators that combine the inputs received from their children and forward their output to the respective parent nodes. The output of the root node is the output value of the Boolean function. The corresponding truth table of f : Fn 
+
+> 2
+
+→ F2 is determined by evaluating the tree over all possible 2n assignments of the input variables at the leaf nodes. Each individual is evaluated according to the truth table it generates, in the same way as for the bitstring representation. 
+
+## 3.3 Fitness Function 
+
+Since we optimize nonlinearity, in solution evaluation for an even number of variables, we need to calculate both the nonlinearity of the original function nl f , as well as the nonlinearity of f ⊕ σ2, denoted as nl f ⊕σ2 . Since both of these need to be at the upper 
+
+> 1An affine function has the algebraic degree at most 1 [1].
+
+4bound defined in Eq. (3) , a simple approach would be to define the fitness function as the sum of these values, nl f + nl f ⊕σ2 . However, in our experiments, we consider the whole Walsh-Hadamard spectrum and not only its extreme value (see Eq. (2) ). To provide some form of gradient information, we include the number of occurrences of the maximal absolute value in the spectrum of both functions, denoted as #max _values f and #max _values f ⊕σ2 correspondingly. Since higher nonlinearity corresponds to a lower 
+
+maximal absolute value, we aim for as few occurrences of the maximal value as possible to make it easier for the algorithm to reach the next nonlinearity value. Therefore, the fitness function for even n is defined as: 
+
+f itness = nl f + 2n − #max _values f
+
+2n + nl f ⊕σ2 + 2n − #max _values f ⊕σ2
+
+2n (5) Note that the terms in fractions never reach the value of 1 since, in that case, we effectively reach the next nonlinearity level. The optimal value of this fitness function, obtained if both functions are bent, is equal to twice the upper bound (3). For an odd number of variables n, we first construct the truth table of f (x) ⊕ σ2(x) ⊕
+
+σ1(x)y as described previously, and just maximize the nonlinearity of the resulting function with an even number of variables n + 1, also considering the whole Walsh-Hadamard spectrum: 
+
+f itness = nl f (x)⊕σ2(x)⊕σ1(x)y + 2n − #max _values 
+
+2n (6) In this case, the optimal fitness value is equal to the covering radius, corresponding to a bent function in n + 1 variables. 
+
+## 3.4 Algorithm Parameters 
+
+Bitstring Encoding. The corresponding variation operators we use are the simple bit mutation and the shuffle mutation. The simple bit mutation inverts a randomly selected bit. The shuffle mutation shuffles the bits within a randomly selected substring. For the crossover operators, we use the one-point crossover and uniform crossover. The one-point crossover combines a new solution from the first part of one parent and the second part of the other parent with a randomly selected breakpoint. The uniform crossover randomly selects one bit from both parents at each position in the child bitstring that is copied. Each time the evolutionary algorithm invokes a crossover or mutation operation, one of the previously described operators is randomly selected. 
+
+Symbolic Encoding. In our experiments, we use the following function set that takes two arguments: OR, XOR, and AND. Next, we use the function NOT that takes a single argument. Finally, we use the function IF that takes three arguments and returns the second one if the first one evaluates to true, and the third one otherwise. This function set is common when dealing with the evolution of Boolean functions with cryptographic properties [5, 3]. The genetic operators used in our experiments with tree-based GP are simple tree crossover, uniform crossover, size fair, one-point, and context preserving crossover [ 16 ](selected at random), and subtree mutation. 56 7 8 9 10 11 12 13 14 15 16 
+
+> Size
+> 0.90
+> 0.92
+> 0.94
+> 0.96
+> 0.98
+> 1.00
+> Normalised fitness
+
+Figure 1: Optimization results for bitstring encoding (truth table, TT) We employ the same evolutionary algorithm for both bitstring and symbolic encod-ing: a steady-state selection with a 3-tournament elimination operator (denoted SST). In each iteration of the algorithm, three individuals are chosen at random from the population for the tournament, and the worst one in terms of fitness value is eliminated. The two remaining individuals in the tournament are used with the crossover operator to generate a new child individual, which then undergoes mutation with individual mutation probability pmut = 0.5 . Finally, the mutated child replaces the eliminated individual in the population. The population size in all experiments was 500 individuals. 
+
+# 4 Experimental Results 
+
+The experiments were conducted with the parameter settings described above; each experiment was executed 30 times, and the termination condition was set at 10 6 evalua-tions for all configurations. We present the results in the form of a separate boxplot for each of the encodings (TT and GP) for all Boolean function sizes from 6 to 16. Since the optimal objective values are known, we normalize the plot so that the optimal value equals 1 in all sizes and apply a suitable scale to enhance visibility. The aggregated results are shown in Figures 1 and 2. The TT encoding found bent-negabent functions only in sizes 6 and 7. On the other hand, the GP encoding found such functions for every number of variables in at least one of 30 runs. Except for sizes 10, 14, and 16, a bent-negabent function was obtained in every run. Clearly, this indicates that the fitness functions were well defined, which is expected as we modeled them based on related work. Moreover, since the related work demonstrated that evolving bent Boolean functions is well within the reach of diverse evolutionary algorithms, it is not surprising that we had no difficulty in evolving bent-negabent functions. For odd dimensions, the results are more interesting as the related work also provides less references for maximally nonlinear functions. What is more, the fitness function for odd sizes is more complicated, potentially disrupting the connection between what we evolve (in n variables) and what is evaluated (in n + 166 7 8 9 10 11 12 13 14 15 16 
+
+> Size
+> 0.90
+> 0.92
+> 0.94
+> 0.96
+> 0.98
+> 1.00
+> Normalised fitness
+
+Figure 2: Optimization results for symbolic encoding (tree, GP) variables). The excellent behavior for odd dimensions suggests we find strong structure during the evolution that remains present for evaluation. 
+
+# 5 Conclusions and Future Work 
+
+This paper considers the problem of evolving bent-negabent Boolean functions for even sizes and highly nonlinear negabent functions for odd sizes. To our knowledge, this is the first time that the evolution of negabent function is considered. One challenge (besides computational complexity of evaluating the solution for higher dimensions) that could be expected when evolving negabent functions is that we use efficient tests that check bentness of transformed functions so to avoid working with complex values. As such, the transformed function must maintain the information that drives the evolution process. Our results indicate this to be difficult problem for the truth table encoding, but an easy problem for the symbolic encoding. Indeed, with GP, we find highly (maximally) nonlinear negabent functions for all evaluated Boolean function sizes. In future work, it would be interesting to evolve negabent functions and evaluate their nonlinearity through the nega-Hadamard transform. Moreover, a natural direction would be to consider additional properties like belancedness and algebraic degree. 
+
+# References 
+
+[1] C. Carlet. Boolean Functions for Cryptography and Coding Theory . Cambridge University Press, Cambridge, 2021. [2] C. Carlet, M. Durasevic, D. Jakobovic, L. Mariot, and S. Picek. Degree is impor-tant: On evolving homogeneous boolean functions. In Proceedings of the Genetic and Evolutionary Computation Conference Companion , GECCO ’25 Companion, page 795–798, New York, NY, USA, 2025. Association for Computing Machinery. 7[3] C. Carlet, M. Durasevic, D. Jakobovic, and S. Picek. Discovering rotation sym-metric self-dual bent functions with evolutionary algorithms. In M. Affenzeller, S. M. Winkler, A. V. Kononova, H. Trautmann, T. Tušar, P. Machado, and T. Bäck, editors, Parallel Problem Solving from Nature – PPSN XVIII , pages 429–445, Cham, 2024. Springer Nature Switzerland. [4] C. Carlet, M. Durasevic, D. Jakobovic, S. Picek, and L. Mariot. A systematic study on the design of odd-sized highly nonlinear boolean functions via evolutionary algorithms. Genetic Programming and Evolvable Machines , 27(1), Dec. 2025. [5] M. Djurasevic, D. Jakobovic, L. Mariot, and S. Picek. A survey of metaheuristic algorithms for the design of cryptographic Boolean functions. Cryptography and Communications , 15(6):1171–1197, July 2023. [6] J. Fuller, E. Dawson, and W. Millan. Evolutionary generation of bent functions for cryptography. In Proceedings of the IEEE Congress on Evolutionary Computation, CEC 2003, Canberra, Australia, December 8-12, 2003 , pages 1655–1661. IEEE, 2003. [7] R. Hrbacek and V. Dvorak. Bent function synthesis by means of cartesian genetic programming. In T. Bartz-Beielstein, J. Branke, B. Filipiˇ c, and J. Smith, editors, 
+
+Parallel Problem Solving from Nature – PPSN XIII , pages 414–423, Cham, 2014. Springer International Publishing. [8] J. Husa and R. Dobai. Designing bent Boolean functions with parallelized linear genetic programming. In Proceedings of the Genetic and Evolutionary Computa-tion Conference Companion , GECCO ’17, page 1825–1832, New York, NY, USA, 2017. Association for Computing Machinery. [9] A. Kerdock. A class of low-rate nonlinear binary codes. Information and Control ,20(2):182 – 187, 1972. [10] F. J. MacWilliams and N. J. A. Sloane. The Theory of Error-Correcting Codes .Elsevier, Amsterdam, North Holland, 1977. ISBN: 978-0-444-85193-2. [11] L. Mariot, D. Jakobovic, A. Leporati, and S. Picek. Hyper-bent boolean functions and evolutionary algorithms. In L. Sekanina, T. Hu, N. Lourenço, H. Richter, and P. García-Sánchez, editors, Genetic Programming , pages 262–277, Cham, 2019. Springer International Publishing. [12] J. Olsen, R. Scholtz, and L. Welch. Bent-function sequences. IEEE Transactions on Information Theory , 28(6):858–864, November 1982. [13] M. G. Parker and A. Pott. On boolean functions which are bent and negabent. In S. W. Golomb, G. Gong, T. Helleseth, and H.-Y. Song, editors, Sequences, Subsequences, and Consequences , pages 9–23, Berlin, Heidelberg, 2007. Springer Berlin Heidelberg. 8[14] S. Picek and D. Jakobovic. Evolving algebraic constructions for designing bent Boolean functions. In Proceedings of the Genetic and Evolutionary Computa-tion Conference 2016 , GECCO ’16, page 781–788, New York, NY, USA, 2016. Association for Computing Machinery. [15] S. Picek, K. Knezevic, L. Mariot, D. Jakobovic, and A. Leporati. Evolving bent quaternary functions. In 2018 IEEE Congress on Evolutionary Computation, CEC 2018, Rio de Janeiro, Brazil, July 8-13, 2018 , pages 1–8. IEEE, 2018. [16] R. Poli, W. B. Langdon, and N. F. McPhee. A Field Guide to Genetic Programming .Lulu Enterprises, UK Ltd, United Kingdom, 2008. [17] C. Riera and M. G. Parker. Generalised bent criteria for boolean functions (i), 2005. [18] O. Rothaus. On “bent” functions. Journal of Combinatorial Theory, Series A ,20(3):300 – 305, 1976. [19] S. Sarkar. On the symmetric negabent boolean functions. In B. Roy and N. Sendrier, editors, Progress in Cryptology - INDOCRYPT 2009 , pages 136–143, Berlin, Heidelberg, 2009. Springer Berlin Heidelberg. [20] K.-U. Schmidt, M. G. Parker, and A. Pott. Negabent functions in the maiorana– mcfarland class. In S. W. Golomb, M. G. Parker, A. Pott, and A. Winterhof, editors, Sequences and Their Applications - SETA 2008 , pages 390–402, Berlin, Heidelberg, 2008. Springer Berlin Heidelberg. [21] P. St˘ anic˘ a, S. Gangopadhyay, A. Chaturvedi, A. K. Gangopadhyay, and S. Maitra. Nega–hadamard transform, bent and negabent functions. In C. Carlet and A. Pott, editors, Sequences and Their Applications – SETA 2010 , pages 359–372, Berlin, Heidelberg, 2010. Springer Berlin Heidelberg. [22] W. Su, A. Pott, and X. Tang. Characterization of negabent functions and con-struction of bent-negabent functions with maximum algebraic degree. IEEE Transactions on Information Theory , 59(6):3387–3395, 2013. 9

@@ -1,0 +1,74 @@
+{
+  "label": "2026-02-03",
+  "date": "2026-02-03",
+  "generated_at": "2026-02-03T04:45:09",
+  "count": 5,
+  "papers": [
+    {
+      "paper_id": "202602/03/2602.01510v1-enhancing-generalization-in-evolutionary-feature-construction-for-symbolic-regression-through-vicinal-jensen-gap-minimization",
+      "section": "deep",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Genetic programming-based feature construction has achieved significant success in recent years as an automated machine learning technique to enhance learning performance. However, overfitting remains a challenge that limits its broader applicability. To improve generalization, we prove that vicinal risk, estimated through noise perturbation or mixup-based data augmentation, is bounded by the sum of empirical risk and a regularization term-either finite difference or the vicinal Jensen gap. Leveraging this decomposition, we propose an evolutionary feature construction framework that jointly optimizes empirical risk and the vicinal Jensen gap to control overfitting. Since datasets may vary in noise levels, we develop a noise estimation strategy to dynamically adjust regularization strength. Furthermore, to mitigate manifold intrusion-where data augmentation may generate unrealistic samples that fall outside the data manifold-we propose a manifold intrusion detection mechanism. Experimental results on 58 datasets demonstrate the effectiveness of Jensen gap minimization compared to other complexity measures. Comparisons with 15 machine learning algorithms further indicate that genetic programming with the proposed overfitting control strategy achieves superior performance.\n\n---"
+    },
+    {
+      "paper_id": "202602/03/2602.02311v1-introns-and-templates-matter-rethinking-linkage-in-gp-gomea",
+      "section": "deep",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "GP-GOMEA is among the state-of-the-art for symbolic regression, especially when it comes to finding small and potentially interpretable solutions. A key mechanism employed in any GOMEA variant is the exploitation of linkage, the dependencies between variables, to ensure efficient evolution. In GP-GOMEA, mutual information between node positions in GP trees has so far been used to learn linkage. For this, a fixed expression template is used. This however leads to introns for expressions smaller than the full template. As introns have no impact on fitness, their occurrences are not directly linked to selection. Consequently, introns can adversely affect the extent to which mutual information captures dependencies between tree nodes. To overcome this, we propose two new measures for linkage learning, one that explicitly considers introns in mutual information estimates, and one that revisits linkage learning in GP-GOMEA from a grey-box perspective, yielding a measure that needs not to be learned from the population but is derived directly from the template. Across five standard symbolic regression problems, GP-GOMEA achieves substantial improvements using both measures. We also find that the newly learned linkage structure closely reflects the template linkage structure, and that explicitly using the template structure yields the best performance overall.\n\n---"
+    },
+    {
+      "paper_id": "202602/03/2602.00843v1-negabent-no-regrets-evolving-spectrally-flat-boolean-functions",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Negabent Boolean functions are defined by having a flat magnitude spectrum under the nega-Hadamard transform. They exist in both even and odd dimensions, and the subclass of functions that are simultaneously bent and negabent (bent-negabent) has attracted interest due to the combined optimal periodic and negaperiodic spectral properties. In this work, we investigate how evolutionary algorithms can be used to evolve (bent-)negabent Boolean functions. Our experimental results indicate that evolutionary algorithms, especially genetic programming, are a suitable approach for evolving negabent Boolean functions, and we successfully evolve such functions in all dimensions we consider."
+    },
+    {
+      "paper_id": "202602/03/2602.01516v1-white-box-neural-ensemble-for-vehicular-plasticity-quantifying-the-efficiency-cost-of-symbolic-auditability-in-adaptive-nmpc",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "We present a white-box adaptive NMPC architecture that resolves vehicular plasticity (adaptation to varying operating regimes without retraining) by arbitrating among frozen, regime-specific neural specialists using a Modular Sovereignty paradigm. The ensemble dynamics are maintained as a fully traversable symbolic graph in CasADi, enabling maximal runtime auditability. Synchronous simulation validates rapid adaptation (~7.3 ms) and near-ideal tracking fidelity under compound regime shifts (friction, mass, drag) where non-adaptive baselines fail. Empirical benchmarking quantifies the transparency cost: symbolic graph maintenance increases solver latency by 72-102X versus compiled parametric physics models, establishing the efficiency price of strict white-box implementation."
+    },
+    {
+      "paper_id": "202602/03/2602.02172v1-neural-network-machine-regression-nnmr-a-deep-learning-framework-for-uncovering-high-order-synergistic-effects",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "We propose a new neural network framework, termed Neural Network Machine Regression (NNMR), which integrates trainable input gating and adaptive depth regularization to jointly perform feature selection and function estimation in an end-to-end manner. By penalizing both gating parameters and redundant layers, NNMR yields sparse and interpretable architectures while capturing complex nonlinear relationships driven by high-order synergistic effects. We further develop a post-selection inference procedure based on split-sample, permutation-based hypothesis testing, enabling valid inference without restrictive parametric assumptions. Compared with existing methods, including Bayesian kernel machine regression and widely used post hoc attribution techniques, NNMR scales efficiently to high-dimensional feature spaces while rigorously controlling type I error. Simulation studies demonstrate its superior selection accuracy and inference reliability. Finally, an empirical application reveals sparse, biologically meaningful food group predictors associated with somatic growth among adolescents living in Mexico City."
+    }
+  ],
+  "errors": []
+}

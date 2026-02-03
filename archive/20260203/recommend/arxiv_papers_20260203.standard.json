@@ -1,0 +1,182 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-02-03T04:43:15.041114+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 2,
+    "deep_cap": 6,
+    "deep_selected": 2,
+    "quick_candidates": 3,
+    "quick_skim_target": 11,
+    "quick_selected": 3
+  },
+  "deep_dive": [
+    {
+      "id": "2602.01510v1",
+      "title": "Enhancing Generalization in Evolutionary Feature Construction for Symbolic Regression through Vicinal Jensen Gap Minimization",
+      "abstract": "Genetic programming-based feature construction has achieved significant success in recent years as an automated machine learning technique to enhance learning performance. However, overfitting remains a challenge that limits its broader applicability. To improve generalization, we prove that vicinal risk, estimated through noise perturbation or mixup-based data augmentation, is bounded by the sum of empirical risk and a regularization term-either finite difference or the vicinal Jensen gap. Leveraging this decomposition, we propose an evolutionary feature construction framework that jointly optimizes empirical risk and the vicinal Jensen gap to control overfitting. Since datasets may vary in noise levels, we develop a noise estimation strategy to dynamically adjust regularization strength. Furthermore, to mitigate manifold intrusion-where data augmentation may generate unrealistic samples that fall outside the data manifold-we propose a manifold intrusion detection mechanism. Experimental results on 58 datasets demonstrate the effectiveness of Jensen gap minimization compared to other complexity measures. Comparisons with 15 machine learning algorithms further indicate that genetic programming with the proposed overfitting control strategy achieves superior performance.",
+      "authors": [
+        "Hengzhe Zhang",
+        "Qi Chen",
+        "Bing Xue",
+        "Wolfgang Banzhaf",
+        "Mengjie Zhang"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.NE"
+      ],
+      "published": "2026-02-02 00:46:16+00:00",
+      "link": "https://arxiv.org/pdf/2602.01510v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "Directly addresses evolutionary feature construction for symbolic regression",
+      "llm_evidence_cn": "直接针对符号回归的进化特征构建",
+      "llm_evidence": "直接针对符号回归的进化特征构建",
+      "llm_tldr_en": "Proposes a framework to improve symbolic regression generalization by minimizing the vicinal Jensen gap.",
+      "llm_tldr_cn": "提出一种通过最小化邻域 Jensen 间隙来提高符号回归泛化能力的框架。",
+      "llm_tldr": "提出一种通过最小化邻域 Jensen 间隙来提高符号回归泛化能力的框架。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    },
+    {
+      "id": "2602.02311v1",
+      "title": "Introns and Templates Matter: Rethinking Linkage in GP-GOMEA",
+      "abstract": "GP-GOMEA is among the state-of-the-art for symbolic regression, especially when it comes to finding small and potentially interpretable solutions. A key mechanism employed in any GOMEA variant is the exploitation of linkage, the dependencies between variables, to ensure efficient evolution. In GP-GOMEA, mutual information between node positions in GP trees has so far been used to learn linkage. For this, a fixed expression template is used. This however leads to introns for expressions smaller than the full template. As introns have no impact on fitness, their occurrences are not directly linked to selection. Consequently, introns can adversely affect the extent to which mutual information captures dependencies between tree nodes. To overcome this, we propose two new measures for linkage learning, one that explicitly considers introns in mutual information estimates, and one that revisits linkage learning in GP-GOMEA from a grey-box perspective, yielding a measure that needs not to be learned from the population but is derived directly from the template. Across five standard symbolic regression problems, GP-GOMEA achieves substantial improvements using both measures. We also find that the newly learned linkage structure closely reflects the template linkage structure, and that explicitly using the template structure yields the best performance overall.",
+      "authors": [
+        "Johannes Koch",
+        "Tanja Alderliesten",
+        "Peter A. N. Bosman"
+      ],
+      "primary_category": "cs.NE",
+      "categories": [
+        "cs.NE"
+      ],
+      "published": "2026-02-02 16:42:30+00:00",
+      "link": "https://arxiv.org/pdf/2602.02311v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "Directly improves GP-GOMEA, a state-of-the-art symbolic regression algorithm, by addressing linkage and introns.",
+      "llm_evidence_cn": "直接改进了 GP-GOMEA（一种最先进的符号回归算法），解决了连锁和内含子问题。",
+      "llm_evidence": "直接改进了 GP-GOMEA（一种最先进的符号回归算法），解决了连锁和内含子问题。",
+      "llm_tldr_en": "Proposes a new linkage learning method for GP-GOMEA to improve symbolic regression efficiency and interpretability.",
+      "llm_tldr_cn": "为 GP-GOMEA 提出了一种新的连锁学习方法，以提高符号回归的效率和可解释性。",
+      "llm_tldr": "为 GP-GOMEA 提出了一种新的连锁学习方法，以提高符号回归的效率和可解释性。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2602.00843v1",
+      "title": "NegaBent, No Regrets: Evolving Spectrally Flat Boolean Functions",
+      "abstract": "Negabent Boolean functions are defined by having a flat magnitude spectrum under the nega-Hadamard transform. They exist in both even and odd dimensions, and the subclass of functions that are simultaneously bent and negabent (bent-negabent) has attracted interest due to the combined optimal periodic and negaperiodic spectral properties. In this work, we investigate how evolutionary algorithms can be used to evolve (bent-)negabent Boolean functions. Our experimental results indicate that evolutionary algorithms, especially genetic programming, are a suitable approach for evolving negabent Boolean functions, and we successfully evolve such functions in all dimensions we consider.",
+      "authors": [
+        "Claude Carlet",
+        "Marko Ðurasevic",
+        "Ermes Franch",
+        "Domagoj Jakobovic",
+        "Luca Mariot",
+        "Stjepan Picek"
+      ],
+      "primary_category": "cs.NE",
+      "categories": [
+        "cs.NE",
+        "cs.CR"
+      ],
+      "published": "2026-01-31 18:13:03+00:00",
+      "link": "https://arxiv.org/pdf/2602.00843v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "genetic programming for function evolution",
+      "llm_evidence_cn": "用于函数演化的遗传编程",
+      "llm_evidence": "用于函数演化的遗传编程",
+      "llm_tldr_en": "Explores using genetic programming to evolve specific Boolean functions with optimal spectral properties.",
+      "llm_tldr_cn": "探索使用遗传编程来演化具有最优谱特性的特定布尔函数。",
+      "llm_tldr": "探索使用遗传编程来演化具有最优谱特性的特定布尔函数。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    },
+    {
+      "id": "2602.01516v1",
+      "title": "White-Box Neural Ensemble for Vehicular Plasticity: Quantifying the Efficiency Cost of Symbolic Auditability in Adaptive NMPC",
+      "abstract": "We present a white-box adaptive NMPC architecture that resolves vehicular plasticity (adaptation to varying operating regimes without retraining) by arbitrating among frozen, regime-specific neural specialists using a Modular Sovereignty paradigm. The ensemble dynamics are maintained as a fully traversable symbolic graph in CasADi, enabling maximal runtime auditability. Synchronous simulation validates rapid adaptation (~7.3 ms) and near-ideal tracking fidelity under compound regime shifts (friction, mass, drag) where non-adaptive baselines fail. Empirical benchmarking quantifies the transparency cost: symbolic graph maintenance increases solver latency by 72-102X versus compiled parametric physics models, establishing the efficiency price of strict white-box implementation.",
+      "authors": [
+        "Enzo Nicolas Spotorno",
+        "Matheus Wagner",
+        "Antonio Augusto Medeiros Frohlich"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "eess.SY"
+      ],
+      "published": "2026-02-02 01:05:30+00:00",
+      "link": "https://arxiv.org/pdf/2602.01516v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "symbolic graph representation for regression",
+      "llm_evidence_cn": "回归中的符号图表示",
+      "llm_evidence": "回归中的符号图表示",
+      "llm_tldr_en": "Explores symbolic graph maintenance for white-box neural ensembles in adaptive control and regression tasks.",
+      "llm_tldr_cn": "探讨了自适应控制和回归任务中白盒神经集成的符号图维护和可审计性。",
+      "llm_tldr": "探讨了自适应控制和回归任务中白盒神经集成的符号图维护和可审计性。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    },
+    {
+      "id": "2602.02172v1",
+      "title": "Neural Network Machine Regression (NNMR): A Deep Learning Framework for Uncovering High-order Synergistic Effects",
+      "abstract": "We propose a new neural network framework, termed Neural Network Machine Regression (NNMR), which integrates trainable input gating and adaptive depth regularization to jointly perform feature selection and function estimation in an end-to-end manner. By penalizing both gating parameters and redundant layers, NNMR yields sparse and interpretable architectures while capturing complex nonlinear relationships driven by high-order synergistic effects. We further develop a post-selection inference procedure based on split-sample, permutation-based hypothesis testing, enabling valid inference without restrictive parametric assumptions. Compared with existing methods, including Bayesian kernel machine regression and widely used post hoc attribution techniques, NNMR scales efficiently to high-dimensional feature spaces while rigorously controlling type I error. Simulation studies demonstrate its superior selection accuracy and inference reliability. Finally, an empirical application reveals sparse, biologically meaningful food group predictors associated with somatic growth among adolescents living in Mexico City.",
+      "authors": [
+        "Jiuchen Zhang",
+        "Ling Zhou",
+        "Peter Song"
+      ],
+      "primary_category": "stat.ME",
+      "categories": [
+        "stat.ME"
+      ],
+      "published": "2026-02-02 14:45:57+00:00",
+      "link": "https://arxiv.org/pdf/2602.02172v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "interpretable function estimation and feature selection",
+      "llm_evidence_cn": "可解释的函数估计和特征选择",
+      "llm_evidence": "可解释的函数估计和特征选择",
+      "llm_tldr_en": "Proposes NNMR for sparse, interpretable function estimation, sharing SR's goal of uncovering nonlinear relationships.",
+      "llm_tldr_cn": "提出NNMR框架用于稀疏可解释的函数估计，与符号回归揭示非线性关系的目标一致。",
+      "llm_tldr": "提出NNMR框架用于稀疏可解释的函数估计，与符号回归揭示非线性关系的目标一致。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    }
+  ]
+}
