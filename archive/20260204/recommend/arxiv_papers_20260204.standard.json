@@ -1,0 +1,121 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-02-04T04:24:02.879677+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 3,
+    "deep_cap": 6,
+    "deep_selected": 3,
+    "quick_candidates": 0,
+    "quick_skim_target": 11,
+    "quick_selected": 0
+  },
+  "deep_dive": [
+    {
+      "id": "2602.02886v1",
+      "title": "Mixture of Concept Bottleneck Experts",
+      "abstract": "Concept Bottleneck Models (CBMs) promote interpretability by grounding predictions in human-understandable concepts. However, existing CBMs typically fix their task predictor to a single linear or Boolean expression, limiting both predictive accuracy and adaptability to diverse user needs. We propose Mixture of Concept Bottleneck Experts (M-CBEs), a framework that generalizes existing CBMs along two dimensions: the number of experts and the functional form of each expert, exposing an underexplored region of the design space. We investigate this region by instantiating two novel models: Linear M-CBE, which learns a finite set of linear expressions, and Symbolic M-CBE, which leverages symbolic regression to discover expert functions from data under user-specified operator vocabularies. Empirical evaluation demonstrates that varying the mixture size and functional form provides a robust framework for navigating the accuracy-interpretability trade-off, adapting to different user and task needs.",
+      "authors": [
+        "Francesco De Santis",
+        "Gabriele Ciravegna",
+        "Giovanni De Felice",
+        "Arianna Casanova",
+        "Francesco Giannini",
+        "Michelangelo Diligenti",
+        "Mateo Espinosa Zarlenga",
+        "Pietro Barbiero",
+        "Johannes Schneider",
+        "Danilo Giordano"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-02-02 22:44:42+00:00",
+      "link": "https://arxiv.org/pdf/2602.02886v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "leverages symbolic regression to discover expert functions",
+      "llm_evidence_cn": "利用符号回归发现专家函数",
+      "llm_evidence": "利用符号回归发现专家函数",
+      "llm_tldr_en": "Proposes M-CBEs, including a Symbolic M-CBE that uses symbolic regression for interpretable expert functions.",
+      "llm_tldr_cn": "提出 M-CBE 框架，其中 Symbolic M-CBE 利用符号回归发现可解释的专家函数。",
+      "llm_tldr": "提出 M-CBE 框架，其中 Symbolic M-CBE 利用符号回归发现可解释的专家函数。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    },
+    {
+      "id": "2602.03506v1",
+      "title": "Explaining the Explainer: Understanding the Inner Workings of Transformer-based Symbolic Regression Models",
+      "abstract": "Following their success across many domains, transformers have also proven effective for symbolic regression (SR); however, the internal mechanisms underlying their generation of mathematical operators remain largely unexplored. Although mechanistic interpretability has successfully identified circuits in language and vision models, it has not yet been applied to SR. In this article, we introduce PATCHES, an evolutionary circuit discovery algorithm that identifies compact and correct circuits for SR. Using PATCHES, we isolate 28 circuits, providing the first circuit-level characterisation of an SR transformer. We validate these findings through a robust causal evaluation framework based on key notions such as faithfulness, completeness, and minimality. Our analysis shows that mean patching with performance-based evaluation most reliably isolates functionally correct circuits. In contrast, we demonstrate that direct logit attribution and probing classifiers primarily capture correlational features rather than causal ones, limiting their utility for circuit discovery. Overall, these results establish SR as a high-potential application domain for mechanistic interpretability and propose a principled methodology for circuit discovery.",
+      "authors": [
+        "Arco van Breda",
+        "Erman Acar"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-02-03 13:27:10+00:00",
+      "link": "https://arxiv.org/pdf/2602.03506v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "Directly investigates Transformer-based Symbolic Regression and introduces a novel circuit discovery algorithm.",
+      "llm_evidence_cn": "直接研究基于Transformer的符号回归，并引入了一种新的电路发现算法。",
+      "llm_evidence": "直接研究基于Transformer的符号回归，并引入了一种新的电路发现算法。",
+      "llm_tldr_en": "Introduces PATCHES to identify and interpret internal circuits in Transformer-based Symbolic Regression models.",
+      "llm_tldr_cn": "引入PATCHES算法来识别和解释基于Transformer的符号回归模型中的内部电路。",
+      "llm_tldr": "引入PATCHES算法来识别和解释基于Transformer的符号回归模型中的内部电路。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    },
+    {
+      "id": "2602.03816v1",
+      "title": "SymPlex: A Structure-Aware Transformer for Symbolic PDE Solving",
+      "abstract": "We propose SymPlex, a reinforcement learning framework for discovering analytical symbolic solutions to partial differential equations (PDEs) without access to ground-truth expressions. SymPlex formulates symbolic PDE solving as tree-structured decision-making and optimizes candidate solutions using only the PDE and its boundary conditions. At its core is SymFormer, a structure-aware Transformer that models hierarchical symbolic dependencies via tree-relative self-attention and enforces syntactic validity through grammar-constrained autoregressive decoding, overcoming the limited expressivity of sequence-based generators. Unlike numerical and neural approaches that approximate solutions in discretized or implicit function spaces, SymPlex operates directly in symbolic expression space, enabling interpretable and human-readable solutions that naturally represent non-smooth behavior and explicit parametric dependence. Empirical results demonstrate exact recovery of non-smooth and parametric PDE solutions using deep learning-based symbolic methods.",
+      "authors": [
+        "Yesom Park",
+        "Annie C. Lu",
+        "Shao-Ching Huang",
+        "Qiyang Hu",
+        "Y. Sungtaek Ju",
+        "Stanley Osher"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-02-03 18:18:30+00:00",
+      "link": "https://arxiv.org/pdf/2602.03816v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "novel algorithmic advancement in symbolic solving using Transformers and RL",
+      "llm_evidence_cn": "使用Transformer和强化学习的符号求解算法创新",
+      "llm_evidence": "使用Transformer和强化学习的符号求解算法创新",
+      "llm_tldr_en": "Proposes a structure-aware Transformer for discovering analytical symbolic solutions to PDEs via RL.",
+      "llm_tldr_cn": "提出一种结构感知Transformer，通过强化学习发现偏微分方程的解析符号解。",
+      "llm_tldr": "提出一种结构感知Transformer，通过强化学习发现偏微分方程的解析符号解。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    }
+  ],
+  "quick_skim": []
+}
