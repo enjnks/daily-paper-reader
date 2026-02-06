@@ -1,0 +1,22 @@
+{
+  "label": "2026-02-06",
+  "date": "2026-02-06",
+  "generated_at": "2026-02-06T04:30:27",
+  "count": 1,
+  "papers": [
+    {
+      "paper_id": "202602/06/2602.05977v1-clifford-kolmogorov-arnold-networks",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "We introduce Clifford Kolmogorov-Arnold Network (ClKAN), a flexible and efficient architecture for function approximation in arbitrary Clifford algebra spaces. We propose the use of Randomized Quasi Monte Carlo grid generation as a solution to the exponential scaling associated with higher dimensional algebras. Our ClKAN also introduces new batch normalization strategies to deal with variable domain input. ClKAN finds application in scientific discovery and engineering, and is validated in synthetic and physics inspired tasks."
+    }
+  ],
+  "errors": []
+}

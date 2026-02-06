@@ -1,5 +1,9 @@
 * [首页](/)
 * Daily Papers
+  * 2026-02-06 <!--dpr-date:20260206-->
+    * 精读区
+    * 速读区
+      * <a class="dpr-sidebar-item-link" href="#/202602/06/2602.05977v1-clifford-kolmogorov-arnold-networks"><div class="dpr-sidebar-title">Clifford Kolmogorov-Arnold Networks</div><div class="dpr-sidebar-tags"><span class="dpr-sidebar-tag dpr-sidebar-tag-score"><span class="dpr-stars" title="评分：6.0/10（3.0/5）" aria-label="3.0 out of 5"><span class="dpr-stars-bg">☆☆☆☆☆</span><span class="dpr-stars-fill" style="width:60%">★★★★★</span></span></span> <span class="dpr-sidebar-tag dpr-sidebar-tag-keyword">SR</span> <span class="dpr-sidebar-tag dpr-sidebar-tag-query">SR</span></div></a>
   * 2026-02-05 <!--dpr-date:20260205-->
     * 精读区
       * <a class="dpr-sidebar-item-link" href="#/202602/05/2602.04492v1-discovering-mechanistic-models-of-neural-activity-system-identification-in-an-in-silico-zebrafish"><div class="dpr-sidebar-title">Discovering Mechanistic Models of Neural Activity: System Identification in an in Silico Zebrafish</div><div class="dpr-sidebar-tags"><span class="dpr-sidebar-tag dpr-sidebar-tag-score"><span class="dpr-stars" title="评分：8.0/10（4.0/5）" aria-label="4.0 out of 5"><span class="dpr-stars-bg">☆☆☆☆☆</span><span class="dpr-stars-fill" style="width:80%">★★★★★</span></span></span> <span class="dpr-sidebar-tag dpr-sidebar-tag-keyword">SR</span> <span class="dpr-sidebar-tag dpr-sidebar-tag-query">SR</span></div></a>
