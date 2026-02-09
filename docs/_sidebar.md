@@ -1,5 +1,9 @@
 * [首页](/)
 * Daily Papers
+  * 2026-02-09 <!--dpr-date:20260209-->
+    * 精读区
+    * 速读区
+      * <a class="dpr-sidebar-item-link" href="#/202602/09/2602.06923v1-from-kepler-to-newton-inductive-biases-guide-learned-world-models-in-transformers"><div class="dpr-sidebar-title">From Kepler to Newton: Inductive Biases Guide Learned World Models in Transformers</div><div class="dpr-sidebar-tags"><span class="dpr-sidebar-tag dpr-sidebar-tag-score"><span class="dpr-stars" title="评分：7.0/10（3.5/5）" aria-label="3.5 out of 5"><span class="dpr-stars-bg">☆☆☆☆☆</span><span class="dpr-stars-fill" style="width:70%">★★★★★</span></span></span> <span class="dpr-sidebar-tag dpr-sidebar-tag-keyword">SR</span> <span class="dpr-sidebar-tag dpr-sidebar-tag-query">SR</span></div></a>
   * 2026-02-06 <!--dpr-date:20260206-->
     * 精读区
     * 速读区
