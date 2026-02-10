@@ -1,0 +1,981 @@
+Title: Cosmology with one galaxy: An analytic formula relating $\Omega_{\rm m}$ with galaxy properties
+
+URL Source: https://arxiv.org/pdf/2602.07651v1
+
+Published Time: Tue, 10 Feb 2026 01:57:18 GMT
+
+Number of Pages: 23
+
+Markdown Content:
+> Draft version February 10, 2026
+> Typeset using L ATEX default style in AASTeX7.0.1
+
+Cosmology with one galaxy: An analytic formula relating Ωm with galaxy properties 
+
+Kito Liao, 1, 2 Francisco Villaescusa-Navarro, 3, 4 Romain Teysser, 4 and Natal´ ı S. M. de Santi 5, 6 
+
+> 1Center for Cosmology and Particle Physics, Department of Physics, New York University, New York, NY, 10003, USA
+> 2City University of New York, 275 Convent Ave, New York, NY , 10031, USA
+> 3Center for Computational Astrophysics, Flatiron Institute, 162 5th Avenue, New York, NY, 10010, USA
+> 4Department of Astrophysical Sciences, Princeton University, Peyton Hall, Princeton NJ 08544, USA
+> 5Berkeley Center for Cosmological Physics, University of California, Berkeley, 341 Campbell Hall, Berkeley, CA 94720, USA
+> 6Physics Division, Lawrence Berkeley National Laboratory, 1 Cyclotron Road, Berkeley, CA 94720, USA
+
+ABSTRACT Standard cosmological analyses typically treat galaxy formation and cosmological parameter infer-ence as decoupled problems, relying on population-level statistics such as clustering, lensing, or halo abundances. However, classical studies of baryon fractions in massive galaxy clusters have long sug-gested that gravitationally bound systems may retain cosmological information through their baryonic content. Building on this insight, we present the first analytic and physically interpretable cosmologi-cal tracer that links the matter density parameter, Ω m, directly to intrinsic galaxy-scale observables, demonstrating that cosmological information can be extracted from individual galaxies. Using sym-bolic regression applied to state-of-the-art hydrodynamical simulations from the CAMELS project, we identify a compact functional form that robustly recovers Ω m across multiple simulation suites (IllustrisTNG , ASTRID , SIMBA , and Swift-EAGLE ), requiring only modest recalibration of a small number of coefficients. The resulting expression admits a transparent physical interpretation in terms of baryonic retention and enrichment efficiency regulated by gravitational potential depth, providing a clear explanation for why Ω m is locally encoded in galaxy properties. Our work establishes a direct, interpretable bridge between small-scale galaxy physics and large-scale cosmology, opening a complementary pathway to cosmological inference that bypasses traditional clustering-based statistics and enables new synergies between galaxy formation theory and precision cosmology. 
+
+Keywords: Galaxies (573) — Cosmology (343) 
+
+1. INTRODUCTION Modern cosmology has traditionally relied on the statistics of the large–scale distribution of matter to infer funda-mental cosmological parameters. Measurements of two–point and higher–order correlation functions, redshift–space distortions, gravitational lensing, and galaxy clustering have long provided the primary route to constrain the mat-ter density parameter Ω m and other cosmological quantities (P. J. E. Peebles 1980; M. Bartelmann & P. Schneider 2001). These methods, while powerful, fundamentally treat galaxies as tracers of an underlying continuous dark matter density field, and extract cosmological information from their collective spatial and dynamical behavior across large volumes. The CAMELS project (F. Villaescusa-Navarro et al. 2021) has enabled a new generation of machine–learning-based approaches to cosmological inference by providing a controlled numerical framework in which both cosmological pa-rameters and astrophysical prescriptions are systematically varied 7. Early studies based on the CAMELS simulation suite (F. Villaescusa-Navarro et al. 2022; A. Lue et al. 2025) have demonstrated that neural networks could identify non-trivial correlations between cosmological parameters and the internal properties of individual simulated galaxies, even in the presence of strong and highly nonlinear astrophysical processes. These findings indicated that cosmo-logical information may survive baryonic processing at the level of individual galaxies, although the physical origin  
+
+> 7https://www.camel-simulations.org
+> arXiv:2602.07651v1 [astro-ph.CO] 7 Feb 2026
+
+2and robustness of this signal remain unclear. While such correlations are not intended to compete with standard cosmological probes, they provide a novel framework for studying how cosmological information may be indirectly encoded in galaxy-scale observables within simulations. Subsequent work (A. Lue et al. 2025) moved beyond direct parameter regression toward understanding the internal structure of the high–dimensional galaxy population itself. In this framework, neural networks were shown to learn low–dimensional manifolds in galaxy property space, encoding joint information about cosmology and baryonic physics. These studies suggested that intrinsic galaxy properties themselves encode cosmological information and that the observed structure in galaxy feature distributions reflects the imprint of cosmology on galaxy formation physics, rather than relying solely on large-scale clustering statistics. One of the challenges highlighted by the Cosmology with One Galaxy framework is that, while the properties of individual galaxies have been shown to encode cosmological information, the physical origin of this connection has so far remained only partially formulated and not yet fully understood, which has limited its broader physical interpretation and acceptance. In contrast, our work approaches the inference of Ω m from an explicitly physical perspective. We obtain compact formulae that relate the value of Ω m with the properties of individual galaxies. This approach examines how cosmology influences the thermodynamic, chemical, and structural outcomes of galaxy formation. As we shall show below, we identify a robust latent variable structure with clear physical interpretation, which persists across a high–dimensional parameter space spanning variations in both cosmology and astrophysical subgrid models. This structure survives extensive tests across multiple simulation suites and feedback prescriptions, indicating that the mapping between galaxy–scale physics and cosmology is not coincidental, but reflects an underlying physical connection between baryonic regulation and cosmology itself. This paper is organized as follows. Section 2 describes the simulation data and machine–learning methodology. Section 3 presents the results obtained from the reduced cosmology–and–feedback variation simulation runs, and Section 4 provides their physical interpretation. Section 5 extends the analysis to a higher dimensional parameter space dataset, testing the analytic framework under broad variations in cosmology-and-feedback and relating the results to our existing physical interpretation. Finally, we summarize and discuss the main results of this work in Section 6.  
+
+> 2.
+
+METHODS 2.1. Simulations 
+
+The Cosmology and Astrophysics with MachinE Learning Simulations project ( CAMELS ; F. Villaescusa-Navarro et al. 2021) is a large suite of cosmological simulations designed to study how variations in cosmology and baryonic physics impact galaxy formation and large-scale structure. CAMELS consists of over 16,000 hydrodynamic and N -body simulations and provides a controlled framework for exploring the joint effects of cosmological parameters and subgrid feedback models in a setting tailored for statistical analysis and machine learning applications. Each simulation of the first generation evolves 2 × 256 3 dark matter and gas resolution elements in a periodic comoving volume of (25 h−1Mpc) 3, from an initial redshift of z = 127 down to z = 0. A key feature of CAMELS is the coordinated variation of both cosmology and galaxy formation physics across multiple independent simulation frameworks, enabling robust comparisons between models and the identification of physical trends that overcome differences in numerical implementation. 2.1.1. The Latin Hypercube Dataset 
+
+In the first part of this work, we use the Latin Hypercube (LH) sets of CAMELS as our primary dataset. Each LH suite consists of 1,000 simulations in which cosmological and astrophysical parameters are simultaneously varied using Latin-hypercube sampling to efficiently explore the high-dimensional parameter space. The LH sets vary over two cosmological parameters: Ω m and σ8, as well as four astrophysical parameters that control the efficiency of supernovae (SN) and active galactic nuclei (AGN) feedback: Ωm ∈ [0 .1, 0.5] , σ8 ∈ [0 .6, 1.0] , (1) 
+
+ASN1 , A AGN1 ∈ [0 .25 , 4.0] , ASN2 , A AGN2 ∈ [0 .5, 2.0] . (2) All simulations adopt fixed background values for the remaining cosmological parameters: Ωb = 0 .049 , H0 = 0 .067 (km s −1)/kpc , ns = 0 .9624 , X mν = 0eV , w = −1.3We use hydrodynamic simulations from four independent galaxy formation models implemented in the CAMELS project: 1. IllustrisTNG : run with the AREPO code (R. Weinberger et al. 2020). The subgrid physics models are the same as the original IllustrisTNG simulations (A. Pillepich et al. 2018). 2. SIMBA : run with the GIZMO code (P. F. Hopkins 2017) and employs the same subgrid physics model as the original SIMBA simulation, building on its precursor MUFASA with the addition of supermassive black hole growth and feedback (R. Dav´ e et al. 2019; D. Angl´ es-Alc´ azar et al. 2017). 3. ASTRID : run with the MP-Gadget code (S. Bird et al. 2022). Detailed subgrid physics models are described in Y. Ni et al. (2023). 4. Swift-EAGLE galaxy formation model is a modified version of the original EAGLE simulation (J. Schaye et al. 2015), implemented in the Swift (M. Schaller et al. 2024) code to solve the equations of gravity and the 
+
+SPHENIX (J. Borrow et al. 2021) formulation of smoothed particle hydrodynamics. Detailed subgrid physics models are described in C. C. Lovell et al. (2025). 2.1.2. 28-parameter TNG Dataset: TNG-SB28 
+
+In the second part of this work, we focus on the TNG-SB28 dataset (Y. Ni et al. 2023), an extended version of the standard TNG-LH suite that explores a substantially larger parameter space. Whereas TNG-LH varies six parameters, TNG-SB28 simultaneously varies 28 parameters . These parameters span all major physical modules of the model: five cosmological parameters, and 23 astrophysical parameters. For the astrophysical parameters, two governing star formation and the interstellar medium (ISM), two describing stellar population modeling, ten controlling galactic wind feedback, three regulating supermassive black hole growth, and six associated with AGN feedback. More information about these parameters is provided in Table 1, where the physical meaning, sampling range, and fiducial value of each parameter are listed in detail. The 28-dimensional parameter space is sampled using a Sobol low-discrepancy sequence (I. Sobol’ 1967) rather than a Latin-hypercube. This choice provides deterministic, faster, and lower-discrepancy coverage. Parameter ranges are calibrated using a combination of physical priors and sensitivity tests, aiming to span realistic values while avoiding edge effects and equilibrating the impact of variations across parameters. 2.2. Machine Learning Method – Symbolic Regression 
+
+During the process of discovering the analytic form of Ω m as a function of galaxy properties, we employ symbolic regression to identify the most interpretable and accurate functional expression directly from the data. The symbolic regression algorithm 8 (M. Cranmer et al. 2020) follows six general steps: (1) Initialization — a population of random candidate equations is generated, where each equation is represented as a tree structure composed of operators and variables; (2) Evaluation — each equation is assessed using a customized error metric (e.g., Mean Squared Error (MSE) or Mean Absolute Error (MAE)) combined with a complexity penalty to balance accuracy and simplicity; (3) Selection — the best-performing equations are chosen as parents for the next generation; (4) Crossover 
+
+— selected parent equations exchange parts of their expression trees to form new offspring; (5) Mutation — small random alterations are applied to individual equations to introduce diversity and explore new regions of the search space; and (6) Iteration — the population is repeatedly evaluated, selected, and updated over multiple generations until convergence criteria are met. The overall workflow of the symbolic regression search process is illustrated in Fig. 1, which summarizes the iterative evolution from initialization to convergence. Throughout this process, symbolic regression explores combinations of mathematical building blocks—operators, variables, and constants—to uncover an analytic expression. 2.2.1. Symbolic Regression Configuration 
+
+The symbolic regression phase was designed to balance physical interpretability, numerical stability, and model expressiveness. We adopt a single exploratory search phase, supported by a restricted but physically motivated operator set, with the goal of identifying a compact analytic relation linking galaxy properties to Ω m. 
+
+> 8https://github.com/MilesCranmer/PySR
+
+4
+
+Table 1. Summary of the 28 model parameters varied in the TNG-SB28 dataset. Parameter Physical meaning Range (sampling) Ωm Matter density parameter [0 .1, 0.5] (linear; fiducial 0 .3) 
+
+σ8 Amplitude of matter fluctuations [0 .6, 1.0] (linear; fiducial 0 .8) 
+
+ASN1 Wind energy normalization [0 .9, 14 .4] (log; fiducial 3 .6) 
+
+ASN2 Wind velocity normalization [3 .7, 14 .8] (log; fiducial 7 .4) 
+
+AAGN1 Radio-mode AGN energy normalization [0 .25 , 4.0] (log; fiducial 1 .0) 
+
+AAGN2 AGN feedback reorientation frequency [10 , 40] (log; fiducial 20) Ωb Baryon density parameter [0 .029 , 0.069] (linear; fiducial 0 .049) 
+
+H0 Hubble constant [0 .4711 , 0.8711] (linear; fiducial 0 .6711) 
+
+ns Spectral index of the initial fluctuations [0 .7624 , 1.1624] (linear; fiducial 0 .9624) 
+
+t⋆ 
+
+> 0
+
+Star-formation timescale [1 .135 , 4.54] Gyr (log; fiducial 2 .27 Gyr) 
+
+qEOS Effective equation-of-state interpolation factor [0 .1, 0.9] (log; fiducial 0 .3) 
+
+αIMF High-mass IMF slope ( M > 1 M⊙) [−2.8, −1.8] (linear; fiducial −2.3) 
+
+MSNII ,min Minimum stellar mass for SN II [4 , 12] M⊙ (linear; fiducial 8 M⊙)
+
+τw Thermal fraction of the galactic wind feedback energy [0 .025 , 0.4] (log; fiducial 0 .1) mom w Wind specific momentum normalization [0 , 4000] km s −1 (linear; fiducial 0) 
+
+ρrecouple Wind recoupling density factor [0 .005 , 0.5] (log; fiducial 0 .05) 
+
+vw, min Minimum galactic wind velocity [150 , 550] km s −1 (linear; fiducial 350 km s −1)
+
+fw,Z Wind energy reduction factor (metallicity-dependent) [0 .0625 , 1.0] (log; fiducial 0 .25) 
+
+Zw, ref Reference metallicity for wind energy transition [5 × 10 −4, 8 × 10 −3] (log; fiducial 2 × 10 −3)
+
+γw,Z Wind energy reduction exponent (metallicity transition) [1 , 3] (linear; fiducial 2) 1 − γw Wind dump factor [0 .2, 1.0] (linear; fiducial 0 .6) 
+
+MBH ,seed Seed black hole mass [2 .5 × 10 5, 2.5 × 10 6] M⊙ (log; fiducial 8 × 10 5 M⊙)
+
+ABH Black hole accretion normalization [0 .25 , 4.0] (log; fiducial 1 .0) 
+
+AEdd Eddington accretion normalization [0 .1, 10] (log; fiducial 1 .0) 
+
+ϵf, high Black Hole feedback factor [0 .025 , 0.4] (log; fiducial 0 .1) 
+
+ϵr Black hole radiative efficiency [0 .05 , 0.8] (log; fiducial 0 .2) 
+
+χ0 Quasar-mode Eddington threshold [6 .3 × 10 −5, 6.3 × 10 −2] (log; fiducial 2 × 10 −3)
+
+β Quasar threshold power [0 , 4] (linear; fiducial 2)     
+
+> Init. Eval. Select & Mutate Stop? Result
+> Yes
+> No
+
+Figure 1. Symbolic regression search loop: The procedure starts with initialization (Init.), evaluates candidate expressions (Eval.), and applies selection and modification operators to generate new equations. A stopping condition is then checked; if satisfied, the algorithm terminates and outputs the resulting expression, otherwise the search continues iteratively. 
+
+• Phase 1: Exploratory Search. During the exploratory phase, we set deterministic = False to expand the search space. This configuration allows random initialization, crossover, and mutation operations to vary between runs, promoting diversity in the expression population and enabling the algorithm to escape local minima. Each run may therefore yield slightly different analytic forms, increasing the likelihood of discovering novel and physically meaningful equations. 
+
+• Operator Design. To preserve physical interpretability while allowing flexible nonlinearity, the symbolic re-gression search employed a restricted set of mathematical operators. The binary operators were defined as 
+
+{+, −, ×, /, power (x, y )},5while the unary operators included common analytic transformations together with a custom sigmoid activa-tion, 
+
+{exp , ln , | · | , √·, σ (x)}, σ(x) = 11 + e−x .
+
+The inclusion of the smooth sigmoid function was essential for capturing regulated, saturating rela-tions—particularly those linking metallicity, stellar mass fraction, and the cosmological parameter Ω m.
+
+• Operator Constraints. To prevent unphysical or unstable expressions, several constraints were imposed: 
+
+– Exponents were restricted to the range −3 ≤ α ≤ 3. 
+
+– Recursive application of identical unary operators (e.g., exp(exp( x)) or ln(ln( x))) was disallowed through nesting constraints. 
+
+– weight optimize=True was enabled to refine numerical coefficients after the symbolic structure was dis-covered. 
+
+• Training Configuration. The primary training parameters were 
+
+niterations = 1500 , populations = 30 , model selection = ”best” , elementwise loss = ( x − y)2.
+
+A total of 1500 evolutionary generations were performed across 30 independent populations, each exploring distinct subregions of the symbolic expression space. At the end of each run, the expression with the lowest loss was retained according to the ‘‘best’’ model-selection criterion. 
+
+• Loss Function and Parsimony. The primary loss function was the mean squared error, 
+
+L = 1
+
+N
+
+X
+
+> i
+
+(yi − ˆyi)2,
+
+where yi denotes the true simulation value of the cosmological parameter Ω m and ˆ yi is the corresponding value predicted by the symbolic expression, ensuring smooth and continuous fits suitable for cosmological parameter prediction. To discourage overly complex models, a parsimony penalty λ = 10 −4 was added to the effective loss, 
+
+Leff = L + λN terms ,
+
+where Nterms denotes the total number of operators and constants in the expression. 
+
+• Complexity Constraints. The symbolic search was bounded by maxsize = 18 and maxdepth = 8, which restricted both the total number of terms and the depth of nested function calls. These limits guided the evolution toward concise and interpretable analytic forms. 
+
+• Optimization and Parallelism. To enhance exploration and prevent premature convergence, training was executed in multithreaded mode ( parallelism="multithreading" ) with random seed random state=42 . Mini-batch evaluation with batch size=2048 enabled stochastic assessment on random subsets of the dataset, in-troducing mild noise that helped avoid local minima—complementary to the nondeterministic search behavior. Each run was limited to timeout in seconds=1200 , ensuring convergence within practical wall-time limits. 2.2.2. Training Procedure 
+
+The symbolic regression model was trained using galaxy property data from the IllustrisTNG simulations at redshift z = 0. From each of the 1000 simulations, we randomly sampled 30 galaxies at z = 0, forming the training set used to identify the baseline analytic relation. To account for redshift evolution, additional multiplicative redshift-dependent factors were subsequently fitted using galaxy samples drawn at higher redshifts ( z = 0 .5, 1 .0, 1 .5, 2 .0, and 3.0). This procedure isolates the discovery of the underlying functional structure at z = 0 from the modeling of its redshift dependence, allowing the evolution of the model parameters to be captured in a controlled and interpretable manner. 62.2.3. Model Evaluation Metrics 
+
+The performance of the analytic Ω m predictor is quantified using: the coefficient of determination ( R2), and the accuracy. 
+
+• Coefficient of determination ( R2). The R2 score measures how well the predicted values reproduce the variance of the true targets, 
+
+R2 = 1 −
+
+> N
+
+X
+
+> i=1
+
+(yi − ˆyi)2
+
+> N
+
+X
+
+> i=1
+
+(yi − ⟨ y⟩)2
+
+, (3) where yi and ˆ yi denote the true and predicted values of Ω m, respectively. 
+
+• Accuracy. The accuracy is defined as the root–mean–square deviation between predictions and true values, Accuracy = 
+
+vuut 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+(yi − ˆyi)2 . (4) This metric quantifies the absolute prediction error in the same physical units as Ω m, with smaller values indicating higher accuracy. 2.3. Dimensionless Parameter Construction 
+
+In the studies, we construct dimensionless parameters that encapsulates the joint dependence of baryonic, kine-matic, and metallicity properties. The formulation of these dimensionless quantities combine key physical variables to eliminate dimensional dependencies, in our case, serve as a better candidate for Ω m analytic equation searching. The raw galaxy catalogs from the CAMELS suites— IllustrisTNG , SIMBA , ASTRID , and Swift-EAGLE —each supply a consistent collection of fundamental physical quantities, ensuring consistency across simulation models: 
+
+{Mgas , M ⋆, M BH , M total , V max , V disp , Z gas , Z star , SFR , spin , V pec , R ⋆, R total , R max }
+
+In addition, the IllustrisTNG suite uniquely provides synthetic photometric magnitudes, {Umag , K mag , g mag }, which are not directly available in the SIMBA, ASTRID, or Swift-EAGLE catalogs. A detailed description of these quantities and their physical definitions is provided in Table 2. We further define the core dimensionless combinations being used in the symbolic regression process. Here, we only present the ones that are relevant to our project goals; one could, in principle, define more combinations with the given raw galaxy properties. The following quantities are derived from the raw galaxy catalogs and used in subsequent analysis: 
+
+• Metallicities in Solar Units: Metal abundances are normalized to the solar value Z⊙, with Zgas , solar =
+
+Zgas /Z ⊙ and Z⋆ = Zstar /Z ⊙.
+
+• Effective Dynamical Velocity: Rotational and dispersion components are combined as Veff =
+
+q
+
+V 2max + κ V 2disp 
+
+with κ = 2 .0, capturing both disk- and bulge-dominated systems within a unified kinematic scaling. 
+
+• Baryonic mass: Mb = M⋆ + Mgas .
+
+• Dimensionless Mass Fractions: The relative contributions of each component are expressed as fgas =
+
+Mgas /M b, f⋆ = M⋆/M b, and fBH = MBH /M b.With the above dimensionless quantities, we define two dimensionless combinations: 
+
+• Score : represents a dimensionless baryonic binding scale linking galaxy-scale dynamics to cosmological baryon content 
+
+Score = Ω2 
+
+> b
+
+V 3eff 
+
+G H 0 Mb
+
+.
+
+• Compactness Parameter: The spatial concentration of baryons is quantified as 
+
+Rcompact = R⋆
+
+Rtotal 
+
+.7
+
+Table 2. Galaxy properties extracted from the CAMELS simulations. Halos and subhalos are identified using SUBFIND (V. Springel et al. 2001). Galaxies are defined as subhalos containing more than 20 star particles. Symbol Property Description 
+
+Mg Gas mass Total gas mass of the galaxy, including contributions from the circum-galactic medium 
+
+MBH Black hole mass Total mass of the central supermassive black hole 
+
+M⋆ Stellar mass Total stellar mass of the galaxy 
+
+Mt Total subhalo mass Sum of dark matter, gas, stars, and black holes bound to the subhalo 
+
+Vmax Maximum circular velocity Maximum value of the circular velocity profile 
+
+σv Velocity dispersion Velocity dispersion of all particles within the galaxy subhalo 
+
+Zg Gas metallicity Mass-weighted gas-phase metallicity 
+
+Z⋆ Stellar metallicity Mass-weighted stellar metallicity SFR Star-formation rate Instantaneous star-formation rate of the galaxy 
+
+J Subhalo angular momentum Magnitude of the galaxy subhalo spin vector 
+
+V Peculiar velocity Magnitude of the galaxy subhalo peculiar velocity 
+
+R⋆ Stellar half-mass radius Radius enclosing half of the stellar mass 
+
+Rt Total half-mass radius Radius enclosing half of the total subhalo mass 
+
+Rmax Radius of Vmax Radius at which the circular velocity reaches Vmax 
+
+U U -band magnitude Absolute galaxy magnitude in the U band 
+
+K K-band magnitude Absolute galaxy magnitude in the K band 
+
+g g-band magnitude Absolute galaxy magnitude in the g band 3. RESULTS In this section, we present the analytic predictor selected from the symbolic regression analysis. Subsection 3.1 presents the results at redshift z = 0, and Subsection 3.2 provides the fitted redshift evolution of the analytic predictor at higher redshifts. 3.1. Analytic predictor for Ωm at redshift z = 0 We present the analytic form of the cosmological predictor trained on the IllustrisTNG dataset at redshift z = 0: Ωsim  
+
+> m, z =0
+
+= ln 
+
+
+
+σ
+
+ Z⋆ Score 
+
+f⋆ ksim 
+
+
+
++ csim 0
+
+
+
+− asim 0
+
+Rcompact 
+
+= ln 
+
+
+
+σ
+
+ Z⋆
+
+M⋆
+
+ΩbV 3eff 
+
+GH 0
+
+Ωb
+
+ksim 
+
+
+
++ csim 0
+
+
+
+− asim 0
+
+Rcompact 
+
+. (5) Where σ function is σ(x) = 1 /(1 + e−x). The subscript “sim” denotes simulation-specific coefficients calibrated separately for each suite. (e.g. IllustrisTNG , Astrid , SIMBA , or Swift-EAGLE ). 
+
+Table 3. Simulation-specific analytic forms of the Ω m predictor at z = 0. Each expression shares the same functional structure of Eq. (5) but uses independently calibrated coefficients for each simulation suite. 
+
+Simulation Analytic Expression 
+
+IllustrisTNG ΩTNG  
+
+> m
+
+= ln 
+
+
+
+σ
+
+ Z⋆
+
+M⋆
+
+ΩbV 3eff 
+
+GH 0
+
+Ωb
+
+5.68 
+
+
+
++ 0 .62 
+
+
+
+− 0.0024 
+
+Rcompact 
+
+Astrid ΩAstrid  
+
+> m
+
+= ln 
+
+
+
+σ
+
+ Z⋆
+
+M⋆
+
+ΩbV 3eff 
+
+GH 0
+
+Ωb
+
+4.71 
+
+
+
++ 0 .61 
+
+
+
+− 0.005 
+
+Rcompact 
+
+SIMBA ΩSIMBA  
+
+> m
+
+= ln 
+
+
+
+σ
+
+ Z⋆
+
+M⋆
+
+ΩbV 3eff 
+
+GH 0
+
+Ωb
+
+14 .88 
+
+
+
++ 0 .62 
+
+
+
++ 0.0014 
+
+Rcompact 
+
+Swift-EAGLE ΩSwift −EAGLE  
+
+> m
+
+= ln 
+
+
+
+σ
+
+ Z⋆
+
+M⋆
+
+ΩbV 3eff 
+
+GH 0
+
+Ωb
+
+8.58 
+
+
+
++ 0 .66 
+
+
+
+− 0.0035 
+
+Rcompact 8Importantly, the analytic structure in Eq. (5) is not retrained on any other simulation suite data. The symbolic form of the predictor is learned exclusively from the IllustrisTNG-LH dataset and is subsequently applied to SIMBA ,
+
+ASTRID , and Swift-EAGLE without modification to its functional form. When transferring the equation to other simulation suites, we only refit the numerical coefficients {ksim , c sim 0 , a sim 0 } to account for differences in subgrid physics, while keeping the latent-variable structure fixed. In practice, we find that recovering an equally compact analytic relation with clear physical interpretation when training directly on other simulation suites is substantially more difficult, owing to stronger degeneracies among feed-back parameters and increased stochasticity in baryonic responses. The simulation-specific coefficients and resulting analytic expressions are summarized in Table 3.                        
+
+> IllustrisTNG, z= 0 ASTRID, z= 0
+> SIMBA, z= 0 Swift-EAGLE, z= 0
+> Figure 2. Performance of the analytic Ωmpredictor across four simulation suites at z= 0 .Each panel compares predicted versus true Ω mfor galaxies from the IllustrisTNG ,ASTRID ,SIMBA , and Swift-EAGLE simulations. Points are binned using a hexagonal grid and colored by the base-10 logarithm of the number of galaxies in each bin. The dashed line denotes perfect prediction, and the quoted R2, and accuracy values summarize performance in linear space.
+
+9Figure 2 shows the performance of the analytic Ω m predictor at z = 0 for the IllustrisTNG , ASTRID , SIMBA ,and Swift-EAGLE simulation suites. Each panel compares predicted and true values using galaxies drawn from 1,000 independent realizations per suite, with 20 randomly selected galaxies per simulation; for IllustrisTNG , we sample a different set of galaxies than those used for training. Colors indicate the logarithmic number density in each hexagonal bin. The model accurately recovers the underlying cosmological parameter in both IllustrisTNG and ASTRID , achiev-ing coefficients of determination of R2 = 0 .77 and R2 = 0 .73, respectively. The corresponding accuracies are 5 .6 × 10 −2
+
+and 6 .0 × 10 −2. Results for SIMBA and Swift-EAGLE exhibit systematically larger scatter and degraded statistical performance, reflecting differences in subgrid feedback implementations. These cross-suite comparisons therefore probe physical consistency rather than model overfitting, indicating that the extracted functional form captures a genuine coupling between galaxy properties and the matter density Ω m. At the high-Ω m end, a mild underprediction is visible, consistent with the saturation behavior of the logarithmic–sigmoid mapping. 3.2. Analytic predictor for Ωm at high redshift 
+
+For high redshift galaxies, we adopt an analytic form in which the predictor includes two (1 + z) power–law scalings, fitted across redshift snapshots z = 0 .5, 1.0, 1.5, 2.0, and 3 .0 for IllustrisTNG and ASTRID datasets: Ωsim  
+
+> m
+
+(z) = ln 
+
+
+
+σ
+
+ Z⋆
+
+M⋆
+
+ΩbV 3eff 
+
+GH 0
+
+Ωb
+
+ksim 
+
+1(1 + z)αk
+
+
+
++ csim 0
+
+
+
+− asim 0 (1 + z)αγ
+
+Rcompact 
+
+. (6)                
+
+> (a) IllustrisTNG at z= 1 ,2,3.
+> (b) ASTRID at z= 1 ,2,3.
+> Figure 3. Performance of the analytic Ωmpredictor across different redshifts. Each panel compares predicted and true Ω mvalues. Top row: IllustrisTNG . Bottom row: ASTRID . Colors represent the logarithmic number density per hexagonal bin. The dashed red line indicates perfect prediction.
+
+The best–fit power–law exponents are αk = 0 .45 and αγ = 0 .33. Although we tested a third (1 + z) scaling applied to the csim 0 term, its fitted response remained consistent with (1 + z)0, indicating that the offset component does not 10 evolve significantly with redshift. We present the full redshift evolution of the Ω m predictor for both IllustrisTNG 
+
+and Astrid simulations simulation suites in Figure 3. In contrast, applying the same redshift parameterization to the 
+
+SIMBA and Swift-EAGLE simulations does not yield comparably stable performance across redshift. This suggests that while the underlying latent structure is present in all four models at z = 0, its redshift transportability depends on the details of the baryonic physics implementation. We therefore restrict presentation of the redshift-dependent fits to IllustrisTNG and ASTRID here. Our results show that for both simulation suites, the correlation between predicted and true Ω m remains strong (R2 ≃ 0.74–0.76) with comparable accuracy ( ≃ 0.056 − 0.06), indicating that the redshift-dependent power-law scaling in Eq. 6 effectively captures the evolution of the baryon–cosmology coupling. At z = 3, the IllustrisTNG panels contain fewer data points due to the smaller number of galaxies per simulation at early cosmic times, while ASTRID 
+
+suite retains higher sampling density. Despite this difference, the consistency observed between the IllustrisTNG 
+
+and ASTRID simulations in both redshift scaling and predictive performance, extending to higher redshift, supports a physical interpretation of the analytic relation rather than one driven by simulation-specific tuning. In contrast, its degraded performance at higher redshift in the SIMBA and Swift-EAGLE models suggests that additional modifications may be necessary to achieve robustness across diverse subgrid physics implementations.  
+
+> 4.
+
+PHYSICAL INTERPRETATION In this section, we explore the physical basis of our analytic predictor and provide a conceptual framework that links its mathematical form to the underlying astrophysical processes. Before interpreting the physical meaning of the equations themselves, we begin by examining how feedback processes shape the stellar mass–metallicity relation (MZR) (S. L. Ellison et al. 2008; J. Lequeux et al. 1979; C. A. Tremonti et al. 2004; J. Koppen et al. 2007) in the simulations through Subsection 4.1. As shown later, this provides the foundation for why a single-galaxy tracer could capture cosmological information across diverse galaxy populations and simulation models. 4.1. Feedback Regulation of the Mass–Metallicity Relation Across Simulation Suites 
+
+Within the CAMELS-LH simulations, four feedback parameters are systematically varied: SN feedback ASN1 and 
+
+ASN2 , and AGN feedback AAGN1 and AAGN2 . Figure 4 shows the resulting log M⋆–Z⋆ MZRs at redshift z = 0 for both the IllustrisTNG and Astrid simulations, highlighting how variations in feedback alter the metallicity normalization and slope. Results at higher redshifts ( z = 1, 2, 3) are provided in Appendix A (see Fig. 7) for completeness. In the IllustrisTNG suite, at redshift z = 0, galaxies with stronger SN feedback ( ASN1 and ASN2 ; red points) tend to exhibit lower metallicities at fixed stellar mass, indicating that enhanced supernova activity efficiently removes enriched gas from the interstellar medium and suppresses metal retention (P. Torrey et al. 2019; R. Dav´ e et al. 2011). In contrast, the AGN feedback parameters ( AAGN1 and AAGN2 ) show weaker or more scattered correlations. Parameter 
+
+ASN1 emerges as the dominant driver of the MZR, controlling both the normalization and scatter of the relation. The secondary SN mode ( ASN2 ) and the AGN parameters ( AAGN1 , AAGN2 ) display weaker or more dispersed correlations, indicating a comparatively minor impact on the resulting metallicity. The redshift evolution of this relation reveals a progressive tightening of the MZR from R2 ≃ 0.3 at z = 0 to R2 ≃ 0.77 by z = 3 (see Appendix A). At higher redshifts, galaxies exhibit steeper MZRs and more coherent color gradients: stronger feedback corresponds to systematically lower metallicities, reflecting the dominant role of feedback in regulating early baryon cycling and chemical enrichment. As cosmic time progresses, recycling and self-regulation processes diminish this dependence, leading to larger scatter at low redshift. For the Astrid suite, at redshift z = 0, SN and AGN feedback exhibit a more balanced influence on the MZR compared to IllustrisTNG . The parameter ASN1 remains a key driver of metallicity suppression, but the AGN parameters AAGN1 and AAGN2 show comparable metallicity gradients, indicating that AGN-driven outflows play a prominent role in regulating galactic enrichment. The overall correlations are tighter ( R2 ≃ 0.6) and span a broader stellar-mass range, signifying a more coherent coupling between feedback and star formation efficiency. Across redshift, the MZR slope and scatter remain relatively stable up to z ≃ 3, with both SN and AGN feedback maintaining clear anti-correlations with metallicity. Unlike IllustrisTNG , where the ASN1 mode dominates the enrichment history, feedback in Astrid acts in a more integrated and self-consistent fashion: supernovae and AGN processes operate concurrently to regulate baryon cycling and chemical enrichment, producing a smoother MZR evolution and a persistent balance between feedback strength and metallicity buildup. 11                       
+
+> IllustrisTNG, z= 0 Astrid, z= 0
+> Figure 4. Stellar mass–metallicity relations ( MZR ) at redshift z= 0 for the IllustrisTNG (left) and Astrid (right) simulation suites. Each point represents an individual galaxy colored by its feedback parameters ASN1 , A SN2 , A AGN1 ,and AAGN2 .The dashed black lines show the best–fit power–law trends in log M⋆–Z⋆space, with annotated R2values quantifying the correlation strength. These relations illustrate that both simulations exhibit similar MZR slopes and feedback-driven metallicity modulation, providing a baseline comparison for the analytic Ω mtracer model.
+
+In contrast, the SIMBA and Swift-EAGLE suites exhibit weaker and less coherent mass–metallicity relations. In SIMBA , variations in both SN and AGN feedback parameters primarily increase the scatter of the MZR rather than produce systematic metallicity offsets at fixed stellar mass, indicating a reduced sensitivity of stellar metallicity to feedback strength. Swift-EAGLE occupies an intermediate regime: feedback-driven metallicity gradients remain visible, but only over a restricted stellar-mass range, and they do not persist across the full galaxy population, limiting the effectiveness of metallicity as a global tracer of baryon-processing efficiency. 4.2. Physical meaning of the Latent Variable 
+
+The contrasting feedback behaviors observed in our results motivate a closer examination of how metallicity enters our analytic formulations (Equations 5 and 6). From the structure of the analytic formula, we identify that the latent variable x inside the sigmoid operator σ(x) naturally encodes the stellar mass–metallicity relation (MZR) —denoted as term (I): 
+
+x ≡ Z⋆
+
+M⋆
+
+|{z} 
+
+> (I)
+
+ΩbV 3eff 
+
+GH 0
+
+| {z } 
+
+> (II)
+
+Ωb
+
+ksim 
+
+| {z } 
+
+> (III)
+
+.
+
+Isolating the MZR term reveals that the remaining components of x carry distinct and complementary physical interpretations. Inside term (II), the factor V 3eff /(GH 0) has the same dimensional form as a mass term, corresponding to the charac-teristic mass enclosed by a system with dynamical velocity Veff in a Universe expanding at rate H0. Multiplication by the cosmic baryon fraction Ω b projects this total mass into its baryonic component, under the assumption that galaxies inherit the cosmological baryon fraction. Although this assumption implies that the local baryon-to-total-matter ratio matches the cosmological mean, feedback and gas dynamics may lead to departures from this idealized value. Term (III) functions as a baryon–cosmology coupling coefficient that encapsulates the influence of feedback regulation within the latent variable. Here, Ω b represents the universal baryon supply, while the scaling factor 1 /k sim adjusts this baseline to reflect the effective participation efficiency —the fraction of baryons that remain gravitationally bound and actively engaged in the star-formation and enrichment cycle. In galaxies with stronger feedback, energetic outflows driven by SN or AGN expel metal-rich gas and decrease baryon retention, effectively increasing ksim (IllustrisTNG )and lowering the contribution of baryons to subsequent enrichment. Conversely, weaker feedback allows gas to remain confined within the potential well, reducing ksim (Astrid ) and enhancing metallicity buildup. Term (III) there-12 fore serves as a feedback-regulation coefficient, linking local baryonic processes to the global baryon fraction Ω b and mediating the connection between feedback physics and the cosmological sensitivity encoded in the analytic predictor. Altogether, the latent variable x reflects the interplay between a baryonic mass scale predicted by galaxy dynamics and cosmology, and the subsequent modification of this scale by feedback-driven baryon retention and enrichment. A related baryon–cosmology connection has previously been explored at the scale of galaxy clusters, where S. D. M. White et al. (1993) argued that the baryon fraction within gravitationally bound systems can constrain the cosmic matter density through the approximate relation fb ≡ Mbaryon /M total ≈ Ωb/Ωm. Here, we extend this principle to galaxy scales by encoding, within the latent variable, the coupling between the cosmological baryon supply and the nonlinear thermodynamic and chemical evolution of baryons within galaxy potentials. The sigmoid operator σ(x) acting on the latent variable further distills this baryonic information. This imposes physically motivated saturation at both low and high baryon-processing capacity, reflecting the diminishing sensitivity of enrichment to variations in gas supply or feedback once the system becomes strongly metal-poor or metal-rich. The subsequent logarithm then restores the dynamic range in the high-capacity regime, yielding a smoothly varying, monotonic mapping between the processed baryonic content of a galaxy and the underlying cosmology. The additive constant in the argument of the logarithm introduces an enrichment floor, ensuring numerical stability at the same time. Finally, the small corrective term proportional to R−1compact encodes a subtle structural dependence, introducing a mild sensitivity to galaxy morphology and its evolution with redshift. Although subdominant, this term provides a modest but consistent improvement in predictive accuracy, completing the physical interpretation of the fiducial analytic predictor. With the full physical interpretation of the analytic predictor in hand, a natural question arises: why is its behavior effectively captured by a mass–metallicity relation ? Our reasonable assumption is that, in a regime where astrophysical degrees of freedom are only minimally perturbed, the baryon cycle does not explore the full richness of feedback-regulated behavior. Indeed, in the CAMELS-LH simulation runs — where the cosmological parameters, including Ω b
+
+and H0, are held fixed and only a limited subset of astrophysical variations are restricted—the baryon cycle remains sufficiently regular that this integrated behavior is well approximated by a clean mass–metallicity–like dependence. As a result, the stellar mass–metallicity relation serves as the dominant channel through which Ω m imprints on individual galaxies. A clearer view of the mathematical structure underlying this behavior emerges from examining power–law transfor-mations of the analytic relation in Eq. 6, which provide complementary insight into how the latent variables combine to yield the observed scaling. The derivation of these transformations, together with a visualization of the resulting galaxy–cosmology manifold that captures how individual galaxies populate the latent predictor space, are presented in Appendix B and Appendix C respectively. To reinforce the robustness of this interpretation, we extend our analysis in Section 5 to the CAMELS-TNG-SB28 simulation suites, in which variations in cosmology and a wider astrophysical parameter space introduce richer baryonic pathways. This broader setting allows us to assess how the underlying physical mechanisms adapt under more complex conditions.  
+
+> 5.
+
+GENERALIZATION ACROSS EXTENDED COSMOLOGY AND FEEDBACK VARIATIONS The CAMELS project primarily uses sets of hydrodynamic simulations in which six cosmological and astrophysical parameters are varied across 1,000 realizations for each of the ASTRID , IllustrisTNG , SWIFT-EAGLE , and 
+
+SIMBA models. These original datasets, referred to as the CAMELS-LH sets, (detailed in F. Villaescusa-Navarro et al. (2022)) provide a controlled framework for exploring the impact of a small number of dominant parameters on large-scale structure and galaxy formation. However, while this design captures the leading-order sources of variation, it does not span the full range of uncertainty present in modern cosmological and subgrid models. Many additional components of astrophysical modeling, including prescriptions for stellar evolution, galactic winds, and feedback from active galactic nuclei, are not explicitly sampled in the CAMELS-LH configuration, despite their potentially significant impact on galaxy observables and cosmological inference. To address this limitation, CAMELS introduced a series of extended simulation sets designed to explore substantially higher-dimensional parameter spaces. One such extension is the TNG-SB28 simulation suite (Y. Ni et al. 2023), which expands the IllustrisTNG model by simultaneously varying 28 independent parameters (see more details in Section 2.1.2). 13 Significantly for this work, the SB28 dataset allows both Ω b and the Hubble parameter H0 to vary self-consistently alongside astrophysical parameters for the first time within the IllustrisTNG framework. This feature enables direct tests of whether galaxy-scale properties remain informative about cosmology when the background expansion rate and baryon content are no longer fixed, providing a uniquely stringent environment for evaluating analytic models of cosmological inference from galaxy observables. In Section 5.1, we present the results of applying symbolic regression to the TNG-SB28 simulations, focusing on how the analytic form of the predictor adapts in the presence of a substantially expanded parameter space. In the following subsection 5.2, we interpret these results within the framework of the gas regulator model, providing a physical explanation for the emergent structure and its dependence on baryonic processes. 5.1. TNG-SB28 Set Result 
+
+We apply the same symbolic regression framework (see Section 2.2) and galaxy-scale feature set (see Section 2.3) used for the CAMELS-LH datasets to the TNG-SB28 dataset. In particular, we retain the same physically motivated dimensionless parameters, including the core structural parameter Score , the stellar mass fraction f⋆, and the stellar metallicity Z⋆. In addition, to account for the explicit variation of the background cosmology in TNG-SB28, we extend the analytic formulation to include a dependence on the Hubble parameter through the ratio H0/H 0,fid , where 
+
+H0,fid = 0 .067 km s −1 kpc −1, denotes the fiducial value adopted in the CAMELS-LH simulations. We recover an analytic form for Ω m in the TNG-SB28 dataset that is closely related to our fiducial cosmology result in Eq. 5 at redshift z = 0, differing by small modifications in the fitted coefficients and functional normalization. The resulting expression is summarized in Table 4.            
+
+> Table 4. Analytic Ω mpredictor for the TNG-SB28 simulation suite. Ωm= 0 .47
+> "
+> ln σ
+> Ωb
+> 34 .96 ΩbV3eff
+> G H 0
+> E(Z⋆, f ⋆)
+> M⋆
+> 
+> + 0 .89
+> #
+> + 0 .07
+> H0
+> H0,fid
+> −1
+> 
+> E(Z⋆, f ⋆) = 11 + 1
+> Z⋆
+> + 0.24
+> f⋆
+
+For clarity, we write the model in the following general form: Ωm = B0
+
+"
+
+ln σ(x) + c0
+
+#
+
++ a0
+
+ H0
+
+H0,fid 
+
+− 1
+
+
+
+, (7) with latent variable 
+
+x =
+
+ Ωb
+
+k
+
+  Ωb V 3eff 
+
+G H 0
+
+  E(Z⋆, f ⋆)
+
+M⋆
+
+
+
+,
+
+and fixed numerical values k = 34 .96 , c 0 = 0 .89 , a 0 = 0 .07 , H 0,fid = 0 .067 , B 0 = 0 .47 , δ 0 = 0 .24 .
+
+At higher redshift ( z = 1 .0, 2 .0, 3 .0), the equation keeps the same general structure, adding a redshift term depen-dence of αk = 0.5 following: Ωm(z) = B0
+
+"
+
+ln σ
+
+ x
+
+(1 + z)αk
+
+
+
++ c0
+
+#
+
++ a0
+
+ H0
+
+H0,fid 
+
+− 1
+
+
+
+. (8) We evaluate the performance of the redshift-dependent model through one-to-one comparisons between predicted and true values of Ω m at each redshift, as shown in Fig. 5. At all redshifts, the hexbin density plots exhibit a strong monotonic correlation between predictions and ground truth, demonstrating that the latent structure successfully captures a systematic relationship between galaxy properties and cosmology, even under the extreme parameter vari-ations of SB28. This confirms that the equation does not lose sensitivity to cosmology in a general sense. However, the calibration curves reveal a physical limitation of the analytic form in the high-Ω m regime: beyond a characteristic threshold Ω m ≃ 0.43, the median predicted value flattens and becomes insensitive to further increases in the matter density. 14 This saturation does not necessarily imply a failure of the latent variable itself, but may instead reflect an intrinsic information ceiling in the TNG–SB28 dataset. Because SB28 explores a high-dimensional parameter space in which 28 astrophysical and cosmological parameters are varied simultaneously, it introduces strong degeneracies between feedback physics, enrichment history, and cosmology. In this regime, changes in cosmology may be increasingly offset by baryonic processes, producing convergence in galaxy-scale observables across distinct models. The observed saturation is therefore likely a manifestation of this extreme degeneracy, rather than a direct limitation of the analytic form alone. Alternatively, it may reflect limitations of the symbolic-regression framework, including restricted functional flexibility or operator bias, which could prevent the analytic form from fully capturing residual cosmological dependence. Overall, these results demonstrate that the latent variable structure robustly encodes the galaxy–cosmology con-nection across a wide range of cosmological backgrounds, while simultaneously suggesting a regime in which galaxy properties no longer provide unique cosmological information. In the following subsections, we turn to a physical interpretation of the analytic form itself, examining the origin of its functional structure, including the emergence of the characteristic knee behavior and the role of each component of the latent variable.                  
+
+> z= 0 z= 1
+> z= 2 z= 3
+> Figure 5. Performance of the analytic Ω mpredictor on the TNG-SB28 dataset for different redshifts. Each panel contains a combined diagnostic: a hexbin density plot (left) comparing true versus predicted Ω mand a calibration curve (right) showing the median prediction in bins of the true value with 16–84th percentile bands. Results are shown for redshifts z= 0 .0,1.0,2.0,3.0(top-left to bottom-right). A saturation regime appears at high Ω m(indicated by doted horizontal red lines, of Ω m≃0.43) in all cases, indicating a limit beyond which galaxy properties no longer carry independent cosmological information under the SB28 parameter variations.
+
+5.2. Physical Interpretation via Gas Regulation 
+
+Although the overall structure of the latent variable remains closely aligned with the form identified in the CAMELS-LH datasets (see Equations 5 and 7), the internal organization of the equation changes in an important way. In our previous result, Eq. 5, the dependence inside the sigmoid is largely captured by a clean mass–metallicity relation (MZR). In contrast, within the SB28 regime, as the parameter space expands to include simultaneous variations in cosmology and a far broader set of feedback parameters, the equation reorganizes itself such that the dominant contribution is an efficiency-like factor that depends jointly on stellar metallicity and stellar mass fraction. A central feature that emerges from the SB28 analysis is the appearance of an explicit retention-like term in the latent variable, represented by the function E(Z⋆, f ⋆). This shift preserves the functional architecture of the latent 15 variable while refining its physical content: rather than expressing baryonic regulation only through global empirical correlations, the model introduces an explicit term that modulates how efficiently baryons are retained and converted into stars. 5.2.1. Gas–Regulator Framework 
+
+Motivated by this connection, we now reinterpret the latent structure in the context of the gas–regulator framework (S. J. Lilly et al. 2013; R. Dav´ e et al. 2012) and show that the functional form of E(Z⋆, f ⋆) can be understood as an effective retention efficiency emerging from the steady-state behavior of the baryonic cycle. Let Mg be the gas mass, SFR the star-formation rate, ˙Min the inflow rate, η the mass-loading factor (outflow rate = η SFR), R the instantaneous recycling fraction, y the net metal yield, and Z the gas-phase metallicity (ISM). The gas-regulator model is then defined by the following continuity equations: 
+
+dM g
+
+dt = ˙Min − (1 − R + η) SFR , (9) 
+
+d(ZM g )
+
+dt = Zin ˙Min + y(1 − R) SFR − Z(1 − R + η) SFR . (10) Eq. 10 describes the metal–mass continuity equation for the interstellar medium (ISM), written as the time derivative of the gas–phase metal mass. Each term admits a direct physical interpretation, in the way that defining MZ, gas ≡ Z M g ,we have 
+
+• Inflow metals: + Zin ˙Min 
+
+• Fresh production: + y(1 − R) SFR 
+
+• Lock-up in stars: − Z(1 − R) SFR 
+
+• Outflows (winds): − Z η SFR . In the self-regulated regime, dM g /dt ≈ 0 and d(ZM g )/dt ≈ 0. Using Eq. (9) gives ˙Min = (1 − R + η) SFR, then Eq. (10) reduces to 0 = Zin (1 − R + η) SFR + y(1 − R) SFR − Z(1 − R + η) SFR .
+
+Dividing by SFR and solving for Z yields the standard equilibrium metallicity: 
+
+Zeq = Zin + y(1 − R)(1 − R) + η . (11) Neglecting the additive baseline from inflow metallicity ( Zin ≈ 0), so that the mass- and feedback-dependent term dominates, the equilibrium metallicity can be written in terms of the retention fraction :
+
+R ≡ 1 − R
+
+(1 − R) + η , Zeq = y R. (12) Typically R ∼ 0.3–0 .5 for standard IMFs (J. Audouze & B. M. Tinsley 1976), and the combination y(1 − R) is often absorbed into an effective yield yeff . For the common analytic simplification, one may set R = 0 explicitly or, equivalently, absorb (1 − R) into the net metal yield y and work with yeff :
+
+Zeq = y
+
+1 + η , R = 11 + η . (13) Setting R = 0 in the denominator of Eq. (13) does not materially alter the gas–cycling budget. In practice, R
+
+contributes only a small and nearly constant term compared to η, which vary by orders of magnitude across the galaxy population. 16  
+
+> Connection to the reduced cosmology–and–feedback variation regime case. —
+
+Mapping the retention relation to our previous defined 
+
+E(Z⋆, f ⋆) = 11 + 1
+
+Z⋆
+
++ δ0
+
+f⋆
+
+.
+
+Where the unity term in the denominator represents the regulator floor. The 1 /Z ⋆ term acts as a monotonic surrogate for for chemical retention history, tracing the cumulative impact of metal loss and feedback-driven outflows in the system. δ0/f ⋆ term captures an additional structural channel associated with baryon conversion efficiency, which in simulations correlates with variations in halo growth and feedback regulation. We therefore interpret this term as an effective structural channel that modifies the mass loading factor from an idealized single-parameter regulator case. When cosmology is fixed, baryon conversion efficiency and chemical enrichment correlate strongly with galaxy mass/structure properties and E ∝ Z⋆ in the metal-poor regime; the latent variable reduces to the familiar i.e. MZR-like proxy. When Ω b or H0 vary, E(Z⋆, f ⋆) remains robust since it explicitly encodes structural baryon-processing effects (∝ δ0/f ⋆) and chemical retention ( ∝ 1/Z ⋆). In Figure 6, we illustrate how the function E(Z⋆, f ⋆) maps onto the joint stellar metallicity–stellar fraction space for TNG-SB28 dataset. The resulting structure exhibits behavior consistent with baryonic retention and enrichment efficiency, with smoothly varying trends across both dimensions. At redshift z = 0, panel (a) shows the efficiency field evaluated across the ( f⋆, Z ⋆) plane, revealing a smooth, monotonic structure in which efficiency increases toward higher stellar fraction and higher metallicity. The contours of constant E are consistent with trends expected from gas-regulated systems, indicating that galaxies with both efficient star formation and enriched stellar populations retain baryons more effectively. Panel (b) further clarifies this behavior by showing the median efficiency as a function of stellar metallicity in four bins of stellar mass fraction, corresponding to the 0–25%, 25–50%, 50–75%, and 75–100% percentiles. At fixed metallicity, galaxies with larger f⋆ consistently exhibit higher efficiency, while at fixed f⋆ the efficiency increases with Z⋆ and approaches saturation at high metallicity. This pattern is consistent with expectations from gas-regulator models, in which enrichment reflects cumulative star-formation processing while the stellar fraction traces the integrated conversion of gas into stars. Importantly, the appearance of the retention term E(Z⋆, f ⋆) in the SB28 expression (see Table 4) does not represent a departure from the latent structure (Eq. 5) identified in the fiducial CAMELS-LH datasets. Rather, it should be viewed as a refinement of the same underlying relationship, in which the mass–metallicity relation is no longer treated as a single empirical scaling but is instead resolved into a more explicit, non-linear representation of baryonic processing. In this sense, the SB28 formulation preserves the core architecture of the model while extending it into a higher-dimensional parameter space, allowing the latent variable to respond more flexibly to variations in enrichment history and star-formation efficiency. Overall, the analytic expression introduced here retains the same overall architecture as the fiducial cosmology predictor in Eq. 5: an effective enrichment term, an outer logarithmic–sigmoid operator, and a secondary correction term. Two controlled modifications distinguish the new formulation. First, the normalization constant outside the logarithmic–sigmoid operator sets a uniform enrichment baseline and ensures that the latent variable maintains a consistent monotonic scaling across the full dynamic range. Second, the structural correction used in the fiducial cosmology model, previously expressed through R−1compact , is replaced by a direct dependence on the Hubble parameter. Once cosmology is allowed to vary, differences in expansion rate become a more relevant source of secondary variation than galaxy compactness, and the predictor reorganizes accordingly to incorporate this dependence.  
+
+> 6.
+
+SUMMARY Modern cosmology has achieved remarkable precision through probes such as the cosmic microwave back-ground (A. A. Penzias & R. W. Wilson 1965), baryon acoustic oscillations (P. J. E. Peebles & J. T. Yu 1970; R. A. Sunyaev & Y. B. Zeldovich 1970; S. Alam et al. 2017), and large-scale structure statistics (P. J. E. Peebles 1980; M. Tegmark et al. 2004). In parallel, galaxy formation studies have focused on understanding how nonlinear baryonic processes—gas accretion, star formation, feedback, and chemical enrichment—shape individual galaxies and their ob-servable properties (S. D. M. White & M. J. Rees 1978; S. D. M. White & C. S. Frenk 1991). Motivated by these developments, large suites of cosmological hydrodynamic simulations have been developed to model galaxy formation within a controlled cosmological framework, enabling cosmological parameters and baryonic feedback processes to be varied systematically. More recently, machine learning analyzes of these simulations have shown that cosmological 17                       
+
+> (a)
+> (b)
+> Figure 6. Baryonic retention–enrichment efficiency at redshift z= 0 across the stellar fraction–metallicity plane. (a) The efficiency field E(Z⋆, f ⋆) =  1 + Z−1
+> ⋆+δ0/f ⋆
+> −1evaluated over the galaxy population and shown in the (log f⋆,log Z⋆) plane. White contours mark constant efficiency. (b) Median efficiency as a function of stellar metallicity for quartiles in stellar fraction. At fixed Z⋆, galaxies with higher f⋆are systematically more efficient, while at fixed f⋆the efficiency increases with metallicity and saturates at high Z⋆.
+
+parameters can be inferred directly from individual galaxy properties (F. Villaescusa-Navarro et al. 2022; A. Lue et al. 2025). In this paper we have demonstrated a unified picture in which the baryonic evolution of individual galaxies encodes information about the matter density parameter Ω m through a physically grounded analytic framework that serves as a single-galaxy cosmological tracer. Focusing first on the reduced cosmology–and–feedback variation regime of the CAMELS project (the CAMELS–LH datasets), which span multiple independent simulation suites— IllustrisTNG ,
+
+SIMBA , ASTRID , and SWIFT–EAGLE —we find that this analytic structure (see Eq. 5) is remarkably stable despite substantial differences in numerical implementation. Moreover, this structure (see Eq. 6) remains robust across redshift when augmented by a simple redshift-dependent rescaling, yielding a unified form applicable from low to intermediate redshifts. In the extended cosmology–and–feedback variation suite (the CAMELS–SB28 datasets), a closely related, physically motivated analytic form (see Eq. 7) remains robust across redshift, with the latent variable reorganizing while preserving the same underlying physical structure. In the reduced cosmology-and-feedback variation regime, the latent variable reduces to a clean mass–metallicity-like dependence, reflecting the regularity of the baryon cycle when feedback variations are modest. In the extended cosmology–and–feedback variation suite, the latent variable reorganizes into the explicit retention function E(Z⋆, f ⋆), which captures the combined effects of chemical retention history and structural baryon-processing efficiency associated with stellar mass buildup and feedback regulation. Despite these differences in functional form, both expressions share the same underlying architecture and rely on the same physical ingredients, demonstrating that the imprint of Ω m is encoded through a stable and interpretable combination of enrichment, baryon retention, and gravitational depth. Our theoretical premise is that the background cosmology is approximately imprinted in each galaxy through the way baryons are accumulated, processed, and enriched across cosmic time. The formation history, metal production, and retention efficiency of a galaxy are all shaped by the depth of its potential well and the cosmological supply of baryons, linking local baryonic evolution to global cosmological parameters. By expressing these processes through an analytically tractable latent variable, and by demonstrating its validity across both fixed-cosmology and varying-cosmology regimes. We show that, in addition to the well-established constraints from large-scale clustering, the matter density parameter Ω m leaves a measurable imprint on the internal baryon cycle of individual galaxies. This provides a surprising and complementary small-scale avenue for cosmological inference. 18 Our analysis is performed within a cosmological simulation framework, but the physical mechanisms driving the tracer are generic and suggest the possibility of observational validation. The existence of a single-galaxy cosmological tracer offers a complementary avenue for probing Ω m, extending cosmological inference beyond traditional large-scale structure measurements. Together, these results highlight a physically grounded connection between galaxy-scale baryon cycling and the matter density of the Universe, opening a new window on the interplay between galaxy formation and cosmology and suggesting a promising direction for future theoretical and observational exploration. Looking ahead, new generations of cosmological simulations with varied subgrid physics, alternative feedback pre-scriptions, and tighter physical constraints will offer valuable opportunities to test and refine the functional form of this tracer. Evaluating its robustness across different numerical approaches and galaxy formation models will be cru-cial for assessing its universality and for clarifying the physical pathways through which cosmology imprints itself on galaxy-scale baryon cycling. Such efforts will help bridge the gap between simulated and observed galaxies, opening the way toward a broader and more predictive framework at the intersection of galaxy formation and cosmology. ACKNOWLEDGMENTS We thank Adrian Bayer, Christopher Lovell, Daisuke Nagai, Oliver Philcox, Yacine Ali-Haimoud, and the whole CAMELS collaboration for insightful discussions and helpful comments that contributed to this work. NSMS acknowl-edges partial support from the NSF CDSE grant AST-2408026 and the NASA TCAN grant 80NSSC24K0101. APPENDIX  
+
+> A.
+
+FEEDBACK ON MZR AT HIGH REDSHIFT In this appendix, we present the feedback regulation of the Mass–Metallicity Relation at both simulation suites (IllustrisTNG and Astrid ), similarly to what has been presented in Section 4.1, but at higher redshifts ( z = 1 .0, 2.0, 3 .0).  
+
+> B.
+
+POWER-LAW TRANSFORMATION The ln–sigmoid form from Equation 5 captures the saturating behavior between metallicity enrichment and cosmo-logical density, but it obscures how the slope of this relation evolves across redshift and feedback regimes. To better interpret the nonlinear structure of the original equation, we offer a format of power–law transformation to the analytic predictor. We simplify the latent variable for mathematical analysis as: 
+
+x =
+
+ Z⋆
+
+M⋆
+
+ΩbV 3eff 
+
+GH 0
+
+Ωb
+
+ksim 
+
+
+
+= Z⋆
+
+ksim ε⋆
+
+, (B1) where ε⋆ represents the grouped parameters from the original relation for simplicity. To identify the knee point —the location where Ω m is most sensitive to metallicity—we impose the condition on Equation 6: 
+
+f (xk; csim 0 ) = d2Ωm
+
+d(ln Z⋆)2 = 0 . (B2) This yields the nonlinear equation, 
+
+f (xk; csim 0 ) = 1
+
+sk + csim 0
+
++ xk
+
+csim 0 (1 − 2sk) − s2
+
+> k
+
+(sk + csim 0 )2 = 0 , sk = σ(xk), (B3) where the subscript “ k” denotes quantities evaluated at the knee point of the relation, and xk is the positive root of 
+
+f (xk; csim 0 ) = 0. The corresponding stellar metallicity at the knee is then given by 
+
+Z⋆,k = xk ksim ε⋆, (B4) which defines the metallicity scale where the slope of the underlying ln–sigmoid relation reaches its maximum slope. 19 
+
+z = 1 
+
+z = 2 
+
+z = 3 
+
+Figure 7. Evolution of the stellar mass–metallicity relation ( MZR ) across redshifts z = 1 .0, 2.0, 3.0 for the IllustrisTNG (left column) and Astrid (right column) simulation suites. Each point represents a galaxy color–coded by its feedback parameters 
+
+ASN1 , A SN2 , A AGN1 , and AAGN2 . Dashed lines indicate best–fit power–law trends in log M⋆–Z⋆ space. 
+
+Evaluating the predictor at this point, we define Sk = σ(xk) and obtain the slope and normalization at the knee: 
+
+Sk = dΩm
+
+d ln Z⋆ Z⋆,k 
+
+= xk sk(1 − sk)
+
+sk + csim 0
+
+, (B5) Ωkm = Ω m(Z⋆,k ) = ln  sk + csim 0
+
+ − asim 0
+
+Rcompact 
+
+. (B6) 20 Around the knee, its local slope behaves as a rescaled version of itself with respect to Z⋆/Z ⋆,k ,
+
+dΩm
+
+d ln Z⋆
+
+∝
+
+ Z⋆
+
+Z⋆,k 
+
+ν
+
+,
+
+which represents a general power-law form. To preserve the correct normalization at the knee, where dΩm   
+
+> dln Z⋆Z⋆,k
+
+= Sk,the proportionality can be written explicitly as 
+
+dΩm
+
+d ln Z⋆
+
+= Sk
+
+ Z⋆
+
+Z⋆,k 
+
+ν
+
+. (B7) the value of Ω m(Z⋆) relative to the knee is obtained by integrating with respect to ln Z⋆:Ωm(Z⋆) − Ωkm =
+
+Z ln Z⋆ 
+
+> ln Z⋆,k
+
+dΩm
+
+d ln Z′
+
+> ⋆
+
+d(ln Z′
+
+> ⋆
+
+) = Sk
+
+Z ln Z⋆ 
+
+> ln Z⋆,k
+
+ Z′
+
+> ⋆
+
+Z⋆,k 
+
+ν
+
+d(ln Z′
+
+> ⋆
+
+).
+
+Since d(ln Z′
+
+> ⋆
+
+) = dZ ′
+
+> ⋆
+
+/Z ′
+
+> ⋆
+
+, the integral evaluates to a simplified power-law expansion: Ωm(Z⋆) ≃ Ωkm + Sk
+
+ν
+
+ Z⋆
+
+Z⋆,k 
+
+ν
+
+− 1
+
+
+
+, (B8) The 1 /ν factor appears as a direct consequence of integration, ensuring that the normalization at Z⋆ = Z⋆,k is preserved. The simulation specified formats of this power law transformation (see Eq. B8) are presented in Table 5. 
+
+Simulation Power-Law Transformation 
+
+IllustrisTNG ΩTNG  
+
+> m
+
+(Z⋆) ≃ Ωkm + Sk
+
+0.3
+
+" Z⋆
+
+Z⋆,k 
+
+0.3
+
+− 1
+
+#
+
+Astrid ΩASTRID  
+
+> m
+
+(Z⋆) ≃ Ωkm + Sk
+
+0.02 
+
+" Z⋆
+
+Z⋆,k 
+
+0.02 
+
+− 1
+
+#
+
+Table 5. Power–law expansion of Ω m(Z⋆) around the metallicity knee for the IllustrisTNG and Astrid simulations. 
+
+The knee metallicity Z⋆,k marks the inflection point of the Ω m–Z⋆ relation, where the slope dΩm   
+
+> dln Z⋆
+
+reaches its maximum and the sensitivity of Ω m to metallicity is strongest. Physically, this point corresponds to the transition between cosmology–dominated and feedback–regulated regimes: at low metallicities ( Z⋆ < Z ⋆,k ), enrichment is limited by the global matter density, while at high metallicities ( Z⋆ > Z ⋆,k ), stellar and AGN feedback saturate the enrichment efficiency, weakening the dependence on Ω m. The slope Sk quantifies the strength of the baryon–cosmology coupling at the transition point, representing how efficiently metallicity traces the cosmic matter field. The exponent ν governs how rapidly this coupling decays away from the knee and thus measures the elasticity of the Ω m–Z⋆ relation. A larger 
+
+ν indicates that the cosmological imprint persists over a broader metallicity range, while a smaller ν implies rapid self–regulation by feedback and diminished cosmological sensitivity. The contrasting values of ν can be directly traced to the redshift evolution of the mass–metallicity relation (MZR) in each simulation suite. In IllustrisTNG , SN and AGN feedback drive a progressively steeper MZR at higher redshift, indicating that the efficiency of metal enrichment remains strongly coupled to the evolving baryonic environment and the underlying cosmological matter density. This evolving enrichment pattern preserves a measurable cosmological imprint, reflected in the relatively large elasticity exponent ( ν ≃ 0.3). In contrast, the Astrid simulations exhibit a remarkably stable MZR across cosmic time, suggesting that feedback processes regulate metallicity growth in a way that quickly reaches equilibrium and becomes largely insensitive to cosmological variations. As a result, the inferred Ωm–Z⋆ coupling remains weak and nearly constant with redshift, leading to the much smaller exponent ( ν ≃ 0.02). This comparison highlights that ν effectively encodes how feedback prescriptions control the redshift evolution of the MZR, and thus how strongly galaxies preserve cosmological memory in their chemical enrichment histories. 21  
+
+> C.
+
+THE GALAXY–COSMOLOGY MANIFOLD VISUALIZATION In this section we extend this concept by presenting a direct manifold visualization derived from our analytic predictor. To visualize the intrinsic geometry of galaxy properties, we employ the Uniform Manifold Approximation and Pro-jection (UMAP) algorithm (L. McInnes et al. 2018) to embed galaxies from a high-dimensional property space into a two-dimensional manifold. The workflow proceeds as follows: 1. Feature definition. For each galaxy, we consider four baryonic observables: stellar mass ( M⋆), stellar metallicity (Z⋆), effective velocity ( Veff ), and structural compactness ( Rcompact ). These quantities span a four-dimensional physical space that encapsulates the galaxy’s internal regulation and dynamical state. 2. Normalization. Each feature is standardized using a StandardScaler to ensure that all parameters con-tribute comparably to the metric distance. This step removes biases due to differing physical units or dynamic ranges. 3. Local neighborhood graph. UMAP constructs a weighted graph that connects each galaxy to its nneighbors =30 nearest neighbors in this normalized property space, using Euclidean distance as the similarity metric. The resulting graph defines the local geometric relationships between galaxies. 4. Manifold learning. The algorithm optimizes a low-dimensional (2-D) representation by minimizing the cross-entropy between the high- and low-dimensional neighbor graphs. This preserves the local topology: galaxies that are close in the original parameter space remain close on the projected manifold. 5. Visualization. The manifold is color-mapped by derived or cosmological quantities. The results of the three simulation suites’ galaxy-property manifolds across redshift ( z = 0 .0, 1.0, 2.0, 3.0) are pre-sented in Fig. 8. Within each subpanel, every point on the manifold corresponds to an individual galaxy, while the color scale encodes different physical quantities: the latent variable x (left, shown in logarithmic scale to better capture its variation), the compactness ratio Rcompact (middle), and the inferred cosmological parameter Ω m (right). The two-dimensional surface represents the nonlinear projection of the high-dimensional galaxy-property space obtained through the UMAP algorithm. The horizontal and vertical directions in each plot serve as abstract coordinates of this projected space, the smooth color gradients across the manifolds indicate correlated variations among the underlying baryonic, structural, and cosmological parameters. Across all panels, the color gradients exhibit a coherent diagonal trend, indicating that enrichment efficiency and structural compactness vary jointly rather than independently. Galaxies with deeper potential wells are simultaneously more compact and more metal-enriched, reflecting a coupled baryon–feedback regulation process. The same diagonal orientation appears in the Ω m panels, demonstrating that the cosmological sensitivity encoded by our analytic relation aligns with the latent direction of baryonic regulation within the manifold. Remarkably, the orientation and continuity of these gradients remain stable across redshift and simulation suite. Al-though minor distortions are visible, the overall deformation of the manifold is very gentle—its topology and dominant gradient direction are largely preserved. Despite differing feedback and star-formation prescriptions in IllustrisTNG ,
+
+Astrid , and SIMBA , the manifolds retain nearly identical geometries and color transitions. This persistence implies that galaxies from distinct physical models occupy a common, low-dimensional equilibrium surface where baryonic, structural, and cosmological dependencies co-evolve in a universal manner. REFERENCES 
+
+> Alam, S., Ata, M., Bailey, S., et al. 2017, MNRAS, 470, 2617, doi: 10.1093/mnras/stx721 Angl´ es-Alc´ azar, D., Dav´ e, R., Faucher-Gigu` ere, C.-A., ¨Ozel, F., & Hopkins, P. F. 2017, Mon. Not. Roy. Astron. Soc., 464, 2840, doi: 10.1093/mnras/stw2565 Audouze, J., & Tinsley, B. M. 1976, Annual Review of Astronomy and Astrophysics, 14, 43, doi: 10.1146/annurev.aa.14.090176.000355 Bartelmann, M., & Schneider, P. 2001, PhR, 340, 291, doi: 10.1016/S0370-1573(00)00082-X
+
+22 z = 0 z = 1 z = 2 z = 3 
+
+(a) IllustrisTNG (b) Astrid (c) SIMBA 
+
+Figure 8. Evolution of the galaxy-property manifold across redshift and simulation suite. Each column corresponds to one CAMELS simulation suite (IllustrisTNG , Astrid , SIMBA ), and each row corresponds to a fixed redshift (z = 0 .0, 1.0, 2.0, 3.0). Within each panel, colors encode: the latent variable log( x) (left), the compactness ratio Rcompact 
+
+(middle), and the corresponding cosmological parameter Ωm (right). Vertical dividers separate the three simulation columns for clarity, while redshift labels along the left indicate cosmic epoch. The manifold topology remains broadly consistent across simulations and redshifts, highlighting a universal low-dimensional relation among stellar mass, metallicity, kinematics, and structural compactness. Bird, S., Ni, Y., Di Matteo, T., et al. 2022, Mon. Not. Roy. Astron. Soc., 512, 3703, doi: 10.1093/mnras/stac648 Borrow, J., Schaller, M., Bower, R. G., & Schaye, J. 2021, Monthly Notices of the Royal Astronomical Society, 511, 2367–2389, doi: 10.1093/mnras/stab3166 Cranmer, M., Sanchez-Gonzalez, A., Battaglia, P., et al. 2020, NeurIPS 2020. https://arxiv.org/abs/2006.11287 Dav´ e, R., Angl´ es-Alc´ azar, D., Narayanan, D., et al. 2019, Mon. Not. Roy. Astron. Soc., 486, 2827, doi: 10.1093/mnras/stz937 Dav´ e, R., Finlator, K., & Oppenheimer, B. D. 2012, MNRAS, 421, 98, doi: 10.1111/j.1365-2966.2011.20148.x Dav´ e, R., Finlator, K., & Oppenheimer, B. D. 2011, Monthly Notices of the Royal Astronomical Society, 416, 1354–1376, doi: 10.1111/j.1365-2966.2011.19132.x Ellison, S. L., Patton, D. R., Simard, L., & McConnachie, A. W. 2008, AJ, 135, 1877, doi: 10.1088/0004-6256/135/5/1877 Hopkins, P. F. 2017, https://arxiv.org/abs/1712.01294 Koppen, J., Weidner, C., & Kroupa, P. 2007, Mon. Not. Roy. Astron. Soc., 375, 673, doi: 10.1111/j.1365-2966.2006.11328.x Lequeux, J., Peimbert, M., Rayo, J. F., Serrano, A., & Torres-Peimbert, S. 1979, A&A, 80, 155 Lilly, S. J., Carollo, C. M., Pipino, A., Renzini, A., & Peng, Y. 2013, ApJ, 772, 119, doi: 10.1088/0004-637X/772/2/119 Lovell, C. C., et al. 2025, Mon. Not. Roy. Astron. Soc., 3949, 3979, doi: 10.1093/mnras/staf1888 Lue, A., Genel, S., Huertas-Company, M., Villaescusa-Navarro, F., & Ho, M. 2025, Astrophys. J., 986, 133, doi: 10.3847/1538-4357/add724 McInnes, L., Healy, J., & Melville, J. 2018, arXiv preprint arXiv:1802.03426 Ni, Y., et al. 2023, Astrophys. J., 959, 136, doi: 10.3847/1538-4357/ad022a Peebles, P. J. E. 1980, The large-scale structure of the universe Peebles, P. J. E., & Yu, J. T. 1970, ApJ, 162, 815, doi: 10.1086/150713 Penzias, A. A., & Wilson, R. W. 1965, ApJ, 142, 419, doi: 10.1086/148307 Pillepich, A., et al. 2018, Mon. Not. Roy. Astron. Soc., 475, 648, doi: 10.1093/mnras/stx3112 Schaller, M., et al. 2024, Mon. Not. Roy. Astron. Soc., 530, 2378, doi: 10.1093/mnras/stae922 Schaye, J., et al. 2015, Mon. Not. Roy. Astron. Soc., 446, 521, doi: 10.1093/mnras/stu2058 23 
+
+Sobol’, I. 1967, USSR Computational Mathematics and Mathematical Physics, 7, 86, doi: https://doi.org/10.1016/0041-5553(67)90144-9 Springel, V., White, S. D. M., Tormen, G., & Kauffmann, G. 2001, Mon. Not. Roy. Astron. Soc., 328, 726, doi: 10.1046/j.1365-8711.2001.04912.x Sunyaev, R. A., & Zeldovich, Y. B. 1970, Astrophys. Space Sci., 7, 3 Tegmark, M., et al. 2004, Phys. Rev. D, 69, 103501, doi: 10.1103/PhysRevD.69.103501 Torrey, P., Vogelsberger, M., Marinacci, F., et al. 2019, Monthly Notices of the Royal Astronomical Society, doi: 10.1093/mnras/stz243 Tremonti, C. A., et al. 2004, Astrophys. J., 613, 898, doi: 10.1086/423264 Villaescusa-Navarro, F., et al. 2021, Astrophys. J., 915, 71, doi: 10.3847/1538-4357/abf7ba Villaescusa-Navarro, F., et al. 2022, Astrophys. J., 929, 132, doi: 10.3847/1538-4357/ac5d3f Weinberger, R., Springel, V., & Pakmor, R. 2020, ApJS, 248, 32, doi: 10.3847/1538-4365/ab908c White, S. D. M., & Frenk, C. S. 1991, ApJ, 379, 52, doi: 10.1086/170483 White, S. D. M., Navarro, J. F., Evrard, A. E., & Frenk, C. S. 1993, Nature, 366, 429, doi: 10.1038/366429a0 White, S. D. M., & Rees, M. J. 1978, MNRAS, 183, 341, doi: 10.1093/mnras/183.3.341
