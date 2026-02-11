@@ -1,0 +1,88 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-02-11T04:44:48.104691+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 0,
+    "deep_cap": 6,
+    "deep_selected": 0,
+    "quick_candidates": 2,
+    "quick_skim_target": 11,
+    "quick_selected": 2
+  },
+  "deep_dive": [],
+  "quick_skim": [
+    {
+      "id": "2602.09801v1",
+      "title": "Tiny Moves: Game-based Hypothesis Refinement",
+      "abstract": "Most machine learning approaches to scientific discovery frame hypotheses as end-to-end predictions, obscuring the incremental structure of scientific reasoning. We propose The Hypothesis Game, a symbolic formalism for hypothesis refinement in which LLM agents operate on a shared hypothesis state using a fixed grammar of reasoning moves. The framework is motivated by the observation that scientific progress often proceeds through small, localized revisions, grounded in domain context, rather than extensive rewrites. We instantiate a minimal game with LLM agents and evaluate it on pathway-level mechanistic refinement tasks. In the primary setting of corruption recovery, where hypotheses contain controlled errors, the game-based approach consistently removes more errors and achieves higher precision than strong prompting baselines, while preserving valid structure through incremental edits. In a secondary reconstruction setting from partial cues, it performs comparably to the strongest baseline, indicating that explicit move-based refinement remains competitive even when ground-truth recovery is difficult. These findings support game-based reasoning as a principled route to more controllable, interpretable, and transferable hypothesis refinement systems for scientific discovery.",
+      "authors": [
+        "Agnieszka Dobrowolska",
+        "Rogier Hintzen",
+        "Martin Balla",
+        "Karl Gemayel",
+        "Sabine Reichert",
+        "Thomas Charman",
+        "Jen Ning Lim",
+        "Lindsay Edwards",
+        "Anna Gogleva"
+      ],
+      "primary_category": "cs.MA",
+      "categories": [
+        "cs.MA"
+      ],
+      "published": "2026-02-10 14:04:29+00:00",
+      "link": "https://arxiv.org/pdf/2602.09801v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "symbolic formalism for scientific hypothesis refinement",
+      "llm_evidence_cn": "科学假设细化的符号化形式",
+      "llm_evidence": "科学假设细化的符号化形式",
+      "llm_tldr_en": "Proposes a symbolic formalism and game-based approach for incremental scientific hypothesis refinement using LLMs.",
+      "llm_tldr_cn": "提出一种符号化形式和基于博弈的方法，利用大模型进行科学假设的增量细化。",
+      "llm_tldr": "提出一种符号化形式和基于博弈的方法，利用大模型进行科学假设的增量细化。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    },
+    {
+      "id": "2602.09988v1",
+      "title": "Empirical Stability Analysis of Kolmogorov-Arnold Networks in Hard-Constrained Recurrent Physics-Informed Discovery",
+      "abstract": "We investigate the integration of Kolmogorov-Arnold Networks (KANs) into hard-constrained recurrent physics-informed architectures (HRPINN) to evaluate the fidelity of learned residual manifolds in oscillatory systems. Motivated by the Kolmogorov-Arnold representation theorem and preliminary gray-box results, we hypothesized that KANs would enable efficient recovery of unknown terms compared to MLPs. Through initial sensitivity analysis on configuration sensitivity, parameter scale, and training paradigm, we found that while small KANs are competitive on univariate polynomial residuals (Duffing), they exhibit severe hyperparameter fragility, instability in deeper configurations, and consistent failure on multiplicative terms (Van der Pol), generally outperformed by standard MLPs. These empirical challenges highlight limitations of the additive inductive bias in the original KAN formulation for state coupling and provide preliminary empirical evidence of inductive bias limitations for future hybrid modeling.",
+      "authors": [
+        "Enzo Nicolas Spotorno",
+        "Josafat Leal Filho",
+        "Antonio Augusto Medeiros Frohlich"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "physics.comp-ph"
+      ],
+      "published": "2026-02-10 17:13:51+00:00",
+      "link": "https://arxiv.org/pdf/2602.09988v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Evaluates KANs for recovering unknown terms in physics-informed discovery",
+      "llm_evidence_cn": "评估KAN在物理信息发现中恢复未知项的能力",
+      "llm_evidence": "评估KAN在物理信息发现中恢复未知项的能力",
+      "llm_tldr_en": "Analyzes Kolmogorov-Arnold Networks for discovering unknown terms in oscillatory systems, relevant to symbolic discovery.",
+      "llm_tldr_cn": "分析了KAN在振荡系统中发现未知项的性能，与符号发现和物理建模相关。",
+      "llm_tldr": "分析了KAN在振荡系统中发现未知项的性能，与符号发现和物理建模相关。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    }
+  ]
+}
