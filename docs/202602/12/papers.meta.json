@@ -1,0 +1,22 @@
+{
+  "label": "2026-02-12",
+  "date": "2026-02-12",
+  "generated_at": "2026-02-12T04:39:35",
+  "count": 1,
+  "papers": [
+    {
+      "paper_id": "202602/12/2602.10576v1-llm-based-scientific-equation-discovery-via-physics-informed-token-regularized-policy-optimization",
+      "section": "deep",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Symbolic regression aims to distill mathematical equations from observational data. Recent approaches have successfully leveraged Large Language Models (LLMs) to generate equation hypotheses, capitalizing on their vast pre-trained scientific priors. However, existing frameworks predominantly treat the LLM as a static generator, relying on prompt-level guidance to steer exploration. This paradigm fails to update the model's internal representations based on search feedback, often yielding physically inconsistent or mathematically redundant expressions. In this work, we propose PiT-PO (Physics-informed Token-regularized Policy Optimization), a unified framework that evolves the LLM into an adaptive generator via reinforcement learning. Central to PiT-PO is a dual-constraint mechanism that rigorously enforces hierarchical physical validity while simultaneously applying fine-grained, token-level penalties to suppress redundant structures. Consequently, PiT-PO aligns LLM to produce equations that are both scientifically consistent and structurally parsimonious. Empirically, PiT-PO achieves state-of-the-art performance on standard benchmarks and successfully discovers novel turbulence models for challenging fluid dynamics problems. We also demonstrate that PiT-PO empowers small-scale models to outperform closed-source giants, democratizing access to high-performance scientific discovery.\n\n---"
+    }
+  ],
+  "errors": []
+}

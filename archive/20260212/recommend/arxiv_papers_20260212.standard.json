@@ -1,0 +1,53 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-02-12T04:38:54.819208+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 1,
+    "deep_cap": 6,
+    "deep_selected": 1,
+    "quick_candidates": 0,
+    "quick_skim_target": 11,
+    "quick_selected": 0
+  },
+  "deep_dive": [
+    {
+      "id": "2602.10576v1",
+      "title": "LLM-Based Scientific Equation Discovery via Physics-Informed Token-Regularized Policy Optimization",
+      "abstract": "Symbolic regression aims to distill mathematical equations from observational data. Recent approaches have successfully leveraged Large Language Models (LLMs) to generate equation hypotheses, capitalizing on their vast pre-trained scientific priors. However, existing frameworks predominantly treat the LLM as a static generator, relying on prompt-level guidance to steer exploration. This paradigm fails to update the model's internal representations based on search feedback, often yielding physically inconsistent or mathematically redundant expressions. In this work, we propose PiT-PO (Physics-informed Token-regularized Policy Optimization), a unified framework that evolves the LLM into an adaptive generator via reinforcement learning. Central to PiT-PO is a dual-constraint mechanism that rigorously enforces hierarchical physical validity while simultaneously applying fine-grained, token-level penalties to suppress redundant structures. Consequently, PiT-PO aligns LLM to produce equations that are both scientifically consistent and structurally parsimonious. Empirically, PiT-PO achieves state-of-the-art performance on standard benchmarks and successfully discovers novel turbulence models for challenging fluid dynamics problems. We also demonstrate that PiT-PO empowers small-scale models to outperform closed-source giants, democratizing access to high-performance scientific discovery.",
+      "authors": [
+        "Boxiao Wang",
+        "Kai Li",
+        "Tianyi Liu",
+        "Chen Li",
+        "Junzhe Wang",
+        "Yifan Zhang",
+        "Jian Cheng"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-02-11 07:02:23+00:00",
+      "link": "https://arxiv.org/pdf/2602.10576v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "novel algorithmic advancement in symbolic regression using LLMs",
+      "llm_evidence_cn": "使用大语言模型的符号回归算法创新",
+      "llm_evidence": "使用大语言模型的符号回归算法创新",
+      "llm_tldr_en": "Proposes PiT-PO, a framework using LLMs and reinforcement learning for physics-informed symbolic regression.",
+      "llm_tldr_cn": "提出PiT-PO框架，利用大模型和强化学习进行物理感知的符号回归。",
+      "llm_tldr": "提出PiT-PO框架，利用大模型和强化学习进行物理感知的符号回归。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    }
+  ],
+  "quick_skim": []
+}
