@@ -1,0 +1,119 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-02-13T04:37:00.282789+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 1,
+    "deep_cap": 6,
+    "deep_selected": 1,
+    "quick_candidates": 2,
+    "quick_skim_target": 11,
+    "quick_selected": 2
+  },
+  "deep_dive": [
+    {
+      "id": "2602.12259v1",
+      "title": "Think like a Scientist: Physics-guided LLM Agent for Equation Discovery",
+      "abstract": "Explaining observed phenomena through symbolic, interpretable formulas is a fundamental goal of science. Recently, large language models (LLMs) have emerged as promising tools for symbolic equation discovery, owing to their broad domain knowledge and strong reasoning capabilities. However, most existing LLM-based systems try to guess equations directly from data, without modeling the multi-step reasoning process that scientists often follow: first inferring physical properties such as symmetries, then using these as priors to restrict the space of candidate equations. We introduce KeplerAgent, an agentic framework that explicitly follows this scientific reasoning process. The agent coordinates physics-based tools to extract intermediate structure and uses these results to configure symbolic regression engines such as PySINDy and PySR, including their function libraries and structural constraints. Across a suite of physical equation benchmarks, KeplerAgent achieves substantially higher symbolic accuracy and greater robustness to noisy data than both LLM and traditional baselines.",
+      "authors": [
+        "Jianke Yang",
+        "Ohm Venkatachalam",
+        "Mohammad Kianezhad",
+        "Sharvaree Vadgama",
+        "Rose Yu"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.LG"
+      ],
+      "published": "2026-02-12 18:49:27+00:00",
+      "link": "https://arxiv.org/pdf/2602.12259v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "symbolic equation discovery and scientific reasoning",
+      "llm_evidence_cn": "符号方程发现与科学推理",
+      "llm_evidence": "符号方程发现与科学推理",
+      "llm_tldr_en": "KeplerAgent uses LLMs and physics-guided tools for interpretable symbolic equation discovery from data.",
+      "llm_tldr_cn": "KeplerAgent利用大模型和物理引导工具从数据中发现可解释的符号方程。",
+      "llm_tldr": "KeplerAgent利用大模型和物理引导工具从数据中发现可解释的符号方程。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2602.11630v1",
+      "title": "Neuro-Symbolic Multitasking: A Unified Framework for Discovering Generalizable Solutions to PDE Families",
+      "abstract": "Solving Partial Differential Equations (PDEs) is fundamental to numerous scientific and engineering disciplines. A common challenge arises from solving the PDE families, which are characterized by sharing an identical mathematical structure but varying in specific parameters. Traditional numerical methods, such as the finite element method, need to independently solve each instance within a PDE family, which incurs massive computational cost. On the other hand, while recent advancements in machine learning PDE solvers offer impressive computational speed and accuracy, their inherent ``black-box\" nature presents a considerable limitation. These methods primarily yield numerical approximations, thereby lacking the crucial interpretability provided by analytical expressions, which are essential for deeper scientific insight. To address these limitations, we propose a neuro-assisted multitasking symbolic PDE solver framework for PDE family solving, dubbed NMIPS. In particular, we employ multifactorial optimization to simultaneously discover the analytical solutions of PDEs. To enhance computational efficiency, we devise an affine transfer method by transferring learned mathematical structures among PDEs in a family, avoiding solving each PDE from scratch. Experimental results across multiple cases demonstrate promising improvements over existing baselines, achieving up to a $\\sim$35.7% increase in accuracy while providing interpretable analytical solutions.",
+      "authors": [
+        "Yipeng Huang",
+        "Dejun Xu",
+        "Zexin Lin",
+        "Zhenzhong Wang",
+        "Min Jiang"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-02-12 06:25:44+00:00",
+      "link": "https://arxiv.org/pdf/2602.11630v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Neuro-symbolic framework for discovering mathematical solutions to PDEs",
+      "llm_evidence_cn": "用于发现偏微分方程数学解的神经符号框架",
+      "llm_evidence": "用于发现偏微分方程数学解的神经符号框架",
+      "llm_tldr_en": "A neuro-symbolic framework that discovers generalizable mathematical solutions for families of PDEs.",
+      "llm_tldr_cn": "一种神经符号框架，能够为偏微分方程族发现具有泛化性的数学解。",
+      "llm_tldr": "一种神经符号框架，能够为偏微分方程族发现具有泛化性的数学解。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "7"
+    },
+    {
+      "id": "2602.11666v1",
+      "title": "PhyNiKCE: A Neurosymbolic Agentic Framework for Autonomous Computational Fluid Dynamics",
+      "abstract": "The deployment of autonomous agents for Computational Fluid Dynamics (CFD), is critically limited by the probabilistic nature of Large Language Models (LLMs), which struggle to enforce the strict conservation laws and numerical stability required for physics-based simulations. Reliance on purely semantic Retrieval Augmented Generation (RAG) often leads to \"context poisoning,\" where agents generate linguistically plausible but physically invalid configurations due to a fundamental Semantic-Physical Disconnect. To bridge this gap, this work introduces PhyNiKCE (Physical and Numerical Knowledgeable Context Engineering), a neurosymbolic agentic framework for trustworthy engineering. Unlike standard black-box agents, PhyNiKCE decouples neural planning from symbolic validation. It employs a Symbolic Knowledge Engine that treats simulation setup as a Constraint Satisfaction Problem, rigidly enforcing physical constraints via a Deterministic RAG Engine with specialized retrieval strategies for solvers, turbulence models, and boundary conditions. Validated through rigorous OpenFOAM experiments on practical, non-tutorial CFD tasks using Gemini-2.5-Pro/Flash, PhyNiKCE demonstrates a 96% relative improvement over state-of-the-art baselines. Furthermore, by replacing trial-and-error with knowledge-driven initialization, the framework reduced autonomous self-correction loops by 59% while simultaneously lowering LLM token consumption by 17%. These results demonstrate that decoupling neural generation from symbolic constraint enforcement significantly enhances robustness and efficiency. While validated on CFD, this architecture offers a scalable, auditable paradigm for Trustworthy Artificial Intelligence in broader industrial automation.",
+      "authors": [
+        "E Fan",
+        "Lisong Shi",
+        "Zhengtong Li",
+        "Chih-yung Wen"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.CL"
+      ],
+      "published": "2026-02-12 07:37:56+00:00",
+      "link": "https://arxiv.org/pdf/2602.11666v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "neurosymbolic agentic framework for physics-based simulations",
+      "llm_evidence_cn": "用于物理模拟的神经符号代理框架",
+      "llm_evidence": "用于物理模拟的神经符号代理框架",
+      "llm_tldr_en": "A neurosymbolic framework ensuring physical validity in autonomous computational fluid dynamics.",
+      "llm_tldr_cn": "一种在自主计算流体动力学中确保物理有效性的神经符号框架。",
+      "llm_tldr": "一种在自主计算流体动力学中确保物理有效性的神经符号框架。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    }
+  ]
+}
