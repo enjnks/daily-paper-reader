@@ -1,0 +1,48 @@
+{
+  "label": "2026-02-16",
+  "date": "2026-02-16",
+  "generated_at": "2026-02-16T04:41:45",
+  "count": 3,
+  "papers": [
+    {
+      "paper_id": "202602/16/2602.12870v1-game-genetic-algorithms-with-marginalised-ensembles-for-model-independent-reconstruction-of-cosmological-quantities",
+      "section": "deep",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Genetic Algorithms (GA) are a powerful tool for stochastic optimisation and non-parametric symbolic regression, already widely used in cosmology. They are capable of reconstructing analytical functions directly from data points without introducing new physical models. A limitation of this approach is that while the reconstructed function is very efficient at reproducing the behaviour of the data points, non-observable quantities involving derivatives are particularly sensitive to stochasticity, hyperparameters, and to the choice of the best-fit function obtained by the GA, which implies the risk of the algorithm getting stuck in a local minimum. In this work we propose an update to the GA methodology for the reconstruction of analytical functions that involves computing a weighted average of an ensemble of GA configurations (\\texttt{GAME}). We define the weights via a quantity that accounts for both the goodness-of-fit of the points and the smoothness of the resulting function. We also present a practical method to analytically estimate and correct the errors on the averaged function by combining a path-integral approach with an ensemble variance. We demonstrate the improvement offered by \\texttt{GAME} methodology on a generic test function. We then apply the new methodology to a non-parametric reconstruction of the Hubble rate $H(z)$ using Cosmic Chronometers data and, assuming a flat Friedmann-Lemaître-Robertson-Walker background and General Relativity, we infer the corresponding dark energy equation of state $w(z)$. Through consistency tests, we show that current data produces results compatible with $Λ$CDM, and that Stage IV cosmology surveys will allow GA reinforced with \\texttt{GAME} methodology to become an even more competitive tool for discriminating between different models.\n\n---"
+    },
+    {
+      "paper_id": "202602/16/2602.13021v1-prior-guided-symbolic-regression-towards-scientific-consistency-in-equation-discovery",
+      "section": "deep",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Symbolic Regression (SR) aims to discover interpretable equations from observational data, with the potential to reveal underlying principles behind natural phenomena. However, existing approaches often fall into the Pseudo-Equation Trap: producing equations that fit observations well but remain inconsistent with fundamental scientific principles. A key reason is that these approaches are dominated by empirical risk minimization, lacking explicit constraints to ensure scientific consistency. To bridge this gap, we propose PG-SR, a prior-guided SR framework built upon a three-stage pipeline consisting of warm-up, evolution, and refinement. Throughout the pipeline, PG-SR introduces a prior constraint checker that explicitly encodes domain priors as executable constraint programs, and employs a Prior Annealing Constrained Evaluation (PACE) mechanism during the evolution stage to progressively steer discovery toward scientifically consistent regions. Theoretically, we prove that PG-SR reduces the Rademacher complexity of the hypothesis space, yielding tighter generalization bounds and establishing a guarantee against pseudo-equations. Experimentally, PG-SR outperforms state-of-the-art baselines across diverse domains, maintaining robustness to varying prior quality, noisy data, and data scarcity.\n\n---"
+    },
+    {
+      "paper_id": "202602/16/2602.13174v1-learning-functional-components-of-pdes-from-data-using-neural-networks",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Partial differential equations often contain unknown functions that are difficult or impossible to measure directly, hampering our ability to derive predictions from the model. Workflows for recovering scalar PDE parameters from data are well studied: here we show how similar workflows can be used to recover functions from data. Specifically, we embed neural networks into the PDE and show how, as they are trained on data, they can approximate unknown functions with arbitrary accuracy. Using nonlocal aggregation-diffusion equations as a case study, we recover interaction kernels and external potentials from steady state data. Specifically, we investigate how a wide range of factors, such as the number of available solutions, their properties, sampling density, and measurement noise, affect our ability to successfully recover functions. Our approach is advantageous because it can utilise standard parameter-fitting workflows, and in that the trained PDE can be treated as a normal PDE for purposes such as generating system predictions."
+    }
+  ],
+  "errors": []
+}

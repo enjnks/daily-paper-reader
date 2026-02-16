@@ -1,0 +1,122 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-02-16T04:39:58.860259+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 2,
+    "deep_cap": 6,
+    "deep_selected": 2,
+    "quick_candidates": 1,
+    "quick_skim_target": 11,
+    "quick_selected": 1
+  },
+  "deep_dive": [
+    {
+      "id": "2602.12870v1",
+      "title": "GAME: Genetic Algorithms with Marginalised Ensembles for model-independent reconstruction of cosmological quantities",
+      "abstract": "Genetic Algorithms (GA) are a powerful tool for stochastic optimisation and non-parametric symbolic regression, already widely used in cosmology. They are capable of reconstructing analytical functions directly from data points without introducing new physical models. A limitation of this approach is that while the reconstructed function is very efficient at reproducing the behaviour of the data points, non-observable quantities involving derivatives are particularly sensitive to stochasticity, hyperparameters, and to the choice of the best-fit function obtained by the GA, which implies the risk of the algorithm getting stuck in a local minimum. In this work we propose an update to the GA methodology for the reconstruction of analytical functions that involves computing a weighted average of an ensemble of GA configurations (\\texttt{GAME}). We define the weights via a quantity that accounts for both the goodness-of-fit of the points and the smoothness of the resulting function. We also present a practical method to analytically estimate and correct the errors on the averaged function by combining a path-integral approach with an ensemble variance. We demonstrate the improvement offered by \\texttt{GAME} methodology on a generic test function. We then apply the new methodology to a non-parametric reconstruction of the Hubble rate $H(z)$ using Cosmic Chronometers data and, assuming a flat Friedmann-Lemaître-Robertson-Walker background and General Relativity, we infer the corresponding dark energy equation of state $w(z)$. Through consistency tests, we show that current data produces results compatible with $Λ$CDM, and that Stage IV cosmology surveys will allow GA reinforced with \\texttt{GAME} methodology to become an even more competitive tool for discriminating between different models.",
+      "authors": [
+        "Matteo Peronaci",
+        "Matteo Martinelli",
+        "Savvas Nesseris"
+      ],
+      "primary_category": "astro-ph.CO",
+      "categories": [
+        "astro-ph.CO"
+      ],
+      "published": "2026-02-13 12:20:46+00:00",
+      "link": "https://arxiv.org/pdf/2602.12870v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "Genetic Algorithms for non-parametric symbolic regression in cosmology",
+      "llm_evidence_cn": "用于宇宙学非参数符号回归的遗传算法",
+      "llm_evidence": "用于宇宙学非参数符号回归的遗传算法",
+      "llm_tldr_en": "Proposes a GA ensemble method for symbolic regression to reconstruct cosmological quantities from data.",
+      "llm_tldr_cn": "提出一种用于符号回归的遗传算法集成方法，旨在从数据中重建宇宙学物理量。",
+      "llm_tldr": "提出一种用于符号回归的遗传算法集成方法，旨在从数据中重建宇宙学物理量。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    },
+    {
+      "id": "2602.13021v1",
+      "title": "Prior-Guided Symbolic Regression: Towards Scientific Consistency in Equation Discovery",
+      "abstract": "Symbolic Regression (SR) aims to discover interpretable equations from observational data, with the potential to reveal underlying principles behind natural phenomena. However, existing approaches often fall into the Pseudo-Equation Trap: producing equations that fit observations well but remain inconsistent with fundamental scientific principles. A key reason is that these approaches are dominated by empirical risk minimization, lacking explicit constraints to ensure scientific consistency. To bridge this gap, we propose PG-SR, a prior-guided SR framework built upon a three-stage pipeline consisting of warm-up, evolution, and refinement. Throughout the pipeline, PG-SR introduces a prior constraint checker that explicitly encodes domain priors as executable constraint programs, and employs a Prior Annealing Constrained Evaluation (PACE) mechanism during the evolution stage to progressively steer discovery toward scientifically consistent regions. Theoretically, we prove that PG-SR reduces the Rademacher complexity of the hypothesis space, yielding tighter generalization bounds and establishing a guarantee against pseudo-equations. Experimentally, PG-SR outperforms state-of-the-art baselines across diverse domains, maintaining robustness to varying prior quality, noisy data, and data scarcity.",
+      "authors": [
+        "Jing Xiao",
+        "Xinhai Chen",
+        "Jiaming Peng",
+        "Qinglin Wang",
+        "Menghan Jia",
+        "Zhiquan Lai",
+        "Guangping Yu",
+        "Dongsheng Li",
+        "Tiejun Li",
+        "Jie Liu"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI"
+      ],
+      "published": "2026-02-13 15:26:21+00:00",
+      "link": "https://arxiv.org/pdf/2602.13021v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "Prior-guided symbolic regression for scientific consistency",
+      "llm_evidence_cn": "先验引导的符号回归以确保科学一致性",
+      "llm_evidence": "先验引导的符号回归以确保科学一致性",
+      "llm_tldr_en": "Introduces PG-SR, a framework that uses domain constraints to ensure symbolic regression follows physical laws.",
+      "llm_tldr_cn": "引入PG-SR框架，通过先验约束确保符号回归发现的方程符合科学原理。",
+      "llm_tldr": "引入PG-SR框架，通过先验约束确保符号回归发现的方程符合科学原理。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2602.13174v1",
+      "title": "Learning functional components of PDEs from data using neural networks",
+      "abstract": "Partial differential equations often contain unknown functions that are difficult or impossible to measure directly, hampering our ability to derive predictions from the model. Workflows for recovering scalar PDE parameters from data are well studied: here we show how similar workflows can be used to recover functions from data. Specifically, we embed neural networks into the PDE and show how, as they are trained on data, they can approximate unknown functions with arbitrary accuracy. Using nonlocal aggregation-diffusion equations as a case study, we recover interaction kernels and external potentials from steady state data. Specifically, we investigate how a wide range of factors, such as the number of available solutions, their properties, sampling density, and measurement noise, affect our ability to successfully recover functions. Our approach is advantageous because it can utilise standard parameter-fitting workflows, and in that the trained PDE can be treated as a normal PDE for purposes such as generating system predictions.",
+      "authors": [
+        "Torkel E. Loman",
+        "Yurij Salmaniw",
+        "Antonio Leon Villares",
+        "Jose A. Carrillo",
+        "Ruth E. Baker"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "math.AP"
+      ],
+      "published": "2026-02-13 18:32:33+00:00",
+      "link": "https://arxiv.org/pdf/2602.13174v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Recovers functional components of PDEs from data, similar to the goals of symbolic regression.",
+      "llm_evidence_cn": "从数据中恢复偏微分方程的功能组件，与符号回归的目标相似。",
+      "llm_evidence": "从数据中恢复偏微分方程的功能组件，与符号回归的目标相似。",
+      "llm_tldr_en": "Uses neural networks to approximate unknown functional components within PDEs from observed data.",
+      "llm_tldr_cn": "利用神经网络从观测数据中近似偏微分方程中未知的函数组件。",
+      "llm_tldr": "利用神经网络从观测数据中近似偏微分方程中未知的函数组件。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    }
+  ]
+}

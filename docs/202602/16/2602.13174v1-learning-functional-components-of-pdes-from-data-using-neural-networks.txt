@@ -1,0 +1,809 @@
+Title: Learning functional components of PDEs from data using neural networks
+
+URL Source: https://arxiv.org/pdf/2602.13174v1
+
+Published Time: Mon, 16 Feb 2026 02:14:09 GMT
+
+Number of Pages: 40
+
+Markdown Content:
+# LEARNING FUNCTIONAL COMPONENTS OF PDE S FROM DATA USING NEURAL NETWORKS 
+
+A P REPRINT 
+
+Torkel E Loman 
+
+Mathematical Institute University of Oxford Oxford, United Kingdom 
+
+torkel.loman@maths.ox.ac.uk 
+
+Yurij Salmaniw 
+
+Department of Mathematics, Physics and Geology Cape Breton University Nova Scotia, Canada 
+
+yurij salmaniw@cbu.ca 
+
+Antonio Le´ on Villares 
+
+Department of Engineering University of Oxford Oxford, United Kingdom 
+
+antonio.leonvillares@stx.ox.ac.uk 
+
+Jos´ e A. Carrillo 
+
+Mathematical Institute University of Oxford Oxford, United Kingdom 
+
+jose.carrillo@maths.ox.ac.uk 
+
+Ruth E Baker 
+
+Mathematical Institute University of Oxford Oxford, United Kingdom 
+
+ruth.baker@maths.ox.ac.uk 
+
+# ABSTRACT 
+
+Partial differential equations often contain unknown functions that are difficult or impossible to mea-sure directly, hampering our ability to derive predictions from the model. Workflows for recovering scalar PDE parameters from data are well studied: here we show how similar workflows can be used to recover functions from data. Specifically, we embed neural networks into the PDE and show how, as they are trained on data, they can approximate unknown functions with arbitrary accuracy. Using nonlocal aggregation–diffusion equations as a case study, we recover interaction kernels and external potentials from steady state data. Specifically, we investigate how a wide range of factors, such as the number of available solutions, their properties, sampling density, and measurement noise, affect our ability to successfully recover functions. Our approach is advantageous because it can utilise 
+
+> arXiv:2602.13174v1 [cs.LG] 13 Feb 2026
+
+Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+standard parameter-fitting workflows, and in that the trained PDE can be treated as a normal PDE for purposes such as generating system predictions. 
+
+# 1 Introduction 
+
+Partial differential equations (PDEs) are a common language for modelling spatio–temporal phenomena across disci-plines. They underpin mechanistic and phenomenological descriptions in biology and ecology [ 33 , 9 , 20 ], govern fluid, thermal, and pattern–forming systems in physics and chemistry [ 2, 29 , 16 , 19 , 28 ], and are workhorses for transport phenomena in chemical engineering [ 5]. Beyond the natural sciences, PDEs appear in traffic and crowd models [ 3 , 23 ], in image processing and computer vision [ 34 , 17 ], and in finance [ 6, 39 ]. While PDEs can generate predictions across these fields, such predictions require complete system knowledge, which is unavailable for most natural systems. Here, a two-step process is used, where first system parameters are inferred from available data (the inverse problem). Next, the inferred system is used to make predictions (the forward problem). A key reason PDEs are so widely used is their flexibility: quantities that govern dynamical phenomena are often spatial (or spatio–temporal) fields, rather than scalar parameters. Examples include spatially dependent growth or mortality, source–sink fields, advection velocities, heterogeneous diffusivity or mobility maps, boundary fluxes, or interaction kernels governing agent-agent interactions. In ecology, population models routinely use reaction–diffusion descriptions [ 33 , 9 , 20 ]; the spatial component of interest is often a spatial growth or carrying–capacity landscape that is difficult to measure directly, whereas population densities are observable. If these landscapes can be recovered from population density observation, they can be used to e.g. inform ecological management decisions [ 4]. In physics and chemical engineering, thermal or mass–transport systems are ubiquitous [ 16 , 5 ]; here, it is common to know temperatures or concentrations while the relevant source field, conductivity, or diffusivity is unknown, leading to well–studied inverse problems [ 24 ]. Similar roles for spatial properties arise in phase–field and pattern–formation models, where heterogeneous tilts or mobility maps encode the effective energetic landscape [ 19 , 28 , 1, 21 ]. In nonlocal aggregation–diffusion systems, used to describe, e.g., cell sorting phenomena [ 12 ], the spatial structure to be inferred may be an external stimulus or the interaction kernel itself. Even in superficial descriptions, a common theme emerges across all practical applications of PDEs: spatial com-ponents are only partially known or entirely unmeasured, while the system’s state can be observed. This mismatch motivates inverse problems that aim to recover these unknown spatial components from data; classical parabolic source identification in heat and transport settings is a familiar instance [24, 40]. While classical parameter fitting methods can be used to recover scalar system parameters from data, we here show how these can naturally be extended to recover full functional parameters. Such methods are essential for the practical applications of PDEs where these functional forms are unknown. In particular, using a prototypical aggregation-diffusion model as a case study, we examine such a reconstruction in detail, both from “perfect” data, as well as in more realistic experimental settings by considering differences in model properties (qualitative and stability properties) and the impact of data quality (sparse and/or noisy data). To enable these reconstructions, we use a Universal PDE (UPDE) framework [ 36 ], which offers a tractable representation of unknown spatial components without sacrificing mechanistic interpretability. In the context of non-spatial ODEs, the concept of universal differential equations (UDEs) was introduced only recently [ 36 ]. Here, neural networks are inserted into differential equations. Next, by fitting the neural network parameters alongside the scalar system parameters, the neural network can learn unknown dynamics from the data. This uses neural networks’ universal approximator property, which roughly states that a sufficiently large neural network with n
+
+inputs and m outputs can approximate any function f : Rn → Rm arbitrarily well [ 22 ]. While UDEs have been applied to PDEs, this has primarily been used to model complex and unknown dynamics [ 7, 25 , 31 ]. Here, we instead form UPDEs to learn the form of functional PDE parameters from data. Once fitted, the discovered functions can either be interpreted as a quantification of a real-world phenomenon or used for forward predictions. 2Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+We use the aggregation-diffusion equation (2.1) as a case study to illustrate this workflow. The model is well-suited for this purpose: (i) it has practical modelling relevance; (ii) it has an extensive theoretical and numerical literature that helps motivate, and aids in the interpretation of, our results; and (iii) it admits a natural objective for inference. In classical parameter fitting, one defines a cost function , such that, minimising it results in a better fit of a model to data; in our UPDE framework, this construction extends naturally from the inference of unknown scalar parameters to that of unknown functional parameters. With steady state data, we minimise the fixed-point residual u 7 → ∥T (u) − u∥, which vanishes exactly at numerical equilibria of the forward model. Because T is the same operator used in the forward solver, the fixed-point residual is equation-consistent in the sense that it respects the original PDE (e.g., boundary conditions are built in) and avoids the need to differentiate noisy data. In this work, we demonstrate that both single and multiple functional parameters can be successfully recovered directly from exact (noise-free) data. To make the connection to practical experimental settings concrete, we apply our method to synthetic empirical measurements and confirm that recovery remains possible under sparse sampling and measurement noise; however, recovery degrades as noise increases. In practice, recoverability ranges from straightforward to difficult; we summarise our findings in Tables 1 and 2. The ease of recovery is governed by an interplay between the PDE’s structure (which unknown functions appear and how), the data (coverage, resolution, noise), and the chosen solutions or experiments (their number, diversity, and mutual informativeness). Some failure modes admit analytic explanation (e.g., a lack of structural identifiability so that recovery is expected to fail), whereas others are design- and implementation-dependent (e.g., identifiable in principle but hindered by poorer data quality). We document these effects and provide simple diagnostics. Crucially, we show that recovery of functional components is feasible: with exact data, it holds at the theoretical level, and with partial or noisy observations, it remains achievable in practice for many systems. These results are encouraging for practical use and motivate systematic experimental-design strategies for regimes that are otherwise non-identifiable. 
+
+# 2 Methods 
+
+2.1 A Case Study: the aggregation-diffusion equation 
+
+As a concrete case study, we consider a canonical aggregation–diffusion equation for a single species with linear diffusion on the one-dimensional torus: 
+
+∂tu = σ ∂ 2
+
+> x
+
+u + κ ∂ x(u ∂ x[W ∗ u]) + ∂x(u ∂ xV ), x ∈ T, t > 0, (2.1) with nonnegative initial datum u0 of unit mass. The density u(x, t ) evolves under constant linear diffusion ( σ > 0), nonlocal interactions mediated by the kernel W via spatial convolution (W ∗ u)( x) = R 
+
+> T
+
+W (x − y) u(y, t ) dy , and movement up/down an external potential V (x). The coefficient κ ≥ 0 denotes the strength of attraction/repulsion towards/away from the potential W ∗ u. We choose (2.1) because it is broadly applicable yet analytically structured in ways that are compatible with a robust exploration of our inference pipeline. More precisely, the model admits a 
+
+gradient-flow structure : the dynamics can be written as a gradient flow of an energy, and the long-time asymptotic limit is a stationary profile under additional criteria, typically avoiding oscillatory behaviour. In contrast to other approaches based on a suitable residual for the time-dependent problem (see, e.g., [ 10 ]), here we focus inference on equilibria. The model also features equilibria as fixed points : stationary states coincide with fixed points of a nonlinear map T
+
+(see Proposition A.3). This enables the direct and efficient computation of all equilibria without time stepping, and provides a natural residual ∥T u − u∥, which we exploit as a loss function for the learning process. This is based on the recent analytical and numerical works [ 13 , 15 ]. Together, these two aspects yield a model problem with rich yet controllable bifurcation structure : the model exhibits pattern-forming instabilities that can be understood precisely via a linear stability and local bifurcation analysis; this offers verifiable ground truth structure against which to test learning. 3Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+These three properties, which we expand upon and provide additional references for in Appendix A, allow one to isolate the challenge of reconstructing model parameters from measured data in a controlled setting. For example, inference procedures have been applied to the time-dependent problem, avoiding difficulties in constructing a robust loss function that depends on the computation of costly time-dependent trajectories. In particular, we can efficiently and accurately compute the steady states of model (2.1) using a Newton-Krylov approach [ 15 ]. This can be viewed as reconstructing model parameters at a single time instance, which carries less information, where the state difference may be initiated by, e.g., differences in the initial distribution at the beginning of the experiment. By rescaling time, we may, without loss of generality, assume that σ = 1 . The stationary problem then reads 
+
+0 = ∂x(∂xu + κu∂ x(W ∗ u) + u∂ xV ), x ∈ T. (2.2) For simplicity, we assume that 1
+
+W, V ∈ H2(T), with W even and V periodic .
+
+Then, a function u = u(x) solves (2.1) if and only if u is a fixed point of the nonlinear map T : L2(T) 7 → L2(T):
+
+T u := exp( −[κW ∗ u + V ]) 
+
+Z(u) , where Z(u) := 
+
+Z
+
+> T
+
+exp( −[κW ∗ u + V ]) d x. (2.3) Throughout the manuscript, we test various combinations of parameter inputs. A summary table of the inputs used can be found in Appendix C. 
+
+2.2 Identification of loss function 
+
+In order to execute our inference procedure, we require a loss function R : X 7 → [0 , ∞) so that R(u) = 0 for a function 
+
+u solving (2.2) , and R(u) > 0 for those functions that are not a solution to (2.2) . There is no universal way to construct a loss function, and indeed, they are not unique. For simplicity, we consider two such functions here, and hint at a third. In general, one may work at the level of the PDE itself. That is, one may take the norm of the right-hand side of (2.2) evaluated at some function: 
+
+RPDE (u) := ∥∂x(∂xu + κu∂ x(W ∗ u) + u∂ xV )∥X . (2.4) Depending on the particular problem, the norm may be taken with respect to some suitable Banach space X. In the present case, we will use X = L2(T). Then, given a function u(x) and a discretised version u(xk) on some grid 
+
+{xj }Nj=1 , we may evaluate the PDE loss function. However, this introduces some known challenges: if the norm is at the level L2(T), one must assume additional regularity of the input so that operations such as ∂2
+
+> x
+
+u make sense. Consequently, it is anticipated that noisy data will be strongly impacted by this fact. As a second case, the nonlinear map T introduces a very natural loss function that does not require any differentiation: 
+
+RFP (u) := ∥T u − u∥X . (2.5) One may also consider an intermediate loss function with only one derivative featured. For example, a loss function can be defined via the weak formulation 
+
+0 = 
+
+Z
+
+> T
+
+∂xϕ (∂xu + κu∂ x(W ∗ u) + u∂ xV ) d x, ∀ϕ ∈ C∞(T),
+
+> 1Strictly speaking, the tophat kernel does not satisfy this property, though we consider it in several instances; however, it is still smooth enough to ensure the problem remains well-posed and therefore does not cause any issue.
+
+4Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+where ϕ is referred to as a test function . A loss function is then obtained via 
+
+R(u)[ ϕ] := 
+
+Z
+
+> T
+
+∂xϕ (∂xu + κu∂ x(W ∗ u) + u∂ xV ) d x, 
+
+where one must seek those u such that R(u)[ ϕ] = 0 for any given test function ϕ. However, we do not consider such cases further here, focusing only on (2.4) and, primarily, (2.5) . Generally, (2.5) will be used for all results. However, to demonstrate that our approach is not unique to the loss function used, in Figure 1, we also reproduce a few main results using the loss function in (2.4). 
+
+2.3 Inference problem definition and solving 
+
+For the PDE described in Equation (2.1) , we wish to recover the (functional and scalar) parameters W (x), V (x), and κ.Here, we replace W (x) and V (x) with corresponding neural network approximations NN W (x; ¯θW ) and NN V (x; ¯θV ),generating the following UPDE: 
+
+0 = ∂2
+
+> x
+
+u + κ∂ x(u∂ x( NN W (x; ¯θW ) ∗ u)) + ∂x(u∂ x NN V (x; ¯θV )) . (2.6) This only depends on the following scalar parameters: κ, θ W, 1, θ W, 2, . . . , θ W,N , θ V, 1, θ V, 2, . . . , θ V,M . If the neural network is sufficiently large, there exists a parameterisation ¯θ∗ 
+
+> W
+
+, ¯θ∗ 
+
+> V
+
+that achieves NN W (x; ¯θ∗ 
+
+> W
+
+) ≡ W ∗(x) ≈ W (x)
+
+and NN V (x; ¯θ∗ 
+
+> V
+
+) ≡ V ∗(x) ≈ V (x) for all x.We note that many non-neural network structures can also approximate continuous functions using finite-dimensional parameterisations. In the context of the aggregation-diffusion equation, the most natural choice is a truncated Fourier mode expansion, with coefficients serving as parameters. We implement this approach (Supplementary Section B.1) and confirm that it achieves similar results to the neural network approach (Supplementary Figure 2). In practice, for this study we primarily use neural networks as function approximators, as they are supported by a highly developed contemporary numerical software framework. We have now reduced our inference problem to one of finding scalar parameters only, where we for each pa-rameter set (κ, ¯θW , ¯θV ) can evaluate the loss function in Equation (2.5) (detailed in Section 2.2). By using a non-linear optimisation method, we can solve the inference problem to find the optimal value (κ∗, ¯θ∗ 
+
+> W
+
+, ¯θ∗ 
+
+> V
+
+), which should yield a good approximation of the true PDE’s dynamics. We will use a combination of a longer initial run with Adam (number of iterations varying between 10,000 and 2,000,000, depending on inference problem complexity), followed by a shorter run using LBFGS (until convergence) to pinpoint the nearest local minimum [ 30 , 26 ]. This combination has seen extensive use for UDEs [ 36 , 35 ], and works well for the models studied in this work. Similarly, as ensemble multi-start optimisation (where multiple runs are performed using random starting guesses) has proven efficient for UDEs [ 35 ], we will use this as well. We use small fully connected feedforward neural network architectures, primarily with the softplus activation function (additional architectural details can be found in Supplementary Section B.2). 
+
+Function fitting analysis workflow 
+
+Throughout the paper, we will analyse how the fitting of functional parameters to measured solution profile data is affected by properties of the PDE and the solutions. The workflow we will employ for this analysis is described in Figure 1. 5Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Figure 1: Diagram of standard workflow for analysing PDE recovery from data. (1) In the first step, we determine the functional forms for W and V , and the value of κ, for the PDE we wish to analyse. Full list of values used for all PDEs analysed in this work can be found in Table 4. (2.1) From the PDE, we compute its true steady state solution profiles using the approach described in [ 15 ]. (2.2) In Section 3.2, we use the approach described in Supplementary Section B.3 to generate downsampled, noisy, solution profiles. (3) First, we assume that some subset of the parameters is unknown (in Sections 3.1 and 3.2 only W is assumed to be unknown, while Sections 3.3 consider multiple unknown parameters). Next, we attempt to recover these from measured solution profiles using the approach described in Section 2.3. The fitting process can be evaluated by comparing the fitted parameters to the true ones (as decided in 1). (4) Finally, the fitting process can be further evaluated by computing the steady state solutions for the fitted PDE, which then can be compared to true ones computed in 2.1. 
+
+# 3 Results 
+
+Throughout the paper, we investigate how a large number of factors affect our ability to recover functional parameters from data. A summary of the different cases investigated can be found in Table 1. Next, Table 2 lists the different modes of success, or failure, that resulted from the fitting procedure. 6Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Condition Relevant Figures Recovery using single solution Figure 4, S. Figures 7, 13, 14, 17. Recovery using partial set of solutions Figure 4, S. Figures 17, 19, 6. Sparse sampling with measurement noise Figures 3, 4, S. Figures 9, 10, 11, 12, 17. Recovery of multiple functional parameters Figures 5, 6, S. Figures 15, 16, 19. Recovery from multiple solutions on the same bifurcation branch Figure 6, S. Figure 19. Recovery using alternative loss function S. Figure 1. Recovery using solution with varying spectral content S. Figures13 and 14. Table 1: Recovery conditions investigated. List of different conditions for which we investigated the effect on functional parameter recoverability (in addition to the base, ideal, case). For each condition, we list the figures in which it was investigated. The conditions are spread across PDEs with different values of W , V , and κ, the details of which are listed in Table 3. Outcome Relevant Figures Success Figures 2, 3E,F, 4, 5, 6H,I, S. Figures 7A,E, 8A-D, 1A-C, 10A,C, 12A, 16A-D,17D-F, 19C-F. Successful recovery of functions, erro-neous solution profile predictions S. Figures 6, 7C. Unsuccessful recovery of function, correct solution profile predictions S. Figure 12C. Unsuccessful recovery and predictions Figures 3G, 4. Unsuccessful recovery due to practical non-identifiability Figure 6G, S. Figure 19A,B. Unsuccessful recovery due to (demon-strated) structural non-identifiability S. Figure 17A-C. Table 2: Encountered outcomes of functional recovery. Throughout our analysis, we note both when functional recovery is possible, but also note multiple (partial or full) modes of failure. Here, we list each such potential case, and the figures in which it is encountered. 
+
+3.1 The interaction kernel W can be recovered from steady state solutions 
+
+We first consider the most basic case, where only a single function (here, W ) is unknown, while all other functional and scalar parameters (here, V and κ) are known a priori. For the nonlocal PDE given in Equation (2.1) , we will first fix the functions W and V , and the scalar κ (Figure 2A). Next, we will compute the resulting PDE instance’s solution profiles using the equivalence between stationary solutions of (2.2) and fixed points of the nonlinear map T defined in (2.3) (Figure 2B). From these solutions, we will compute a fitted interaction kernel W ∗, so that W ∗ ≈ W , where W is the true interaction kernel. To do this, we formulate the UPDE where W has been replaced with a neural network (where we have ensured that the chosen architecture can reproduce the ground truth W under ideal circumstances, Supplementary Figure 3). Using the optimisation approach described in Section 2.3, we can fit the UPDE to the full solution set (we confirm convergence by inspecting the loss function progression traces, Supplementary Figure 4). By plotting the fitted 
+
+W ∗ function, we confirm that it recovers the true W well (Figure 2C). Finally, we confirm identifiability, i.e. that the found W ∗ is the only function yielding a good fit (Supplementary Figure 5). We note that while a W ∗ may yield a small loss function value, it does not necessarily yield the same solution set as the ground truth W (as computed using Equation (2.2) ). Indeed, this can be understood via [ 11 , Remark 4.7], which provides an example of a family of kernels {Ws(x)}s≥1 that converge uniformly to a limiting kernel −w1(x) as 
+
+s → +∞; yet, Ws(x) has infinitely many bifurcation points for any s ≥ 1, while −w1(x) has exactly one bifurcation point. This indicates that while two kernels may “look” very similar, they can have an entirely different bifurcation structure (and hence different solution profiles). We also confirm this phenomenon numerically in Supplementary Figure 6. For the example studied in Figure 2, however, we confirm that W and W ∗ yield near identical solution profiles (Figure 2D). 7Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Figure 2: The interaction kernel W can be recovered from solution profiles. (A) For a nonlocal PDE (Equation (2.1) ) we set the potential V ≡ 0, the interaction strength parameter κ = 8 , and use a multi-modal interaction kernel 
+
+W (described in Supplementary Section C, depicted with solid blue line). (B) From the fully-determined PDE, we compute the set of four potential solutions (solid green lines). (C) Assuming W is unknown, it can be recovered by fitting a neural network to the solution profiles (Section 2.3). We confirm that the fitted W ∗ (dashed red line) replicates the true W (solid blue line). (D) Finally, we compute the solutions for the PDE instance (W ∗, V, κ ) (dashed purple lines), confirming these correspond to the ground truth solutions (solid green lines). We next consider whether the full solution set is required to recover W . Here, for each of the non-constant solutions in Figure 2B, we perform the inference procedure using only that single profile. In each case, we confirm both that W ∗ ≈ W , and that these generate (almost) identical solution sets (Supplementary Figure 7). Finally, to show that our results are not limited to the specific kernel W used in Figure 2, we repeat our results using piece-wise linear (Supplementary Figure 12A,B), smooth (Supplementary Figure 12C) and combined piece-wise linear/smooth (Supplementary Figure 12D) kernels W . In all cases, we recover both the ground truth W and its corresponding solution set. 
+
+3.2 The interaction kernel W can be recovered from noisy solution profiles 
+
+In the previous section, we assumed that the full set of steady state solutions was known and measured at an arbitrarily dense discretisation and without noise. For practical applications, however, this is not a realistic scenario. To assess the approach’s potential to recover unknown functional parameters from empirical data, we next consider the case where the solutions are measured sparsely and with noise. Starting with the ground truth PDE parameters and solution profiles used in Figure 2, we downsample the solutions (to a discretised domain with 100 samples) and introduce varying levels of noise (Figure 3A-D, Supplementary Section B.3). We then repeat the fitting procedure using the solutions with low, medium, and high noise. For low to medium noise, we can recover the ground truth W (Figure 3E,F), however, this is not possible for the high-noise case (Figure 3G). Notably, in the low and medium noise cases, the fitted W ∗ also generates the same solution sets as the ground truth W (Supplementary Figures 9). To confirm our results’ generality, 8Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Figure 3: The interaction kernel W can be recovered from noisy steady state solutions. (A) The solutions of the PDE described in Figure 2. (B-D) We downsample the solution in A to 100 datapoints, and also add low (B), medium (C), and high (D) levels of noise (Supplementary Section B.3). (E-G) Using the optimisation procedure from Figure 1, we attempt to recover W using the noisy solution profiles. For low (E) and medium (F) noise levels, the fitted W ∗
+
+(dashed red lines) follows the ground truth W (solid blue lines). However, for the high noise levels (G), we can no longer accurately recover W .we repeat them using new, but identically distributed, noisy solutions (Supplementary Figure 10). We also confirm that all fitted W ∗ functions are identifiable (Supplementary Figure 11). Finally, we note that the ability to recover W
+
+from noisy data depends in part on the kernel shape. E.g., for comparable noise levels but using a different kernel W ,recovery is not possible (Supplementary Figure 12). Under controlled experimental conditions, multiple distinct solutions may be observed. In practice, however, we can at best only observe stable solutions. Furthermore, many natural systems can only be observed at a single steady state. Finally, even when multiple steady states can be observed, doing so might be expensive or time-consuming, and 9Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Figure 4: Each steady state solution contains a different level of information. (A) The four low-noise solutions presented in Figure 3B (numbers 1-4 are used for identification throughout the figure). (B) For the combinations of either all solutions, all but one, or only a single one, we fit W . In the cases where we use only the first or the fourth solution, recovery of W is not possible. For the trivially constant first solution, this is non-noteworthy, as it is a potential solution for a large number (but not all) PDE instances. The unimodal fourth solution, however, could be used to recover the ground truth W in the non-noisy and arbitrarily densely sampled case (Supplementary Figure 7). Finally, using the solution with three peaks, we recover characteristics of the true W , but not the actual kernel. While none of these solutions is enough to recover W individually, in combination, however, they are. Still, any combination of solutions which includes the second solution generates a better estimate W ∗. (C) For each combination of solutions, we plot how well the estimated best solution fits the true kernel across the optimisation run. I.e. for each step of the optimisation process, we compute the estimated best W ∗ so far, and compare it to the true W . Here, all solution sets that include the second solution converge at well. The combination of the 1st, 3rd, and 4th solutions does converge, but more slowly. The remaining runs show convergence, but towards W ∗ different to the ground truth (this explains the early increases in these lines). observing only a single one is preferable. Our analysis for non-noisy data suggested that PDE components can be recovered from a single solution profile (Supplementary Figure 7), however, whether this is the case for noisy data is uncertain. Using the noisy solution set in Figure 3B, we fit the UPDE using various combinations of the four solution profiles (Figure 4A). We note that, when fitting to a single solution, only some solutions allow us to recover W (Figure 4B). Next, while all attempts using multiple solutions were successful, the choice of which solutions were used affected the speed of convergence, i.e. fitting to the three “worst” solutions (in terms of their ability to recover W when used in isolation) improved performance compared to using any single one of the three. However, the rate of convergence towards the ground truth W was slower for this solution set as compared to any other combination of three solutions (Figure 4C). This suggests that different solution profiles carry different information content. If an experimentalist can control which solutions are measured, this likely has a noticeable effect on the subsequent ability to recover model components. It is natural to hypothesise that the richness of a solution’s spectrum should correspond to its information content with respect to yielding correct fits. Indeed, theoretical analysis suggests this is true (see Supplementary Material A); however, further work is required to prove this rigorously. While numeric investigation across two different examples generates some support for this, our current results are ultimately inconclusive (Supplementary Figures 13,14). 10 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Figure 5: The full PDE can be recovered from its solutions. We set values for the interaction kernel W (A, solid blue line), potential function V (B, solid pink line), and interaction strength parameter κ = 5 .0. Exact functional forms are provided in Supplementary Section C. From this PDE, we generate the full set of three solutions (C, solid green lines). We confirm that the fitted PDE recovers the correct W (A, dashed red line), V (B, dashed teal line) and κ (fitted value 
+
+4.87 ≈ 5.0). We also confirm that the recovered PDE regenerates the ground-truth solution set (C, dashed purple lines). 
+
+3.3 The complete set of PDE components can be recovered from solution profiles 
+
+In the previous sections, we have assumed that only the interaction kernel W is unknown. However, in more realistic scenarios, several unknown parameters must simultaneously be fitted to the data. Here, we consider the case where all parameters (the interaction kernel function W , the potential function V , and the interaction strength parameter κ)are unknown. We first designate non-constant W and V , from which we then compute the solution profiles (using Equation (2.2) ). From these solutions, we can successfully infer all three parameters ( W and V as neural networks, κ
+
+as a scalar parameter) (Figure 5). As discussed previously, model fitting may suffer from identifiability problems. Here, the data is not sufficient to identify a single PDE instance (i.e. values of W , V , and κ)) and multiple instances all yield good fits. This can prevent us from correctly recovering a single PDE instance from the data. Indeed, in our case, it could be possible that the two functions can generate an infinite range of combinations of functional forms all yielding identical fits. However, by plotting the ensemble of fitted functional forms, we confirm that this is not the case, i.e. that if (W ∗, V ∗, κ ∗) minimises our cost function, then (W ∗, V ∗, κ ∗) ≈ (W, V, κ ) (Supplementary Figure 15). Finally, to demonstrate our results’ generality, we confirm that multi-component recovery is possible for an additional 4 nonlocal PDE examples (Supplementary Figure 16). Next, we again consider the case where only a partial set of solutions is observed, but now whether multiple functions (i.e. both W and V ) can be recovered. Using the same PDE parameter values and solution profiles as in Figure 5, we fit W and V to either a single or two solutions. Here, both functions can be recovered only when two solutions are measured, while in the single-solution case, this is impossible (Supplementary Figure 17). Indeed, we can partially understand these numerical results theoretically: identifiability fails miserably when attempting to recover two 11 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Figure 6: Accurate function recovery using solutions from the same bifurcation branch is possible if the κ distance is large enough. (A) Bifurcation diagram showing how the quantity and quality of the nonlinear-PDE in Figure 5’s solutions change with κ. The lines correspond to the PDE’s solutions, with the y-axis denoting R (u(x) − 1/π )2dx . Dots mark different solution profiles used in the analysis (profiles are shown in C-F and Supplementary Figure 18). (B) For each combination of a base solution (white dot in A) with another solution (coloured dots in A), we attempt to recover 
+
+W and V . The plot shows the recovery performance (measured as mean R (W (x)∗ − W (x)) 2 + ( V ∗(x) − V (x)) 2dx 
+
+across 400 independent optimisation runs) over the optimisation processes’ progression. When the two solutions are sampled from the same branch, predictive performance improves with the distance between the two solutions. When the two solutions are sampled from different branches, good performance can be achieved using the same κ value. (C-F) Solution profiles for 4 samples in A (identity marked using top right corner dots). (G-I) Ensemble of fitted W ∗
+
+and V ∗ using solutions from different branches (G) or solutions from the same branches (H denotes the minimum distance fit and I the maximum distance fit). The adjacent solution fit in H exhibits non-identifiability, while W and V
+
+can be correctly identified in the other two cases. Ensemble plots for the remaining solution profiles are displayed in Supplementary 19. functional components from a single profile, even when the data is exact (see Supplementary Material A for further details). Finally, we consider the case where the system is measured for different values of κ. Here, multiple solutions (each corresponding to a known and potentially different κ value) are used to recover W and V . Notably, whether the solutions used correspond to a single or multiple bifurcation diagram branches should impact the fit. In other words, using two nearly identical solutions differing only by an incremental perturbation to κ should not improve recovery as compared to using only one of the solutions. However, if the difference in κ is large, or the solutions are from different branches, recovery should be possible. We investigate this in Figure 6. Here, we confirm that same-branch recovery fails if the κ distance is small. However, as the κ distance increases, same-branch recovery performance approaches 12 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+that of using two solutions from different branches. This shows that not only is each solution’s information content highly variable, but it also depends on what other solutions are considered. 
+
+# 4 Discussion 
+
+In this work, we have shown how to extend UDEs to a broad class of PDEs with unknown functional parameters. By embedding neural networks directly within the governing equations, we showed that spatially dependent functions, such as interaction kernels and external potentials, can be inferred directly from data. The strength of this approach lies in its ability to combine the predictive flexibility of machine learning approaches with the interpretability and analytical structure of mechanistic mathematical modelling. These UDE models can be trained using standard optimisation workflows designed for parameter fitting, formulated in conventional modelling terms where the unknown functions are simply marked as such. Once trained, they can be treated as ordinary PDEs that can be simulated and analysed using existing numerical and theoretical techniques. The ability to infer functional components has clear relevance for real-world applications. In many settings, we have qualitative expectations about how these functions behave, such as predators being attracted to prey, or species preferring favourable environments, but not their precise quantitative form. As shown here and in previous studies, even small errors in the shapes of these functions can substantially alter PDE solutions and predictions. The UPDE framework enables these functions to be learned directly from data, offering a route toward the practical application of PDE models in empirical systems. In such cases, model parameters, including both scalar and functional ones, would first be fitted to available data; the trained UPDE could then be used to predict future system states or the outcomes of interventions. We also explored how realistic factors such as noise and sample sparsity affect the recovery of functions. Encouragingly, accurate recovery remains possible under moderate noise, although performance depends strongly on the noise characteristics and the underlying PDE properties. Indeed, the variety of fitting outcomes encountered only in this study is remarkable. We have cases where fitted parameter(s) (such as W ) are recovered correctly, and these generate correct solution predictions (e.g. Figure 2), where the correct component(s) are recovered from the solutions, but these generate incorrect solution predictions (e.g. Supplementary Figure 7), or where incorrect component(s) yield correct solution predictions (e.g. Supplementary Figure 12). Finally, the fitting may fail due to convergence to incorrect component(s) (e.g. Figure 3G) or due to non-identifiability, where a wide range of component combinations all yield a good fit to the data (e.g. Supplementary Figure 17). These cases are affected by factors ranging from component properties (e.g. kernel W shape), noise magnitude, sampling frequency, and properties of the solution(s) used for inference. Likely, this width of potential cases will only grow as more functional forms and PDEs are explored. Indeed, it will be important for future research to better pinpoint how properties of the data (like noise) and of the PDE instance (like distance to bifurcation points for new behaviours) affect the extent to which recovery is possible. Finally, it is possible that the incorporation of qualitative knowledge (e.g. unimodality) on fitted functions can improve results. Here, this has successfully been shown for non-spatial UDEs by using Gaussian Processes to provide functional priors [ 8], or by directly encoding constraints into the neural network architecture [32]. In this study, we focused on cases where only steady state data is available. Interestingly, we observed a range of behaviours depending on the number and type of steady state solutions. In some instances, the full PDE could be recovered from a single solution profile, while in others, this was fundamentally impossible or highly sensitive to which profile was used. We also found that, in the presence of noise, different solution profiles carry different amounts of information. This insight could inform experimental design by revealing which measurements provide the most informative data. It also raises an important theoretical question: under what conditions do distinct PDEs produce distinct steady state solution sets, and can these sets (partially or fully) overlap? Understanding this is not 13 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+only of theoretical interest, but also important for identifiability analysis (i.e. a solution shared between multiple PDE instances cannot be used to distinguish between them in the fitting process). Finally, it will be valuable to assess whether time-dependent data, which are typically more information-rich, can recover model information in cases where steady state data cannot. The type of data available, whether dynamic, multiple steady states, or a single steady state, will vary by application, and each case merits further study. This work combines aspects of mathematical modelling, PDE theory, and machine learning methodology. Although our analysis focused on learning spatial functions in a class of nonlocal aggregation–diffusion equations, the framework is general and could be extended to other PDEs and to functional dependencies on non-spatial variables. For instance, non-spatial UDEs have been used to model the rate of predation as a function of predator and prey density, an idea that can be readily transferred to UPDEs. Since PDEs with functional parameters occur across many disciplines, including physics (quantum wells with variable fields), biology (pattern formation in tissues), finance (option pricing with variable volatility), and engineering (structural deformation under varying loads), our approach also has broad potential applicability. By revealing when and how spatially dependent information can be recovered, our results provide a framework for quantitatively applying these PDEs to make real-world predictions across these domains. Finally, we hope that by enabling direct investigation of the relation between PDE instance and solution, our work will also be of practical use to researchers studying the theoretical aspects of these models. 
+
+# References 
+
+[1] S. M. Allen and J. W. Cahn. A microscopic theory for antiphase boundary motion and its application to antiphase domain coarsening. Acta Metallurgica , 27(6):1085–1095, 1979. [2] G. K. Batchelor. An Introduction to Fluid Dynamics . Cambridge University Press, 1967. [3] N. Bellomo and C. Dogbe. On the modeling of traffic and crowds: A survey of models, speculations, and perspectives. SIAM Review , 53(3):409–463, 2011. [4] H. Berestycki, F. Hamel, and L. Roques. Analysis of the periodically fragmented environment model: I—species persistence. Journal of Mathematical Biology , 51(1):75–113, 2005. [5] R. B. Bird, W. E. Stewart, and E. N. Lightfoot. Transport Phenomena . Wiley, 2nd edition, 2002. [6] F. Black and M. Scholes. The pricing of options and corporate liabilities. Journal of Political Economy ,81(3):637–654, 1973. [7] J. Bolibar, F. Sapienza, F. Maussion, R. Lguensat, B. Wouters, and F. P ´erez. Universal differential equations for glacier ice flow modelling. Geoscientific Model Development , 16(22):6671–6687, 2023. [8] A. P. Browning, J. A. Flegg, and R. J. Murphy. A cautionary tale of model misspecification and identifiability, 2025. arXiv:2507.04894. [9] R. S. Cantrell and C. Cosner. Spatial Ecology via Reaction–Diffusion Equations . Wiley, 2003. [10] J. A. Carrillo, G. Estrada-Rodriguez, L. Mikol ´as, and S. Tang. Sparse identification of nonlocal interaction kernels in nonlinear gradient flow equations via partial inversion. Math. Models Methods Appl. Sci. , 35(5):1073–1131, 2025. [11] J. A. Carrillo, R. S. Gvalani, G. A. Pavliotis, and A. Schlichting. Long-time behaviour and phase transitions for the McKean-Vlasov equation on the torus. Arch. Ration. Mech. Anal. , 235(1):635–690, 2020. [12] J. A. Carrillo, H. Murakawa, M. Sato, H. Togashi, and O. Trush. A population dynamics model of cell-cell adhesion incorporating population pressure and density saturation. J. Theoret. Biol. , 474:14–24, 2019. [13] J. A. Carrillo and Y. Salmaniw. Long-time behaviour and bifurcation analysis of a two-species aggregation-diffusion system on the torus. Calc. Var. Partial Differential Equations , 65(1):Paper No. 19, 61, 2026. 14 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+[14] J. A. Carrillo, Y. Salmaniw, and J. Skrzeczkowski. Well-posedness of aggregation-diffusion systems with irregular kernels, 2024. arXiv:2406.09227, to appear in Ann. IHP C. [15] J. A. Carrillo, Y. Salmaniw, and A. L. Villares. Numerical stationary states for nonlocal Fokker-Planck equations via fixed points of consistency maps, 2026. arXiv:2602.05632. [16] H. S. Carslaw and J. C. Jaeger. Conduction of Heat in Solids . Oxford University Press, 2nd edition, 1959. [17] T. F. Chan and L. A. Vese. Active contours without edges. IEEE Transactions on Image Processing , 10(2):266–277, 2001. [18] B. Chazelle, Q. Jiu, Q. Li, and C. Wang. Well-posedness of the limiting equation of a noisy consensus model in opinion dynamics. J. Differential Equations , 263(1):365–397, 2017. [19] M. C. Cross and P. C. Hohenberg. Pattern formation outside of equilibrium. Reviews of Modern Physics ,65(3):851–1112, 1993. [20] L. Edelstein-Keshet. Mathematical Models in Biology . Classics in Applied Mathematics. SIAM, 2005. [21] P. C. Fife. Mathematical Aspects of Reacting and Diffusing Systems . Springer, 1979. [22] K. Hornik. Approximation capabilities of multilayer feedforward networks. Neural Networks , 4(2):251–257, 1991. [23] R. L. Hughes. A continuum theory for the flow of pedestrians. Transportation Research Part B: Methodological ,36(6):507–535, 2002. [24] V. Isakov. Inverse Problems for Partial Differential Equations , volume 127 of Applied Mathematical Sciences .Springer, 3 edition, 2017. [25] X. Jiang, S. Vadhavkar, Y. Ye, M. Toloubidokhti, R. Missel, and L. Wang. Hyper-ep: Meta-learning hybrid personalized models for cardiac electrophysiology, 2024. arXiv:2403.15433. [26] D. P. Kingma and J. Ba. Adam: A Method for Stochastic Optimization, Jan. 2017. arXiv:1412.6980 [cs]. [27] C. Kreutz, A. Raue, D. Kaschek, and J. Timmer. Profile likelihood in systems biology. The FEBS Journal ,280(11):2564–2571, 2013. eprint: https://febs.onlinelibrary.wiley.com/doi/pdf/10.1111/febs.12276. [28] Y. Kuramoto. Chemical Oscillations, Waves, and Turbulence . Springer, 1984. [29] L. D. Landau and E. M. Lifshitz. Fluid Mechanics . Course of Theoretical Physics, Vol. 6. Pergamon, 2nd edition, 1987. [30] D. C. Liu and J. Nocedal. On the limited memory BFGS method for large scale optimization. Mathematical Programming , 45(1):503–528, Aug. 1989. [31] X. Liu and Y. Song. Scientific machine learning of flow resistance using universal shallow water equations with differentiable programming, 2025. arXiv:2502.12396. [32] T. E. Loman and R. E. Baker. Functional and parametric identifiability for universal differential equations applied to chemical reaction networks, 2025. arXiv:2502.12396. [33] J. D. Murray. Mathematical Biology I: An Introduction . Springer, 3rd edition, 2002. [34] P. Perona and J. Malik. Scale-space and edge detection using anisotropic diffusion. IEEE Transactions on Pattern Analysis and Machine Intelligence , 12(7):629–639, 1990. [35] M. Philipps, N. Schmid, and J. Hasenauer. Current state and open problems in universal differential equations for systems biology. npj Systems Biology and Applications , 11(1):101, Aug. 2025. Publisher: Nature Publishing Group. [36] C. Rackauckas, Y. Ma, J. Martensen, C. Warner, K. Zubov, R. Supekar, D. Skinner, A. Ramadhan, and A. Edelman. Universal differential equations for scientific machine learning, 2020. 15 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+[37] Y. Salmaniw and A. P. Browning. Structural identifiability of linear-in-parameter parabolic PDEs through auxiliary elliptic operators. J. Math. Biol. , 91(1):Paper No. 4, 31, 2025. [38] M. J. Simpson and R. E. Baker. Parameter identifiability, parameter estimation and model prediction for differential equation models, Mar. 2025. arXiv:2405.08177 [stat]. [39] P. Wilmott, S. Howison, and J. Dewynne. The Mathematics of Financial Derivatives: A Student Introduction .Cambridge University Press, 1995. [40] M. Yamamoto. Carleman estimates for parabolic equations and applications. Inverse Problems , 25:123013, 2009. 16 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+# A Analytical properties of aggregation-diffusion equations in one dimension 
+
+In this section, we compile some known properties of the aggregation-diffusion equation (2.1) and its stationary counterpart (2.2) . We state all results for the one-dimensional case only to avoid additional technicalities; however, we note that many aspects of the analyses carry over to the higher-dimensional cases under appropriate modification. Consider the domain Ω = T = ( −L/ 2, L/ 2] for some L > 0 fixed. We denote by L2(Ω) the space of Lebesgue measurable functions with finite L2-norm: 
+
+L2(Ω) := 
+
+
+
+f (Lebesgue) measurable :
+
+Z
+
+> Ω
+
+|f |2dx < ∞
+
+
+
+.
+
+We then denote by L2
+
+> per
+
+(Ω) ⊂ L2(Ω) the (closed) subspace of periodic functions belonging to L2(Ω) , and by L2
+
+> s
+
+(Ω) the closed subspace of L2
+
+> per
+
+(Ω) consisting of even functions. We denote by Hk(Ω) , k ∈ N, those functions having weak derivatives up to and including order k, each of which belongs to L2(Ω) .We denote by {wk}k≥0 the orthonormal basis for L2
+
+> s
+
+(Ω) given by 
+
+wk(x) := 
+
+ 
+
+> 1√L
+
+, k = 0; 
+
+q 2 
+
+> L
+
+cos (2 πkx/L ) , k ≥ 1. (A.1) For simplicity, we will assume that W is even in addition to W, V ∈ H2(Ω) ∩ L2
+
+> per
+
+(Ω) . We note that these conditions can be weakened significantly, see, e.g., [14, 13]. 
+
+Well-posedness: We begin with the well-posedness (existence & uniqueness) of the time-dependent problem (2.1) ,its stationary counterpart (2.2) (existence & smoothness), as well as the positivity and mass-preserving property of solutions. This follows from the proof of well-posedness found in, e.g., [ 18 , 11 ]. Note that minor modification is required to accommodate V , but assuming sufficient regularity (e.g., H2) leaves the core approach unchanged. 
+
+Proposition A.1 Suppose W, V ∈ H2(Ω) . Then, for initial data u0 ∈ H4(Ω) , there exists a unique classical solution solving (2.1) such that u(x, ·) ∈ C2(Ω) for all t ≥ 0. Moreover, u(·, t ) is strictly positive for all t > 0 and satisfies 
+
+Z
+
+> Ω
+
+u(y, t )d y =
+
+Z
+
+> Ω
+
+u0(y)d y ∀t ≥ 0, (A.2) 
+
+i.e., the mass is preserved for all t > 0.
+
+We also note the following existence, smoothness, and positivity result for the stationary problem whose statement for 
+
+V ≡ 0 can be found in, e.g., [ 11 ]. The same approach applies for nontrivial V . Since the proof of this result uses an equivalence between stationary solutions and fixed points of a nonlinear map T , we forego the details until after the map T has been introduced (see Proposition A.3 below). 
+
+Proposition A.2 Suppose W, V ∈ H2(Ω) . Then, there exists a weak solution u ∈ H1(Ω) such that R 
+
+> Ω
+
+u dx = 1 
+
+solving the stationary problem (A.7) . Moreover, any such weak solution is smooth and strictly positive in Ω, i.e., 
+
+u ∈ Hk(Ω) for any k ≥ 1 and u > 0 everywhere in Ω.
+
+Model as a gradient flow: To better understand the energy structure of the model and the influence on its stationary states, it is useful to rewrite (2.1) as a gradient-flow: 
+
+∂tu = ∂x
+
+
+
+u ∂ x
+
+ σ log u + W ∗ u + V 
+
+= ∂x
+
+
+
+u ∂ xF′[u]
+
+
+
+, (A.3) where ·′ denotes the first variation of the free energy functional: 
+
+F[u] := 
+
+Z
+
+> Ω
+
+u  σ log u − 1 + 12 W ∗ u + V  dx. (A.4) 17 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+In this sense, the model is a continuity equation ut + ∂xJ = 0 with flux J := −u∂ xF′[u]. Assuming that the initial data is a probability density function, from Proposition A.1 we have that ∥u(·, t )∥L1(Ω) = 1 for all t > 0. A formal computation that can be made rigorous then yields 
+
+F′[u] := lim 
+
+> ε→0
+
+F[u + εη ] − F [u]
+
+ε = σ log u − 1 + W ∗ u + V, (A.5) where η is a mean-zero variation. Hence, we multiply (A.3) by F′[u] and integrate by parts to conclude that along smooth trajectories of (A.3) there holds 
+
+ddt F[u(t)] + 
+
+Z
+
+> T
+
+u ∂x
+
+ σ log u + W ∗ u + V  2 dx = 0 . (A.6) In particular, there holds dF/dt ≤ 0 and so we conclude that F[u] is decreasing along solution trajectories for all time. Moreover, since we are on a bounded domain, it is not difficult to show that the free energy F(u) is bounded below. Consequently, persistent oscillatory behaviour cannot occur in the long-time limit, and only those solutions that remain constant over time are possible in this long-time limit. It is therefore natural to study stationary states of model (A.3) through critical points of the free energy functional F, or equivalently, through fixed points of a nonlinear map T ,which we identify now. 
+
+Stationary states via a fixed-point map: With the only possibility in the long-time limit being ∂tu = 0 , stationary states U = U (x) satisfy 
+
+0 = ∂x
+
+
+
+U ∂ x
+
+ σ log U + W ∗ U + V 
+
+, x ∈ Ω. (A.7) To ensure this problem is well-defined, we prescribe the mass condition R 
+
+> T
+
+U dx = 1 so that we seek stationary states that are probability density functions. This is natural when the time-dependent problem is equipped with initial data 
+
+u0(·) which is itself a probability density function. Similar to how we obtained (A.6) in the time-dependent case, we multiply (A.7) by σ log U + κW ∗ U + V , integrate by parts and apply the periodic boundary conditions to obtain 
+
+Z
+
+> Ω
+
+u|∂x(σ log U + W ∗ U + V )|2 dx = 0 .
+
+By Proposition (A.2), any stationary state is smooth and satisfies U > 0 in Ω, and so there must hold 
+
+∂x(σ log U + W ∗ U + V ) = 0 everywhere in Ω,
+
+and so σ log U + W ∗ U + V = c0 over Ω, for some c0 ∈ R to be determined. In the case of linear diffusion, we may rearrange and solve directly for this constant to deduce that U must satisfy 
+
+U (x) = exp  −σ−1[W ∗ U (x) + V (x)] 
+
+Z(U ) , Z(U ) := 
+
+Z
+
+> Ω
+
+exp  −σ−1[W ∗ U (y) + V (y)]  dy. 
+
+This motivates the fixed-point formulation via the map T : L2(Ω) 7 → L2(Ω) defined by 
+
+T u := exp   − σ−1[ W ∗ u + V ]
+
+Z(u) , (A.8) with Z = Z(u) as defined above. This leads to the following Proposition whose statement for V ≡ 0 can be found in, e.g., [ 11 ]. Assuming sufficient regularity on V , e.g., V ∈ H2(Ω) , allows one to apply the same approach when V is included. We omit the details. 
+
+Proposition A.3 A function u ∈ H1(Ω) is a weak solution to problem (A.7) if and only if it is a fixed point of the nonlinear map T .
+
+18 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+In addition to the Lipschitz continuity of T , in [ 13 ] it is shown that when V ≡ 0, the map T is Fr ´echet differentiable, with Lipschitz continuous derivative DT [u]( ϕ)2. Forgoing the technical details, the map T possesses the necessary ingredients to apply an efficient Newton-Krylov-type algorithm to identify its fixed points. We refer to [ 15 ] for full details. 
+
+Analytical description of stationary states: When at least one of W or V is identically zero over Ω, the solution structure at steady state can be understood analytically for some special cases. To demonstrate this in a logically sensible way, we consider these two cases as guidance for future numerical explorations: first, when W ≡ 0 so that there is no nonlocal self-interaction; second, when V ≡ 0 so that there is no influence from the external potential. 
+
+Case I: W ≡ 0. In this case, there is no self-interaction through the nonlocal kernel W , and the problem reduces to a linear advection-diffusion equation. Given any V ∈ H2(Ω) ∩ L2
+
+> per
+
+(Ω) , the unique stationary state is given explicitly by 
+
+uV (x) = exp( −σ−1V )
+
+R 
+
+> Ω
+
+exp( −σ−1V )d x . (A.9) This is sometimes referred to as the Gibbs state . Notice that then V ≡ const. , the unique stationary state is precisely 
+
+L−1; otherwise, the unique stationary state is always nontrivial. 
+
+Case II: V ≡ const. . When V is constant, the external potential does not influence the dynamics; on the other hand, so long as the kernel W ∗ · is nontrivial, the problem becomes nonlinear. This has several implications for the possible solution structure to equation (A.7) . First, the problem becomes translation invariant in the sense that any stationary state u(x) has u(x + ξ), ξ ∈ R, also as a solution. Furthermore, any constant profile u∞ ≡ c is a valid stationary solution to problem (A.7) ; under the unit mass constraint, this implies that there is always a unique homogeneous (also called the trivial ) stationary solution given by u∞ = L−1, a valid solution for any κ ≥ 0.Fixing the trivial state u∞ = L−1 allows one to study in detail the associated bifurcation structure of problem (A.7) in the absence of an external potential V . First, we define W := κW so that κ ≥ 0 acts as a bifurcation parameter. Due to translation invariance, we can then restrict the analysis to L2
+
+> s
+
+(Ω) ⊂ L2
+
+> per
+
+(Ω) , the (closed) subspace of even , L-periodic functions. We then seek solutions that bifurcate from the homogeneous solution u∞ = L−1 in terms of the strength parameter κ ≥ 0. The key intuition, up to some technical criteria, is the following result (see [ 11 , Theorem 1.2]): any Fourier mode k ∈ N \ { 0} such that fW (k) < 0 leads to a bifurcation point (κ∗
+
+> k
+
+, L −1) from the homogeneous state taking the following form near κ = κ∗
+
+> k
+
+:
+
+uk(x) = L−1 + s cos(2 πkx/L ) + o(s2), |s| ≪ 1, κ∗ 
+
+> k
+
+:= − σ√2L
+
+fW (k) > 0.
+
+Moreover, any Fourier mode such that fW (k) ≥ 0 does not lead to a bifurcation point. This alone allows one to quickly identify which kernels will lead to nontrivial stationary states for our study; cases without nontrivial stationary states leave little work to be done. More importantly, since the bifurcation value κ∗ 
+
+> k
+
+has an analytical expression, we know not only a minimal number of nontrivial solutions to expect 3, but also where to search for them in κ-space. Furthermore, [13 ] has recently expanded upon this bifurcation analysis to determine the branch direction and stability properties of the emergent branch, depending on whether it is sub- or supercritical. Using Cases I-II described above, we can gain some understanding of the expected solution behaviour for combinations of κW and V by (figuratively) interpolating between these two edge cases. 
+
+Structural identifiability and non-identifiability: While we do not seek to provide an exhaustive description of the structural identifiability properties of equation (2.2) , we will provide a heuristic understanding of when identifiability       
+
+> 2The exact same approach applies for smooth V.
+> 3The minimal number of nontrivial states to expect is one nontrivial solution for each wavenumber such that fW(k)<0. In practice, we observe several additional higher-order bifurcations for every such wavenumber, and these cannot be explored through analytical theory alone.
+
+19 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+is expected to succeed, and when it is expected to fail. To do so, we notice that equation (2.2) is linear in all of its functional components, and so we may use the approach of [ 37 ]. More precisely, we will show one example each of identifiability and non-identifiability from a single, exact solution profile. Structural identifiability of W from a single profile. Suppose that V ≡ 0 and σ = 1 so that W is the unknown func-tional form to be recovered. Suppose that u∗ = u∗(x) is a steady state associated with the kernel W . We will identify conditions for which the following statement holds: given a kernel W0 with associated steady state u0, W̸ = W0
+
+implies u∗̸ ≡ u0. This is precisely the structural identifiability of W from u∗: if we had measured any other data, it must necessarily agree with u∗. Note carefully that we implicitly assume any such kernel will have the same mass, i.e., 
+
+R 
+
+> Ω
+
+W dx is fixed, otherwise identifiability fails automatically via rescaling. To this end, assume for a contradiction that two solution-kernel pairs (u∗, W ) and (u0, W 0) exist with u∗ ≡ u0 while 
+
+W̸ ≡ W0. We seek to conclude that W ≡ W0 is the only possibility, at least under some conditions. Taking the difference between these two PDEs, using the linearity with respect to W , and using the assumption that u∗ ≡ u0, we arrive at the relation 
+
+0 = ∂x (u∗ ∂x([ W − W0] ∗ u∗)) everywhere in Ω.
+
+Due to the periodic boundary condition, we may integrate the relation above to conclude u∗ ∂x([ W − W0] ∗ u∗ = 0 
+
+everywhere in Ω. By Proposition A.2, u∗ > 0 everywhere in Ω, and so there necessarily holds 
+
+0 = ∂x([ W − W0] ∗ u∗) everywhere in Ω.
+
+Integrating the result once more, we conclude that 
+
+[W − W0] ∗ u∗ ≡ c0 everywhere in Ω,
+
+for some fixed c0 ∈ R. Since the mass of W is assumed fixed, we may integrate over Ω to conclude that 
+
+Z
+
+> Ω
+
+W ∗ u∗dx =
+
+Z
+
+> Ω
+
+W0 ∗ u∗dx ⇒ c0 = 0 .
+
+Hence, any non-identifiable solution must satify 
+
+W ∗ u∗ = W0 ∗ u∗ everywhere in Ω.
+
+Unfortunately, equality of the convolution is insufficient to conclude equality of the functions themselves; indeed, the convolution does not have a well-defined inverse in general. However, we may use the convolution theorem to gain some additional insight: 
+
+W ∗ u∗ = W0 ∗ u∗ everywhere in Ω ⇐⇒ fW (k)fu∗(k) = fW0(k)fu∗(k) for all k ≥ 1,
+
+where ef (k) denotes the kth Fourier (or cosine) coefficient of a periodic signal f . Therefore, for every wavenumber k
+
+such that fu∗(k)̸ = 0 , we can uniquely recover the kth Fourier coefficient of W .Consequently, the kernel W (x) is structurally identifiable from u∗(x) whenever u∗ has a full spectrum. In other words, 
+
+W (x) is structurally identifiable from u∗(x) whenever fu∗(k)̸ = 0 for all wavenumbers k ≥ 1.There are two interesting implications of this analysis. First, identifiability of W from a single trajectory depends on the information content of the profile used: if the profile itself has vanishing Fourier modes (or very small modes relative to those of W ), identifiability is expected to fail. The question then becomes: is it likely, or even possible, for model (2.2) to feature “defective” solutions of this sort? Analytically, this is a very challenging problem; yet, the local bifurcation analysis of the preceding section indicates that such solutions are guaranteed to exist near a bifurcation point! This observation motivates our exploration of the role that the “information content” of a solution profile plays in recovery 20 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+(see, e.g., Supplementary Figure 13): generally speaking, solution profiles with a fuller spectrum are better able to recover functional components. Non-identifiability of W and V simultaneously from a single profile. We contrast the identifiability result of the previ-ous section with a non-identifiability result. In this case, we now assume that W and V are fixed and both nontrivial. Assume, as before, that u∗ is the solution profile corresponding to the inputs (W, V ). We now construct a pair (W0, V 0),entirely distinct from (W, V ), that feature u∗ as a valid solution. To this end, let denote by Q any even interaction kernel with zero mean (so that R
+
+> Ω
+
+(W + Q)d x = R 
+
+> Ω
+
+W dx remains fixed). We then define the following auxiliary inputs: 
+
+W0 := W + Q, V0 := V − Q ∗ u∗.
+
+Then, direct computation reveals that the profile u∗ simultaneously solves equation (2.2) with either (W, V ) or (W0, V 0)
+
+as inputs . This reveals an interesting relation between the nonlocal interactions through W , and the local interactions through V : with only a single solution profile, there always exists a continuum of pairs of kernels and external potentials that can compensate for each other, resulting in non-identifiability. This is consistent with Supplementary Figure 17, where simultaneous recovery from a single profile fails. While we do not explore the structural identifiability properties of model (2.2) any further here, the two examples above illustrate an interesting direction of future study: is there a precise relationship between the number of unknowns to be inferred, and the number of distinct inputs (e.g., solution profiles) provided? We see theoretically that structural identifiability of both (W, V ) fails from a single profile; however, our numerical results indicate that (W, V ) are indeed identifiable from two (or more) solution profiles. It is interesting, therefore, to inquire about the minimal amount of information required for structural identifiability to hold. 
+
+# B Detailed methodology 
+
+B.1 Fourier mode expansion as universal function approximator 
+
+In Supplementary Figure 2 we use a Fourier mode expansion, rather than a neural network, to approximate the unknown functional parameter W . Here, we use a truncated cosine expansion 
+
+W ∗(x; ¯θW ) = a0 +
+
+> K
+
+X
+
+> k=1
+
+ak cos 
+
+ 2πkx L
+
+
+
+, (B.1) with ¯θW = ( a0, a 1, . . . , a K ). This directly imposes the constraint of symmetry, with the constraints W ≤ 0,
+
+max x{W } = 0 are imposed in a similar manner as for the network-based approach (Supplementary Section B.2). This yields the following parameterised PDE: 
+
+0 = ∂2
+
+> x
+
+u + κ∂ x(u∂ x( W ∗(x; ¯θW ) ∗ u)) + ∂x(u∂ x V (x)) , (B.2) where V (x) is assumed to be known. A similar approach can be used to approximate V , now using a truncated Fourier series: 
+
+V ∗(x; ¯θV ) = a0 +
+
+> K
+
+X
+
+> k=1
+
+
+
+ak cos 
+
+ 2πkx L
+
+
+
++ bk sin 
+
+ 2πkx L
+
+ 
+
+, (B.3) with ¯θV = ( a0, a 1, . . . , a K , b 1, . . . , b K ). Different from W ∗, the approximation V ∗ must also include sine terms as it is assumed periodic, but not necessarily even. In practice, when recovering W , we use a similar number of Fourier mode terms as the number of parameters in our fitted neural networks (numbers vary between problems, bu are all approximately between 15 and 40 ). 21 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+B.2 Neural network architecture 
+
+First, we note that UDEs can depend on any universal function approximator to fit unknown functions, and non-neural network alternatives are possible. However, as neural networks are the most frequently used alternative, we will use them here. All neural networks used throughout this work will be fully connected feedforward neural networks. Width and depth are typically between three and four, but vary from case to case. Activation functions will be softplus, except for in Supplementary Figure 8A,B, 14, and 16A,B,D, where ReLU is used, and Supplementary Figure 8D, where a mix of ReLU and softplus is used. In these cases, ReLU should better capture the sought piecewise constant components. Notably, both softplus and ReLU are nonnegative. By enforcing these in the output layer, we can ensure that the unmodified neural network is nonnegative, which is a basis for follow-up transformations. We then apply transformations on fitted functions to ensure they conform to the required forms for either W
+
+or V as imposed by the original PDE. For the kernels W , it is assumed that they are: • Symmetric so that the original problem remains a gradient-flow with fixed-point structure; • W ≤ 0 and max x{W } = 0 to fix the degree of freedom offered by invariance under vertical shifts of the kernel. Here, for an unmodified fitted neural network NN pre,W (x, ¯θW ) (which is nonnegative), we let W ∗(x, ¯θW ) =min(NN pre,W (x, ¯θW )) − NN pre,W (|x|, ¯θW ), which produces a function of the desired form. For the external potential V we have only the condition that R 
+
+> T
+
+V dx = 0 , again due to invariance with respect to vertical shifts of V , and so we apply the transformation V ∗(x, ¯θV ) = NN pre,V (x, ¯θV ) − R 
+
+> T
+
+NN pre,V (x, ¯θV )d x.
+
+B.3 Noisy data generation 
+
+All downsampled solution profiles are sampled at a grid of N evenly distributed datapoints. While different noise models can be used, for simplicity, we will, for each datapoint, draw and use an N (x, σ ) distributed value, where x is the ground truth value, and σ is determined by the noise level for that solution set. If the drawn value is negative, it is set to 0. Sampling densities ( N ) and noise levels ( σ) for each figure are listed in Supplementary Section C. 
+
+# C List of studied PDE instances 
+
+In this section, we provide Supplementary Table 4 that lists the functions W (x), V (x), and parameter κ used for the PDE in each figure. We also provide Supplementary Table 5, listing the sample number ( N ) and noise magnitude ( σ)used for each noisy solution profile set.                                        
+
+> Wmm (x;n, d ) := −e−dx 2
+> cos  nx
+> 2
+> 2Wtri (x;w):=
+> (|x| − w, |x| ≤ w,
+> 0,|x|> w Wth (x;w):=
+> (−1,|x| ≤ w,
+> 0,|x|> w Wexp (x):= e−L/ 2−e−| x|Vconst (x):= 0 Vplat (x;a, n ):= tanh  asin(2 nx )
+> Vsink (x;w):= −cos
+> 4
+> π
+> tanh( wx )tanh( wπ/ 2)
+> 
+> Vwave (x;n, d ) := −cos(2 nx ) + cos(6 nx )
+> dVmount (x;m, n ) := sin(2 nx )1+2 m
+
+Table 3: General functional forms. Here we define several instances of functional forms used as inputs to the PDE, all featuring one or two parameters modifying amplitude and/or frequency. Particular instances of these forms and where they appear throughout the manuscript are found in Table 4. Note: all functional forms are subsequently normalised to fulfil their respective conditions outlined in Section B.2. 
+
+22 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Figure W (x) V (x) κ
+
+S. Figure 1A Wtri (x; 0 .6) Vconst (x) 10 
+
+S. Figure 1B Wth (x; 0 .5) Vconst (x) 6
+
+S. Figure 1C Wmm (x; 5 , 2) Vconst (x) 10 
+
+S. Figure 1D 
+
+Wth (x; 0 .5) , |x| ≤ 0.25 ,Wmm (x; 3 , 1.5) , |x| > 0.25 Vconst (x) 20 
+
+S. Figure 2A Wexp (x) Vconst (x) 10 
+
+S. Figure 2B 
+
+Wth (x; 0 .5) , |x| ≤ 0.15 ,Wmm (x; 3 , 1.5) , |x| > 0.15 Vconst (x) 10 
+
+S. Figure 2C Wmm (x; 5 , 0.5) Vconst (x) 20 
+
+S. Figure 2D Wmm (x; 3 , 2) Vconst (x) 6
+
+Figure 2 Wmm (x; 3 , 1) Vconst (x) 8
+
+Figure 3 Wmm (x; 3 , 1) Vconst (x) 8
+
+Figure 4 Wmm (x; 3 , 1) Vconst (x) 8
+
+Figure 5 Wmm (x; 2 , 1.5) Vplat (2 , 1.5) 5
+
+Figure 6 Wmm (x; 2 , 1.5) Vplat (2 , 1.5) 4.0, 4.02 , 4, 1, 4.5, 5.0, 6.0
+
+S. Figure 3 Wmm (x; 3 , 1) Vconst (x) 8
+
+S. Figure 4 Wmm (x; 3 , 1) Vconst (x) 8
+
+S. Figure 5 Wmm (x; 3 , 1) Vconst (x) 8
+
+S. Figure 6 Wmm (x; 3 , 1) Vconst (x) 8
+
+S. Figure 7 Wmm (x; 3 , 1) Vconst (x) 8
+
+S. Figure 8A Wtri (x; 0 .6) Vconst (x) 10 
+
+S. Figure 8B Wth (x; 0 .5) Vconst (x) 10 
+
+S. Figure 8C Wmm (x; 5 , 2) Vconst (x) 10 
+
+S. Figure 8D 
+
+Wth (x; 0 .5) , |x| ≤ 0.25 ,Wmm (x; 3 , 1.5) , |x| > 0.25 Vconst (x) 10 
+
+S. Figure 9 Wmm (x; 3 , 1) Vconst (x) 8
+
+S. Figure 10 Wmm (x; 3 , 1) Vconst (x) 8
+
+S. Figure 11 Wmm (x; 3 , 1) Vconst (x) 8
+
+S. Figure 12 Wmm (x; 1 , 3) Vconst (x) 30 
+
+S. Figure 13 Wmm (x; 3 , 2) Vconst (x) 8
+
+S. Figure 14 Wtri (x; 0 .4) Vconst (x) 19 
+
+S. Figure 15 Wmm (x; 2 , 1.5) Vplat (x; 2 , 1.5) 5
+
+S. Figure 16A Wtri (x; 0 .8) Vsink (x; 1 , 1.0) 6
+
+S. Figure 16B Wtri (x; 0 .8) Vwave (x; 1 , 1.0) 10 
+
+S. Figure 16C Wmm (x; 1 , 3.0) Vplat (x; 2 .0, 2) 20 
+
+S. Figure 16D Wth (x; 0 .5) Vmount (x; 2 , 2) 20 
+
+S. Figure 17 Wmm (x; 2 , 1.5) Vplat (x; 2 , 1.5) 5
+
+S. Figure 18 Wmm (x; 2 , 1.5) Vplat (2 , 1.5) 4.0, 4.02 , 4, 1, 4.5, 5.0, 6.0
+
+S. Figure 19 Wmm (x; 2 , 1.5) Vplat (2 , 1.5) 4.0, 4.02 , 4, 1, 4.5, 5.0, 6.0
+
+Table 4: Specific instances of functional forms. Here we compile all instances of functions used throughout the manuscript. General function formulas are found in Table 3. 23 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Figure N σ
+
+Figure 3B,E 100 0.01 
+
+Figure 3C,F 100 0.025 
+
+Figure 3D,G 100 0.05 
+
+Figure 4 100 0.01 
+
+S. Figure 9 100 0.025 
+
+S. Figure 10 100 0.025 
+
+S. Figure 11 100 0.025 
+
+S. Figure 12 100 0.025 
+
+Table 5: Data parameters for relevant figures. For each figure where downsampled noisy data is used, this figure lists the number of data samples ( N ) and noise magnitude ( σ). Data generation details are described in Supplementary Section B.3. 24 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+# D Supplementary Figures 
+
+Supplementary Figure 1: Functional parameters can be recovered using an alternative loss function. To show that our approach is not restricted to the loss function presented in Section 2.2 (Equation (2.5) ), we replicate them using another loss function presented in the same section (Equation (2.4) ). (A-D) For the four different parameterisations of the PDE (each also used in Supplementary Figure 8), we carry out the procedure described in Figure 1. In each case, using the loss function in Equation (2.4), the interaction kernel is correctly recovered. 25 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Supplementary Figure 2: A Fourier mode expansion can be used as a universal function approximator. Throughout this paper, we rely on neural networks to approximate the functional parameters V and W . However, other approaches are possible. Here, for four different W (in all cases, V ≡ 0), we perform the workflow described in Figure 1 to recover 
+
+W from the solution profiles. Instead of using neural networks to approximate the unknown functions, we use Fourier mode expansion (detailed in Supplementary Section B.1). (A-D) In all four cases, the Fourier mode expansion can successfully recover W from the steady state solutions, and the fitted PDE yields the ground-truth solution profiles. 26 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Supplementary Figure 3: The selected neural network architecture can be successfully fitted directly to the true 
+
+W . Since the true W is known, we can perform a pre-fit optimisation run to confirm that our used neural network architecture (Supplementary Section B.2) can represent the W we attempt to fit. Here, we perform a direct fit of the neural network (dashed red line) to the ground truth W (solid blue line). Since the fit is successful, we carry on with (the more computationally intensive) fitting of the neural network to the solution profiles (Figure 2). Generally, while a larger neural network can fit more general functions, they do so at a greater computational cost (and at an increased risk of overfitting). For real-world applications (where the true W is not known), this kind of pre-fitting check is not possible. However, it is still possible to analyse how the complexity of the neural network affects the fitted function. Previous UDE research has suggested that neural network architecture has only minor effects on results [35]. 27 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Supplementary Figure 4: Convergence can be confirmed by plotting loss traces. For each individual optimisation run performed in Figure 2 and for each iteration (also called epoch ) of the optimisation procedure, we plot the best achieved loss function evaluation so far. Since the curves are flattening out towards the end of the optimisation, we determine that the optimisation has converged. Generally, loss trace progression plots like this one can be used to determine convergence. Finally, we note that, due to the nature of the used Adam optimiser, the actual loss function evaluation at each iteration might be higher than the plotted value. 28 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Supplementary Figure 5: Ensemble plots of fitted W ∗ functions confirms identifiability. In Figure 2, we confirmed that the fitted W ∗ aligned with the ground truth W . We also confirmed that W ∗ and W yield the same steady state solutions. However, while one can fail to generate a correct fit, there is a more elusive potential model fitting problem: non-identifiability [ 38 ]. Here, while we have confirmed that there is a W ∗ that fits the data, we have not confirmed whether there are other potential W ∗ that also do so. Indeed, if the space of potential W ∗ generating a good fit is large, this would prevent us from identifying the ground truth W . This is called a non-identifiability problem. Established methods for assessing identifiability for parameters exist [ 27 ], however, methods for functional identifiability analysis are more limited. Here, we will use the approach from [ 32 ], where the ensemble of functional forms achieving a certain goodness-of-fit is plotted. As we repeat the optimisation procedure multiple times (using different randomised initial guesses), we select all fitted functions W ∗ achieving a loss function value no more than twice that of the best fitting W ∗.The figure compares all such W ∗ (dashed red lines). Since they all converge to the same function (which is identical to the ground truth W , solid blue line), we have identifiability. 
+
+Supplementary Figure 6: A slightly perturbed W can yield a different solution set. In Figure 2 we showed how the optimally fitting W ∗ regenerated the solution set of the ground truth W . In this figure, we have an alternative function W † (A, red dashed line), so that W † ≈ W (A, solid blue line). However, while the two kernels are similar, the solution profiles generated by W † (B, dashed purple lines) differ from those generated by W (B, solid green lines). This suggests that, especially for applications to empirical data, one has to carefully consider the trustworthiness of steady state solutions generated by fitted PDEs. 29 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Supplementary Figure 7: The correct W can be recovered from a single solution. In Figure 2, we used all four solutions to recover W . Here, we perform the same fit three times, but in each case only using a single solution profile (omitting the trivial constant solution case). The double-peak solution is used in A,B, the triple-peak solution in C,D, and the bump in E,F. (A,C,E) While there are slight differences, in each case the fitted W ∗ (dashed red lines) is a good approximation of the ground truth W (solid blue lines). (B,D,F) In almost all cases, the fitted W ∗s regenerate the ground truth solution profiles. The exception is the W ∗ fitted to the triple-peak solution, where only three of the four solutions are regenerated. 30 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Supplementary Figure 8: A wide range of potential W can be recovered from the solutions. (A-D) To confirm the general nature of our results, we repeat them for a range of interaction kernels W . In each case, we confirm that the fitted kernel W ∗ (dashed red lines) follows the true kernels (solid blue lines) and that the solutions generated by the fitted kernels (dashed purple lines) are also solutions of the truth kernels (solid green lines). The kernels include piece-wise linear ones (A and B), a continuous one with multiple modes (C) and one with both piece-wise linear and continuous elements (D). 31 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Supplementary Figure 9: PDEs fitted from noisy data retain the full solution sets . (A-C) The solution profiles generated by the W ∗s fitted to the solution profiles in Figure 3 (dashed purple lines) compared to the noisy solutions to which they were fitted (solid green lines). (A,B) For the low noise (A) and medium noise (B) cases, the fitted W ∗sgenerate (smooth) solution profiles similar to those to which they were fitted. (C) For the high-noise case, not only are we unable to recover the ground truth W , but the fitted W ∗ fails to regenerate the solution profiles. 32 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Supplementary Figure 10: The fits to noisy succeed in numerical repeats. For the medium noise case in Figure 3C, we generate two new noisy steady state solution sets. These use new measurements, but the same sampling sparsity and noise distributions as in Figure 3C. (A,C) In both cases, the fitted W ∗ (dashed red lines) follows the ground truth W
+
+(solid blue lines). (B,D) Furthermore, the fitted W ∗’s solutions (dashed purple lines) correspond to the ground truth solutions (solid green lines). 
+
+Supplementary Figure 11: W functions recovered from noisy data are identifiable . To ensure that interaction kernels fitted from the noisy solutions are identifiable, we perform ensemble plots. In each case, the ensemble (all functions yielding a loss value < 1.1obj max , where obj max is the best found loss function value) is plotted. (A) Ensemble plot for the fit in Figure 3F. (B) Ensemble plot for the fit in Supplementary Figure 10A. (C) Ensemble plot for the fit in Supplementary Figure 10C. In all cases, the ensemble of plotted W ∗ (dashed red lines) aligns with each other and the ground truth W (solid blue lines), suggesting identifiability. 33 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Supplementary Figure 12: Our ability to recover the true W is highly dependent on the PDE . We generate a new nonlocal PDE with potential V ≡ 0, interaction strength parameter κ = 30 , and a unimodal interaction kernel W (A, solid blue line). (B) The new PDE, just like the ones used in Figure 3, generates four solutions (B, solid green lines). First, we confirm that the ground truth W can be recovered from the non-noisy solutions (A, dashed red line), and that the fitted W ∗ regenerates the ground truth solutions (B, dashed purple lines). Next, we generate a sparsely sampled, noisy, solution set (using the same sampling frequency and noise distributions as in Figure 3C) (D, solid green lines). The W ∗ that we fit from this noisy solution set (C, dashed red line) does not follow the ground truth kernel (C, solid blue line). It is noteworthy (but not necessarily unexpected) that we could fit a more complicated, multi-modal, W to solutions with similar noise levels (Figure 3F). Finally, we note that while we could not recover the correct W , W ∗ still generates a solution set (D, dashed purple lines) very similar to the ground truth one (D, solid green lines). 34 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Supplementary Figure 13: Analysis of spectral density’s impact on fitting performance (case 1). We consider a nonlocal PDE with a multimodal W (column C, blue curves), constant V , and κ = 8 . It generates 7 (non-trivial) steady state solutions (A). From every single solution, we check the solution’s spectrum (column B), and then attempt to recover a fitted W ∗ from the solution (column C). In theory, a solution with a rich spectrum should generate a better fit, however, the results are inconclusive. (Column D), For each case, for each wavenumber, we plot the absolute value of that wavenumber for the solution in A (x-axis) compared to the relative error between the true and fitted kernels (C). In theory, this should generate a negative slope, as we get better fits for more prominent wavenumbers. This phenomenon holds. 35 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Supplementary Figure 14: Analysis of spectral density’s impact on fitting performance (case 2). We consider a nonlocal PDE with a triangle kernel W (column C, blue curves), constant V , and κ = 19 . It generates 5 (non-trivial) steady state solutions (A). From every single solution, we check the solution’s spectrum (column B), and then attempt to recover a fitted W ∗ from the solution (column C). In theory, a solution with a rich spectrum should generate a better fit, however, the results are inconclusive. (Column D), For each case, for each wavenumber, we plot the absolute value of that wavenumber for the solution in A (x-axis) compared to the relative error between the true and fitted kernels (C). In theory, this should generate a negative slope, as we get better fits for more prominent wavenumbers. This phenomenon holds. 36 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Supplementary Figure 15: Ensemble plots of fitted PDE components confirm identifiability In Figure 5, when fitting 
+
+(W ∗, V ∗, κ ∗) to the solutions, we perform an ensemble fit with multiple random initial guesses ( N = 800 ). Here, we consider the set of optimisation runs achieving a loss function value no more than three times that of the optimal one. (A) The ensemble of well-fitting interaction kernels W ∗ (dashed red lines) all converge to the same functional form, which also follows the ground truth W (solid blue line). (B) The ensemble of well-fitting potential functions V ∗
+
+(dashed teal lines) all converge to the same functional form, which also follows the ground truth V (solid pink line). (C) The distribution of well-fitting κ∗ values (yellow line) all aggregate around the true value (vertical dotted black line). We note that parameter identifiability could have been carried out more comprehensively using profile likelihood analysis [ 27 ], however, we here use a distribution plot for simplicity. Taken together, these results show that not only can we recover the correct PDE components from the solution, but we can do so in an identifiable manner. 
+
+Supplementary Figure 16: A wide range of potential W and V combinations can be recovered from the solutions. (A-D) To confirm the general nature of our results, we repeat them for a range of interaction kernels W , potential functions 
+
+V , and values of κ. In each case, we confirm that the fitted functions (dashed lines) follow the true functions (solid lines) and that the fitted functions generate the same solutions (dashed purple lines) as the ground truth functions (solid green lines). Finally, we note that the fitted values κ∗ (6.1, 10 .9, 17 .8, and 20 .1, for A, B, C, and D, respectively) align well with the true values ( 6.0, 10 .0, 20 .0, and 20 .0). 37 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Supplementary Figure 17: Recovery of two functional components requires at least two steady state solutions (A-C) For each of the solutions of the PDE in Figure 5, we attempt to fit both W and V using that solution only ( κ is set to be known). Using the approach from Supplementary Figure 15, we plot all fitted W ∗ and V ∗ achieving a loss function value no more than three times that of the optimal one. In each case, a wide range of functional components generates good fits, suggesting that the recovery problem is non-identifiable. This is consistent with a theoretical analysis (see Supplementary Materials A). (D-F) For each combination of two solutions of the solution of the PDE in Figure 5, we attempt to fit both W and V using those two solutions only. Here, in all cases, the ensemble plots show that we can correctly recover the true functions, confirming that identifiability holds when two solutions are available. 38 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Supplementary Figure 18: Solution profiles vary across the PDE’s bifurcation diagram. (A-F) Solution profiles for the 6 sample locations in Figure 6A. Identities are marked by top right corner colored dots. A-E corresponds to solutions on the same branch, while F corresponds to a solution on a different branch. Note that profiles A,B,F,G are identical to Figure 6C,D,E,F (but displayed here as well for completeness). 39 Learning functional components of PDEs from data using neural networks A P REPRINT 
+
+Supplementary Figure 19: V and W can be recovered using two solutions, conditioned on their bifurcation diagram sampling locations. (A-E) For each of the combinations of two solutions described in Figure 6B, we show the ensemble of recovered W ∗ and V ∗ (and compare them to the true functions). Using the approach from Supplementary Figure 15, we plot all fitted W ∗ and V ∗ achieving a loss function value no more than three times that of the optimal one. These plots correspond to Figure 6G-I, but include the fits for the solution combinations not displayed there. Same-branch recovery performance increases as the κ distance between the two solutions used increases. However, already at a relatively small distance, V and W can be recovered well. Note that ensemble plots A,E,F are identical to Figure 6G,H,I (but displayed here as well for completeness). 40
