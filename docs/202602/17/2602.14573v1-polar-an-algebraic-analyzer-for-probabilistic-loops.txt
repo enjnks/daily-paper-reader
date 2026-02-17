@@ -1,0 +1,768 @@
+Title: Polar: An Algebraic Analyzer for (Probabilistic) Loops
+
+URL Source: https://arxiv.org/pdf/2602.14573v1
+
+Published Time: Tue, 17 Feb 2026 02:42:49 GMT
+
+Number of Pages: 23
+
+Markdown Content:
+# Polar: An Algebraic Analyzer for (Probabilistic) Loops 
+
+Marcel Moosbrugger  , Julian Müllner  , Ezio Bartocci  , and Laura Kovács 
+
+TU Wien, Vienna, Austria {firstname.lastname@tuwien.ac.at} 
+
+Abstract. We present the Polar framework for fully automating the analysis of classical and probabilistic loops using algebraic reasoning. The central theme in Polar comes with handling algebraic recurrences that precisely capture the loop semantics. To this end, our work implements a variety of techniques to compute exact closed-forms of recurrences over higher-order moments of variables, infer invariants, and derive loop sen-sitivities with respect to unknown parameters. Polar can analyze prob-abilistic loops containing if-statements, polynomial arithmetic, and com-mon probability distributions. By translating loop analysis into linear recurrence solving, Polar uses the derived closed-forms of recurrences to compute the strongest polynomial invariant or to infer parameter sensitivity. Polar is both sound and complete within well-defined pro-gramming model restrictions. Lifting any of these restrictions results in significant hardness limits of computation. To overcome computational burdens for the sake of efficiency, Polar also provides incomplete but sound techniques to compute moments of combinations of variables. 
+
+Keywords: Probabilistic Loops · Program Analysis · Linear Recur-rences · Polynomial Invariants · Sensitivity Analysis 
+
+# 1 Introduction 
+
+Probabilistic programs (PPs) extend classical programs by integrating the abil-ity to draw from common probability distributions [9,42]. This integration allows PPs to embed stochastic quantities within standard control flow, enabling the encoding of complex probability distributions. As such, PPs constitute a unify-ing framework to model stochastic systems across various domains, such as ma-chine learning [26], natural sciences [4], cyber-physical systems [21,56], security and privacy [8,10], or randomized algorithms [50]. In this context, probabilistic program loops can encode stochastic processes, modeling dynamics under uncer-tainty, such as dynamic Bayesian networks [57] or autonomous vehicles [39,40]. Given the wide application range of PPs, automating the formal analysis of PPs is intrinsically hard. As pointed out by Joost-Pieter Katoen and his co-authors in [27], “formal verification of probabilistic programs is strictly harder  
+
+> arXiv:2602.14573v1 [cs.PL] 16 Feb 2026 2Marcel Moosbrugger, Julian Müllner, Ezio Bartocci, and Laura Kovács
+
+than for nonprobabilistic programs”. In this paper we address some of the veri-fication challenges studied by Joost-Pieter Katoen in probabilistic programming 
+
+and present Polar , a fully automatic tool for the automated analysis of non-probabilistic and probabilistic loops. In the sequel, we refer to nonprobabilistic programs as classic programs. Our Polar framework complements the many al-gorithmic approaches, see e.g. [32,33], Joost-Pieter Katoen has developed over the past years. In particular, Polar combines algebraic reasoning with statisti-cal methods, which we believe yields a rigorous methodology that Joost-Pieter Katoen will enjoy using and experimenting with. Polar is open-source and publicly available: 
+
+https://github.com/probing-lab/polar 1
+
+The Polar methodology. Formally verifying and analyzing PPs has received significant attention, due to their complexity introduced by the combination of randomness and deterministic control flow. Deductive program calculi [42,43], such as the weakest preexpectation calculus, offer effective methods for reasoning about PPs. Recently, various probabilistic program calculi have been proposed to address different program properties [15,3,38,30,31]. The primary challenge in au-tomating these calculi is handling program loops. Similarly to classical program verification, verifying probabilistic loops requires invariant properties, which typ-ically are provided manually. In contrast to these works, Polar automates the analysis of classical and probabilistic loops without any user guidance, by rely-ing on algebraic recurrence solving. Under certain restrictions on its program-ming model, Polar computes closed-forms of loop recurrences over moments of loop variables. These closed-forms are further used to derive (strongest) loop invariants and loop sensitivities of variable moments with respect to unknown parameters. 
+
+Algebraic loop analysis via Polar . The central feature of Polar comes with its capability to extract algebraic recurrences that precisely describe statistical moments of loop variables, such as expected values or even higher moments [49]. Specifically, these recurrences are linear recurrences with constant coefficients, so-called C-finite recurrences [36]. In our setting, Polar computes closed-forms of such recurrences as being functions representing moments of loop variables parameterized by the number of loop iterations n. Figure 1a illustrates a proba-bilistic loop modeling a two-dimensional random walk with Gaussian noise and an unknown parameter p. The closed-forms, automatically computed by Polar 
+
+and shown in Figure 1b, provide the expected values and second moments of the variables x and y for any loop iteration n and value of p.Two central concepts in the analysis of probabilistic loops are loop invariants 
+
+and sensitivities . For moments of program variables, invariants are properties of the moments that are valid throughout a loop’s execution. Sensitivities quantify how changes in unknown parameters affect variable moments. Polar leverages                                          
+
+> 1Throughout the paper, Polar is used with version 1.0 .Polar: An Algebraic Analyzer for (Probabilistic) Loops 3
+> x , y =0 , 0
+> while ⋆:
+> dimension =Bernoulli (p)
+> noise =Normal (0 ,1)
+> if dimension == 0 : x=x+1 {1/2}x−1 x=x + noise
+> else:
+> y=y+1 {1/2}y−1 y=y + noise
+> end end
+> (a)
+> Closed-forms:
+> E(xn)=E(yn) = 0
+> E(x2
+> n) = 2 n·(1 −p)
+> E(y2
+> n) = 2 n·p
+> Invariants:
+> E(x) = E(y) = 0
+> E(x2)·p+E(y2)·(p−1) = 0
+> Sensitivities:
+> ∂pV(xn) = −2n∂pV(yn) = 2 n
+> (b)
+
+Fig. 1: A probabilistic loop modeling a two-dimensional random walk with Gaus-sian noise and parameter p. Fig. 1b depicts information about the loop as com-puted by Polar .the computed closed-forms of loop recurrences to automatically infer (strongest) loop invariants and quantify the sensitivity of variable moments on unknown parameters. Figure 1b shows the strongest polynomial invariant among the first two moments of the variables x and y for the loop depicted in Figure 1a, as well as the sensitivities of their variances with respect to the parameter p. For classical loops, Polar computes the strongest polynomial invariant of the loop. Loops that can be analyzed by Polar support if-statements, symbolic con-stants, polynomial arithmetic, constant probabilistic choice, and draws from com-mon probability distributions. To ensure computability, Polar imposes certain restrictions on its input programs (see Section 2.3): besides enforcing probabili-ties to be constant, all variables in if-conditions must only assume finitely many values and all cyclic variable dependencies must be linear. Interestingly, none of the restrictions can be lifted without encountering significant hardness bound-aries [49,51]. Despite these hardness results, Polar implements an incomplete, but sound, method to compute closed-forms for combinations of program vari-ables, even for certain loops that violate the computability restrictions [5]. 
+
+Contributions. This paper serves as the first comprehensive tutorial on Polar ,discussing what Polar can do and how it can be used. We present the main features and techniques implemented in Polar , designed for the automated analysis of both classical and probabilistic loops, as follows. 
+
+– We describe the use of C-finite recurrences for computing closed-forms for (moments of) loop variables [49]. We also detail the restrictions on input programs that Polar enforces to guarantee computability (Section 2). 4 Marcel Moosbrugger, Julian Müllner, Ezio Bartocci, and Laura Kovács                                                                                                                  
+
+> lop ∈ { and ,or },cop ∈ { =,6=, <, >, ≥,≤} ,Dist ∈ { Bernoulli ,Beta ,Categorical ,DiscreteUniform ,
+> Exponential ,Gamma ,Laplace ,Normal ,TruncNormal ,Uniform }
+> 〈sym 〉::= a|b|. . . 〈var 〉::= x|y|. . .
+> 〈const 〉::= r∈R|〈sym 〉|〈const 〉(+|*|/)〈const 〉〈poly 〉::= 〈const 〉|〈var 〉|〈poly 〉(+|-|*)〈poly 〉|〈poly 〉**n
+> 〈assign 〉::= 〈var 〉=〈assign_right 〉|〈var 〉,〈assign 〉,〈assign_right 〉〈categorical 〉::= 〈poly 〉({〈const 〉}〈poly 〉)* [ {〈const 〉}]
+> 〈assign_right 〉::= 〈categorical 〉| Dist (〈poly 〉∗)
+> 〈bexpr 〉::= true (⋆) | false |〈poly 〉 〈 cop 〉 〈 poly 〉|not 〈bexpr 〉|〈bexpr 〉 〈 lop 〉 〈 bexpr 〉〈ifstmt 〉::= if 〈bexpr 〉:〈statems 〉(else if 〈bexpr 〉:〈statems 〉)∗[else: 〈statems 〉]end
+> 〈statem 〉::= 〈assign 〉|〈ifstmt 〉〈statems 〉::= 〈statem 〉+
+> 〈loop 〉::= 〈statem 〉*while 〈bexpr 〉:〈statems 〉end
+
+Fig. 2: Grammar describing the syntax of the input programs to Polar [49]. 
+
+– We provide a comprehensive overview of how Polar uses exponential poly-nomial closed-forms to compute the strongest polynomial invariant for clas-sical and probabilistic loops (Section 3). 
+
+– We explain how Polar can be used to compute the sensitivities of variable moments with respect to unknown model parameters [48] (Section 4). 
+
+– We illustrate the incomplete, but sound techniques that Polar employs to analyze loops that violate its computability restrictions [5] (Section 5). 
+
+# 2 Computing Closed-Form Formulas 
+
+Assignments in program loops capture relations between the values of variables in previous loop iterations and variable values in the current iteration. Likewise, algebraic recurrence relations describe values of sequences in terms of previous values. This similarity renders algebraic recurrence solving as a natural tool for the analysis of loops. Linear recurrences with constant coefficients, also referred to as C-finite recurrences , are particularly suitable for automation: the sequences described by C-finite recurrences are always expressible with computable closed-form formulas [36]. A core functionality of Polar comes with modeling loops by recurrence equa-tions , which in turn enables Polar to compute closed-forms of recurrences over (i) loop variable values in classical, non-probabilistic loops; (ii) as well as ex-pected values and higher moments of loop variables in probabilistic loops. These closed-forms are further used to infer loop invariants or automate sensitivity analysis over loop parameters (see Sections 3–4). 
+
+The Polar programming model. Polar ’s input programs are non-nested while-loops with standard program constructs. Figure 2 depicts the grammar defining the input programs. Polar supports symbolic constants, probabilistic choice between different expressions, and drawing from probability distributions with Polar: An Algebraic Analyzer for (Probabilistic) Loops 5                           
+
+> a , b , c =0 , 1 , 1 x , z =0 , 1
+> while ⋆:a , b , c =b , c , b+c z=−z x=x + a ∗∗2
+> end
+> (a) Classical loop.
+> x , y =1 , 0
+> while ⋆:y=y+1 {1/2}y−2 {1/3}yg=Normal ( y , 1 ) x=x + g ∗∗2
+> end
+> (b) Probabilistic loop
+
+Fig. 3: Two loops for which closed-forms of loop variables (moments) are com-putable with Polar . Here, ** denotes the power operator. existing moments. For the probabilistic loop in Figure 3b, the assignment of 
+
+y contains a probabilistic choice between three expressions which evaluates to 
+
+y + 1 with probability 1/2, y − 2 with probability 1/3 and y with the remaining probability of 1/6. Conditioning is a prevalent feature in probabilistic program languages and is currently not supported by Polar .The following example illustrates C-finite recurrences and their use in the automated analysis of classical loops. Here and in sequel, by a classical loop we mean a non-probabilistic loop. 
+
+Example 1 (Fibonacci loop). The classical loop in Figure 3a iterates over Fi-bonacci numbers using the program variables a, b, and c. Moreover, the pro-gram variable z toggles between 1 and −1. The value of x after n loop iterations corresponds to the sum of squares of the first n Fibonacci numbers. The value sequences of the program variables a, b, c, and z are fully described by the following system of C-finite recurrences together with the initial values of loop variables; here, the initial values of loop variables are already substituted in the recurrences. 
+
+an+1 = bn bn+1 = cn
+
+cn+1 = bn + cn zn+1 = −zn
+
+(1) where an denote the value of a at the nth loop iterations; similarly for the other variables/sequences. The system (1) of recurrences can automatically be constructed from the assignments in the loop body and succinctly expressed using matrices and vectors: 
+
+
+
+abcz
+
+
+
+> n+1
+
+=
+
+
+
+0 1 0 00 0 1 00 1 1 00 0 0 −1
+
+︸ ︷︷ ︸
+
+> M
+
+·
+
+
+
+abcz
+
+
+
+> n
+
+(2) 6 Marcel Moosbrugger, Julian Müllner, Ezio Bartocci, and Laura Kovács 
+
+Closed-forms of each component of the matrix system (2) are expressed as an 
+
+exponential polynomial , that is, a sum of polynomials and exponentials. More precisely, for every variable α of the system, we have 
+
+αn = ∑
+
+> λ
+
+pλ(n)λn,
+
+where the λ’s are the eigenvalues of the matrix M and every pλ(n) is a polynomial depending on λ and the initial value of α. Such a closed-form representation is not specific to this example but holds in general for any system of C-finite recurrences [36]. For the loop in Figure 3a, we obtain the following closed-forms: 
+
+Fn = 1
+
+√5
+
+( 1 + √5
+
+2
+
+)n
+
+− 1
+
+√5
+
+( 1 − √5
+
+2
+
+)n
+
+an = Fn bn = Fn+1 
+
+cn = Fn+2 zn = ( −1) n
+
+where Fn is Binet’s formula for Fibonacci numbers. So far, the program variable x of Figure 3a was omitted in this example. Although the assignment of x in the loop body contains a non-linear term, its values can still be described by C-finite recurrences. The main idea is to construct linear recurrences for monomials in program variables. To fully capture the values of x, the system (1) can be extended by the following recurrences: 
+
+xn+1 = xn + b2 
+
+> n
+
+b2 
+
+> n+1
+
+= c2
+
+> n
+
+c2 
+
+> n+1
+
+= b2 
+
+> n
+
++ 2 cb n + c2 
+
+> n
+
+cb n+1 = cb n + c2
+
+> n
+
+(3) The resulting system (3) is comprised of C-finite recurrences over monomials in program variables and yields the closed-form for the program variable x.
+
+2.1 Closed-Forms for Probabilistic Loops 
+
+Our tool Polar implements the computation of closed-forms for classical loops and can also analyze probabilistic loops. For probabilistic loops, the exact values of program variables are inherently stochastic and hence do not follow classical recurrences. Nevertheless, expected values and higher moments of program vari-ables can obey C-finite recurrences, referred to as moment recurrences [11,45]. 
+
+Example 2 (Closed-forms for Moments). The probabilistic loop in Figure 3b con-tains assignments with probabilistic choice and draws from probability distribu-tions. Hence, the values of the loop variables do not follow classical algebraic recurrences. However, using the expected value operator E, we can devise recur-rences for moments of program variables, as illustrated next. Due to the assignment of x in Figure 3b, we have E(xn+1 ) = E(xn)+ E(g2
+
+> n+1
+
+). The assignment of g contains a distribution with a state-dependent parameter, Polar: An Algebraic Analyzer for (Probabilistic) Loops 7
+
+which can be resolved using the identity Normal (y, 1) = y + Normal (0 , 1). Hence, we construct the following recurrences for the first two moments of g:
+
+E(gn+1 ) = E(yn+1 ) + E(Normal (0 , 1)) = E(yn+1 )
+
+E(g2
+
+> n+1
+
+) = E(y2
+
+> n+1
+
+) + E(2 yn+1 N(0 , 1)) + E(N(0 , 1) 2)= E(y2
+
+> n+1
+
+) + 1 Similarly, the recurrences for the first two moments of the loop variable y
+
+are: 
+
+E(yn+1 ) = E(yn + 1) 
+
+2 + E(yn − 1) 
+
+3 + E(yn)
+
+6 = E(yn) − 1
+
+6
+
+E(y2
+
+> n+1
+
+) = E(( yn + 1) 2)
+
+2 + E(( yn − 1) 2)
+
+3 + E(y2
+
+> n
+
+)
+
+6= E(y2
+
+> n
+
+) − 1
+
+3 E(yn) + 11 
+
+6By combining the moment recurrences of y and g together with the moment recurrences of x, we obtain a system of C-finite recurrences over expected values of monomials in the program variables of Figure 3b. Solving this recurrence system, Polar infers the following closed-forms for the loop variable moments: 
+
+E(yn) = − n
+
+6 E(y2
+
+> n
+
+) = n2 + 65 n
+
+36 
+
+E(xn ) = n3
+
+256 + 133 n2
+
+256 + 205 n
+
+128 + 1 As Examples 1 and 2 suggest, the system of recurrences can often be con-structed by applying the expected value operator on assignments together with bottom-up substitution of program variables by their assignments as they ap-pear in the loop body. Throughout the process, properties such as the linearity of expectation are used to simplify the resulting recurrences. The treatment of if-statements in the construction of recurrences is non-trivial. We refer to [49] for more details on constructing moment recurrences, especially regarding the support of if-statements. 
+
+2.2 Computing Closed-Forms with Polar 
+
+Polar utilizes moment recurrences to automatically compute closed-forms for raw moments such as E(xkn), for a fixed k ∈ N. These closed-forms are param-eterized by the number of loop iterations n ∈ N and can also be computed for mixed moments, such as E(xy n). Moreover, central moments can be computed using raw moments. For instance, the variance of a variable x is determined by its first two raw moments: V(x) = E(x2) − E(x)2. Polar provides the following command-line interface for closed-form computation, where BENCHMARK is a path to the input program to analyze. 8 Marcel Moosbrugger, Julian Müllner, Ezio Bartocci, and Laura Kovács 
+
+python polar.py BENCHMARK --goals "GOAL1", ..., "GOALk" 
+
+Polar derives a closed-form form for each goal from GOAL1, ..., GOALk ,passed through the goals parameter. Each goal from GOAL1, ..., GOALk , rep-resents an expected value, a central moment, or a cumulant for some monomial 
+
+M in program variables, and has one of the following forms: 
+
+– E(M) for the expected value of M ;
+
+– cd(M) for the central moment of degree d of M , where d ∈ N;
+
+– kd(M) for the cumulant of degree d of M , with d ∈ N.For guarded loops, Polar can compute moments of program variables after termination of the loop by additionally passing the flag after_loop .
+
+2.3 Restrictions for Computability 
+
+The class of input programs defined by the grammar in Figure 2 is Turing-complete. Hence, closed-forms are uncomputable in general. Nevertheless, with some further restrictions (R) on the input programs as listed below, Polar 
+
+guarantees computability [45]. 
+
+R1 – Constant probabilities. The first restriction is that probabilities in proba-bilistic choice constructs, as well as distribution parameters, must be constant, which means, they must not change between loop iterations. Similarly to Ex-ample 2, some non-constant distribution parameters are supported by utilizing specific identities to eliminate the dependency of parameters on the program state. 
+
+R2 – Finite guards. Program variables occurring in if-statements and/or the loop guard must only assume finitely many values through the loop’s execution. Intuitively, this is the restriction that prevents Turing-completeness of the input programs. 
+
+R3 – Acyclic Non-Linearity. Polar ’s program model allows polynomial arith-metic. However, if a program variable x depends non-linearly on y, then y must not depend on x.With these three restrictions R1–R3 , the closed-form of any moment of pro-gram variables is computable by Polar . Restriction R2 is necessary because, without it, the program model is Turing-complete. However, also restrictions 
+
+R1 and R3 cannot be lifted without facing serious hardness boundaries on com-putability (cf. Section 5). 
+
+# 3 Computing Invariants 
+
+Loop invariants are properties that hold throughout the execution of a loop and are essential for verifying the safety and correctness of programs containing Polar: An Algebraic Analyzer for (Probabilistic) Loops 9
+
+loops. In general, invariants strong enough for verifying a given safety property are uncomputable. Hence, existing works either resort to incomplete methods or impose restrictions on the class of supported loops and invariants. Polynomial invariants are given by polynomial equations in program variables. Every poly-nomial equation P = Q can trivially be transformed to P − Q = 0. Therefore, it is sufficient to only consider polynomial invariants of the form P = 0, where P is a polynomial in program variables. Polynomial invariants constitute a relatively tractable, yet expressive class of invariants. 
+
+Example 3. For the loop in Figure 3a, the variables a, b, and c are three consec-utive Fibonacci numbers, z toggles between 1 and −1, and the variable x sums the squares of a. The following equalities are polynomial invariants of the loop and correspond to well-known identities involving Fibonacci numbers: 
+
+a + b − c = 0 (Fibonacci definition) 
+
+z − b2 − bc − c2 = 0 (Cassini’s identity) 
+
+b4 + 2 b3c − b2c2 − 2bc 3 + c4 − 1 = 0 (Quartic identity) 
+
+b2 − bc + x = 0 (Sum of squares identity) The strongest polynomial invariant of a loop is the set I of all polynomials P
+
+in program variables such that P = 0 is an invariant. The fact that I generally contains infinitely many elements is mitigated by its well-behaved structure: the strongest polynomial invariant forms an ideal . This means I is a group and, for every P ∈ I and every polynomial in program variables Q, we have P ·Q ∈ I . For a given loop, I is also called the invariant ideal of the loop. Crucially, Hilbert’s basis theorem states that every polynomial ideal is finitely generated [22]. Hence, 
+
+I can be fully characterized by listing a finite number of polynomials. In fact, the four polynomial invariants in Example 3 form a basis and generate the strongest polynomial invariant of the Fibonacci loop from Figure 3a. When considering polynomial invariants in probabilistic loops, we note that in general E(xk ) 6 = E(x)k . Intuitively speaking, this is the main reason why the set of all polynomial invariants among all moments of program variables is not a polynomial ideal and is not finitely generated. A solution to infer polynomial invariants among moments of probabilistic loop variables is to fix a finite set of moments and only consider polynomial invariants over these moments [51]. For instance, for the probabilistic loop of Figure 3b the following single invariant is a basis for all polynomial invariants among E(x) and E(y): 
+
+E(x) + 2 E(y)3 − 33 E(y)2 + 103 
+
+9 E(y) − 1 = 0 For a given loop and a finite set M of moments of program variables, the strongest polynomial invariant is the set I of all polynomials P in M such that 
+
+P = 0 is an invariant. For instance, if M = {E(x), E(y)}, then I contains all polynomial invariants among the expected values of the program variables x
+
+and y. The set I is also referred to as the moment invariant ideal with respect 10 Marcel Moosbrugger, Julian Müllner, Ezio Bartocci, and Laura Kovács 
+
+to M [51]. Importantly, moment invariant ideals are a proper generalization of classical polynomial invariants: for every program variable x of any classical loop we have E(x) = x. Hence, for classical loops, the moment invariant ideal with respect to the first moments of loop variables corresponds to the classical invariant ideal. 
+
+3.1 From Closed-Forms to Invariant Ideals 
+
+Our tool Polar can compute a basis for the invariant ideal of any classical loop and any moment invariant ideal of probabilistic loops adhering to the computabil-ity restrictions from Section 2.3. It does so, by first computing the closed-forms of all program variables (or a fixed set of moments for probabilistic loops) as exponential polynomials parameterized by the number of loop iterations n (cf. Section 2). Second, Polar uses existing techniques to compute all polynomial relations among the closed-forms that hold for all n ∈ N. In the remainder of this section, we sketch the main ideas of how Polar computes all polynomial relations among exponential polynomial closed-forms. 
+
+Polynomial Closed-Forms. Polar uses C-finite recurrences to compute closed-forms for (moments of) loop variables which, in general, are exponential polyno-mials. However, if all closed-forms are standard polynomials, such as in Exam-ple 2, the computation of bases for (moment) invariant ideals simplifies signifi-cantly. We illustrate the basis computation for this special case with the following example. 
+
+Example 4. Assume a classical loop with variables x, y and polynomial closed-forms xn = n2 − 1 and yn = n3 + n. The ideal ˆI generated by x − n2 − 1and y − n3 − n is an ideal in the polynomial ring Q[x, y, n ] and subsumes the loop’s invariant ideal I. However, ˆI references n which is not a variable of the loop. Intuitively, n needs to be eliminated from ˆI to compute I. More precisely, 
+
+I = ˆI ∩Q[x, y ]. A basis for ˆI ∩Q[x, y ], and hence I, can be inferred using Gröbner bases computation via Buchberger’s algorithm [16]. In this respect, the first step is to compute a Gröbner basis for ˆI with respect to a lexicographic monomial order such that n > x, y ; as a result, we obtain the Gröbner basis: 
+
+n2 − x − 1 nx + 2 n − yny − x2 − 3x − 2 x3 + 5 x2 + 8 x − y2 + 4 Then, a basis for ˆI ∩ Q[x, y ], and hence I, is given by all above basis elements that do not contain n. Therefore, the invariant ideal of I is generated by the single invariant x3 + 5 x2 + 8 x − y2 + 4 = 0. This technique to eliminate variables from polynomial ideals is applicable in general: (i) compute a Gröbner basis with respect to a lexicographic order such that the variables to eliminate have higher precedence, and (ii) in the resulting basis only retain elements that do not contain “unwanted” variables, that is perform variable elimination [22]. Polar: An Algebraic Analyzer for (Probabilistic) Loops 11 
+
+General Closed-Forms as Exponential Polynomials. Generally, closed-forms of C-finite recurrences contain polynomials and exponentials. Gröbner bases and Buchberger’s algorithm are inherently tied to polynomial arithmetic and hence do not suffice for computing invariant ideals for all loops supported by Polar . The main idea for treating exponential terms is to replace them with fresh variables, transforming the closed-forms into polynomials. There are no algebraic relations between any exponential bn and polynomial p(n) that hold for all n ∈ N. On the other hand, there can be algebraic relations between multiple exponential terms. However, any information about the exponential terms is removed when replacing them with fresh variables. For this reason, the 
+
+multiplicative relation s between the exponentials are calculated separately and added to the basis containing the invariant ideal. Then, the loop counter n as well as the variables introduced for the exponentials are eliminated, as in Example 4, resulting in a basis for the invariant ideal. 
+
+Example 5. Assume a classical loop with variables x, y and closed-forms xn =
+
+n2n and yn = n24n. Because the closed-forms contain exponentials, we associate 2n and 4 n with the fresh variables a and b, respectively; that is, a = 2 n and 
+
+b = 4 n. The equation a2b − 1 = 0 characterizes the multiplicative relations between 2 n and 4 n. The ideal ˆI generated by x − na , y − n2b, and a2b − 1 is an ideal in the polynomial ring Q[x, y, n, a, b ] and subsumes the loops invariant ideal. In contrast to Example 4, we now eliminate not only n but also a and b,resulting in the invariant ideal generated by the single polynomial x2 − y.Usually, the multiplicative relationships among exponentials are less evident than in Example 5 and need to be computed automatically. The exponential bases occurring in the closed-forms of C-finite recurrences are algebraic num-bers. Existing algorithms can be used to compute the multiplicative relations among general algebraic numbers [34,35]. The algorithms are non-trivial and in-volve concepts from abstract algebra. If all exponential bases are rational, Polar 
+
+uses a considerably simpler approach. This simpler method involves factorization and solving a system of linear Diophantine equations which is particularly suit-able if the numerators and denominators of the exponential bases are small. We illustrate this approach with the following example. 
+
+Example 6. The multiplicative relations between the rational numbers 2, 1/4, and 
+
+> 1
+
+/6 are given by the natural solutions of the following equation: 2x ·
+
+( 1
+
+4
+
+)y
+
+·
+
+( 1
+
+6
+
+)z
+
+= 1 ⇐⇒ 
+
+( 2x
+
+1
+
+)
+
+·
+
+( 1
+
+2y2y
+
+) ( 1
+
+2z 3z
+
+)
+
+= 1 For any solution, the multiplicity of every prime factor in the enumerator must be equal to the multiplicity in the denominator. More precisely, a triple ( x, y, z )is a solution if and only if it is a solution to the following linear system: 
+
+x − 2y − z = 0 
+
+−z = 0 12 Marcel Moosbrugger, Julian Müllner, Ezio Bartocci, and Laura Kovács                                
+
+> x , y =0 , 0
+> while ⋆:x=x+2 {1/2}x−1 y=y+1 {1/2}y−2
+> end
+> (a)
+> stop =0
+> count =0x=1
+> while stop == 0 :
+> stop =Bernoulli (1/2)
+> count =count + 1 x=2x
+> end
+> (b)
+
+Fig. 4: Two probabilistic loops with computable moment invariant ideals. The set of all natural solutions of the linear system forms is characterized by a finite number of minimal solutions computable by standard means. For this example, a basis is given by the single triple (2 , 1, 0). The approach from this example generalizes to arbitrary rational numbers with one additional step. Po-tential occurrences of the factor −1 are treated separately by adding a single equation to the linear system, ensuring that the multiplicity of −1 is even. 
+
+3.2 Computing Invariants with Polar 
+
+Polar implements (i) the algorithm from [35] to compute the multiplicative relations among exponentials with general algebraic number bases, and (ii) a simpler method for rational bases. Together with the closed-form computation introduced in Section 2 and Gröbner bases manipulations, Polar infers (mo-ment) invariant ideals fully automatically. Computability of bases for (moment) invariant ideals is guaranteed for any (probabilistic) loop adhering to the restric-tions from Section 2.3 [45,51]. 
+
+Example 7. Figure 4 contains two examples of probabilistic loops. For these loops, Polar computes moment invariant ideals for any set of program variable moments. The loop in Figure 4a models two asymmetric random walks, both starting at the origin. The moment invariant ideal for all first- and second-order moments is characterized by the following invariants computed by Polar :
+
+E(x2) − E(y2) = 0 
+
+E(xy )2 + 2 E(xy )E(y2) + 81 
+
+4 E(xy ) + E(y2)2 = 0 2
+
+9 E(xy ) + E(y) + 2
+
+9 E(y2) = 0 
+
+E(x) − 2
+
+9 E(xy ) − 2
+
+9 E(y2) = 0 (4) Polar: An Algebraic Analyzer for (Probabilistic) Loops 13 
+
+The moment invariant ideal contains all polynomial relations among the mo-ments E(xn), E(yn), E(x2
+
+> n
+
+), and E(xy n) that are true after all number of loop iterations n ∈ N. We omit the index n from moments in invariants to empha-size that the invariants are true for all n ∈ N. The ideal can be “queried” for invariants using the basis (4). For instance, it can be automatically checked that E(xy ) = E(x)E(y) is an invariant, showing that the two random walks of Figure 4a are uncorrelated. The probabilistic loop in Figure 4b contains a loop guard. Because the single variable stop occurring in the loop guard can only assume the values 0 and 1, the loop is supported by Polar . The following single invariant is a basis for the moment invariant ideal with respect to the expected values of the program variables: 
+
+−E(count ) + 2 E(stop ) = 0 Upon termination of the loop, we have stop = 1 and hence E(stop ) = 1. Com-bining this fact obtained from the loop guard with the invariant from the basis results in the expected value of count after termination, that is E(count ) = 2. There is a plethora of calculi, such as the weakest-preexpectation calculus [43,9], that enable reasoning about expected values after termination. However, regard-ing automation, these calculi require a manually provided loop invariant. Inves-tigating the connection between these calculi and moment invariant ideals is an interesting direction for future research. In summary, Polar provides the functionality of computing (moment) invari-ant ideals through its command-line interface and the parameter invariants :
+
+python polar.py BENCHMARK --goals GOALS --invariants 
+
+With this command, Polar first computes the closed-forms for all goals passed through the goals parameter and then uses its approach described in this section to compute all algebraic relations among the closed-forms. If no goals are passed, by default Polar uses all (expected values of) program variables of the (probabilistic) loop BENCHMARK .
+
+# 4 Parameters and Sensitivity Analysis 
+
+A major challenge when modeling stochastic processes with probabilistic loops is that value distributions of some process parameters are often unknown. 
+
+Polar addresses this issue by supporting symbolic constants that represent arbi-trary real numbers, enabling the modeling of such processes despite the unknown parameters. In this context, the goal of sensitivity analysis is to describe/quan-tify how small changes in these symbolic parameters affect the moments of loop variables. As such, sensitivity analysis provides additional information about probabilistic loops when model parameters are only partially known. The re-sulting sensitivity information can then be applied to various tasks, such as determining optimal values for unknown parameters based on given objectives. 14 Marcel Moosbrugger, Julian Müllner, Ezio Bartocci, and Laura Kovács                                  
+
+> x , y =0 , 0
+> while ⋆:v=Normal ( p, 2 ) x=x+v {7/10 }x−v y=y+2x {1/3}y−x ∗∗2
+> end
+> (a)
+> u , w , x , y , z =0 , 1 , 2 , 3 , 4
+> while t r u e : z=z+ p∗∗2 {1/2}z+ p
+> y=y − 5pzw=5w + x ∗∗2 x=5 + w + x u=x + py
+> end
+> (b) [48]
+
+Fig. 5: Two probabilistic loops with computable sensitivities. 
+
+Example 8. Figure 5a depicts a probabilistic loop with parameter p representing an arbitrary real number. Exploiting the techniques of Section 2 and using sym-bolic constants, Polar can compute the closed-forms of any moment of loop variables. For instance, the closed-form of the expected value of y is: 
+
+E(yn) = −8n3p2 − 75 n2p2 + 30 n2p − 150 n2 − 67 np2 + 30 np − 150 n
+
+225 Recall that the closed-forms computed by Polar are exponential polynomials in the number of loop iterations n. These closed-forms also include symbolic constants within the polynomials and exponential bases for parameterized loops. Hence, the closed-forms for variable moments can be differentiated fully auto-matically with respect to a parameter leading to the sensitivities of variable moments. For the loop from Figure 5a, we denote by ∂pE(yn) the sensitivity of the expected value of y with respect to p and use Polar to derive the following closed-form: 
+
+∂pE(yn) = −16 n3p − 150 n2p + 30 n2 − 134 np + 30 n
+
+225 
+
+4.1 Sensitivity Analysis for Unsolvable Loops 
+
+Analyzing sensitivities by utilizing closed-forms of variable moments requires that the loops satisfy the restrictions from Section 2.3. By providing an alterna-tive method, Polar is able to compute sensitivities even for loops that violate the restriction R3 of acyclic non-linearity. For the loop in Figure 5b, the program variable w depends non-linearly on x. Moreover, the variable x depends on w, cre-ating a non-linear cyclic dependency. This violates restriction R3 , and as a result, 
+
+Polar is unable to compute closed-forms for the moments of the variables. In general, exponential polynomial closed-forms do not exist for such loops. Hence, it is impossible to compute sensitivities by differentiating the closed-forms of variable moments. Polar: An Algebraic Analyzer for (Probabilistic) Loops 15 
+
+With the technique of [48], the computation of moments can be circumvented by constructing recurrences for sensitivities , instead of recurrences over moments, and utilizing the potential independence of some variables and the parameter under study. We illustrate this approach via the following example. 
+
+Example 9. The variables w and x are responsible for the violation of restriction 
+
+R3 of the loop in Figure 5b; variables w and x are however independent of the parameter p. Therefore, changes in p do not affect moments that only involve w
+
+and x. More precisely, ∂pE(Mn) = 0 for any monomial Mn in wn and xn. This fact can be utilized by constructing a recurrence for ∂pE(un): 
+
+∂pE(un) = ∂pE(xn+1 ) + E(yn+1 ) + p∂pE(yn+1 )= E(yn+1 ) + p∂pE(yn+1 )Using that ∂pE(xn) = 0, all variables responsible for the violation of restriction 
+
+R3 vanish from the sensitivity recurrence of ∂pE(un). The recurrence for ∂pE(un)can be completed to a system of C-finite recurrences by adding recurrences for E(yn), ∂pE(yn), E(zn), and ∂pE(zn). Hence, the sensitivity ∂pE(un) has an exponential polynomial closed-form even though the moment E(un) does not: 
+
+∂pE(un) = −5n2p3 − 15 
+
+4 n2p2 − 5np3 − 15 
+
+4 np2 − 40 np + 3 
+
+4.2 Computing Parameter Sensitivities with Polar 
+
+Computing sensitivities by differentiating the closed-forms of moments, as de-tailed in Example 8, is available in Polar through its command-line interface: 
+
+python polar.py BENCHMARK --goals GOALS -sens_diff PARAM 
+
+Using this command, Polar computes the closed-forms of all goals passed through the goals parameter and differentiates them with respect to the pa-rameter PARAM ; for example, with respect to parameter p of Example 8. Further, Polar also derives recurrences for sensitivities, as discussed in Sec-tion 4.1. To this end, Polar uses simple static analysis techniques to determine parameter-independent program variables. The functionality can be used by re-placing the sens_diff parameter with sens :
+
+python polar.py BENCHMARK --goals GOALS -sens PARAM 
+
+# 5 Computational Hardness and Unsolvable Loops 
+
+As argued in Section 2, the core functionality of Polar comes with computing closed-forms for (moments of) loop variables using linear recurrences. To ensure computability, Polar imposes the three restrictions of Section 2.3 on its pro-gramming model. Lifting any of these restrictions brings hard computational boundaries, as detailed next. 16 Marcel Moosbrugger, Julian Müllner, Ezio Bartocci, and Laura Kovács               
+
+> z=0
+> while ⋆:z=1 − zx=2x + y ∗∗2 +zy=2y − y ∗∗2 + 2 z
+> end
+
+Fig. 6: An unsolvable loop [5]. Restriction R2 of Section 2.3, disallows arbitrary variables in if-conditions. Lifting this restriction would make Polar ’s programming model Turing-complete and render closed-forms uncomputable [49]. Additionally, recent results of [51] show that lifting restriction R3 , which disallows arbitrary polynomial depen-dencies within the loop body, render computing closed-forms and the strongest polynomial invariant Skolem -hard. The Skolem -problem is a well-known prob-lem in number theory whose decidability has been unresolved for nearly a cen-tury [23,58]. Furthermore, restriction R1 requires all probabilities to be constant. Allowing for state-dependent probabilities would generally result in cyclic non-linear dependencies in the moment recurrences, leading to similar computational difficulties as encountered when lifting restriction R3 .Despite the restrictions of R1 –R3 , Polar implements additional techniques to analyze loops that cannot be solved by the methods of Sections 2–3. We refer to such loops as unsolvable loops [4]. 
+
+5.1 Closed-Forms for Unsolvable Loops 
+
+Intuitively, unsolvable loops are loops with arbitrary polynomial dependencies within their loop bodies. Hence, unsolvable loops do not satisfy restriction R3 .Despite the hardness results, Polar analyzes unsolvable loops using incomplete, but sound methods. 
+
+Example 10. In the loop of Figure 6, the program variable y depends non-linearly on itself, rendering the loop unsolvable. Although exponential polynomial closed-forms for the variables x and y generally do not exist, combinations of these variables may allow for closed-forms. For instance, the addition of x and y follows a linear recurrence and has the following closed-form: 
+
+xn + yn = 2 n(x0 + y0 + 2) − (−1) n
+
+2 − 3
+
+2 (5) Intuitively, by summing up the variable x and y, the problematic non-linear self-dependency of y vanishes. Generally, problematic non-linear dependencies may remain in linear combinations of variables but vanish using polynomial combinations of higher degrees. Polar: An Algebraic Analyzer for (Probabilistic) Loops 17 
+
+5.2 Solvable Loop Synthesis from Unsolvable Loops 
+
+Given an unsolvable loop, the polynomial combinations of program variables as described in Section 5.1 can be used to synthesize a solvable loop that overap-proximates the original unsolvable loop [5]. 
+
+Example 11. The unsolvable loop from Figure 6 is overapproximated by the following solvable loop with respect to the variable combination x + y.               
+
+> s=x0+y0
+> while ⋆:t=1 − zs=2 s + 3 − 3 z z=t
+> end
+
+The fresh program variable s simulates the value of the variable combination 
+
+x + y. Hence, s and x + y share the closed-form stated in (5). The solvable loop overapproximates the unsolvable loop from Figure 6 in the sense that every invariant of the solvable loop is also an invariant of the unsolvable loop relative to the substitution s → x + y.
+
+5.3 Analyzing Unsolvable Loops using Polar 
+
+In support of automating the analysis of unsolvable loops by computing (unsolv-able) closed-forms as discussed in Section 5.1, Polar implements the techniques of [4,5] to synthesize polynomial combinations of program variables that obey linear recurrences, whenever loop updates over individual variables may not yield linear recurrences. To synthesize such polynomial combinations of program vari-ables for unsolvable loops, Polar provides the following command-line interface: 
+
+python polar.py BENCHMARK --synth_unsolv_inv --inv_deg DEGREE 
+
+Using the parameter synth_unsolv_inv , Polar synthesizes polynomial com-binations of “problematic” program variables that follow a well-behaved recur-rence [4]. To circumvent the hardness results stemming from lifting (some) re-strictions of R1 –R3 , Polar synthesizes all such polynomial combinations, where the degree of the polynomials is bounded by the natural number DEGREE passed through the inv_deg parameter. For probabilistic input loops, the closed-forms are for the expected value of the synthesized combinations instead of their exact values. Further, Polar implements the approach of [5] to synthesize solvable loops from unsolvable loops, as discussed in Section 5.2. In essence, Polar ’s synthesis procedure replaces the program variables “responsible for unsolvability” with a fresh variable that simulates a well-behaved polynomial combination of program 18 Marcel Moosbrugger, Julian Müllner, Ezio Bartocci, and Laura Kovács 
+
+variables, as introduced in Section 5.1. The solvable loop synthesized by Po-lar is always deterministic, even if the original unsolvable loop is probabilistic. In the case of a probabilistic input loop, the variables in the synthesized loop represent the expected values of the original variables and the combination of program variables. To synthesize solvable loops from a given unsolvable loop 
+
+Polar provides the following command-line interface: 
+
+python polar.py BENCHMARK --synth_solv_loop --inv_deg DEGREE 
+
+By calling this command, Polar first computes all well-behaved polynomial combinations of program variables up to the fixed degree DEGREE . For every combination found, Polar synthesizes a solvable loop that overapproximates the original unsolvable loop of BENCHMARK .
+
+# 6 Related Work 
+
+While the verification and invariant generation of (probabilistic) loops are widely studied research problems with many theoretical challenges, our focus with Po-lar remains in the computer-aided efficient automation of loop analysis. For classical programs, recurrence relations serve as common workhorses for program analysis [41,29,24,37]. Inferring polynomial invariants by using linear recurrences and Gröbner bases computation was pioneered in [53,54] and later extended to more general recurrences [41,29]. The tool Aligator [28] can au-tomatically compute the strongest polynomial invariant for a class of classical 
+
+loops. However, the loops supported by Aligator are a strict subset of those supported by Polar , as Aligator does not handle any form of randomness or branching statements. The use of linear recurrences for probabilistic loops was first introduced in [11], leading to the development of the tool Mora [12]. While 
+
+Mora can compute closed-forms for a strict subset of probabilistic loops sup-ported by Polar , it lacks additional functionalities such as sensitivity analysis and invariant synthesis. Due to the uncomputability of invariants for general probabilistic programs, many techniques resort to incomplete techniques. Constraint-based methods use templates for potential invariants and aim to solve for template instantiations resulting in invariants [25,32]. In [7] the authors use neural networks as potential invariants and train them using counter-examples. Another technique leveraging counter-examples to guide the search for probabilistic invariants was introduced in [13]. In some cases, probabilistic programs can be automatically verified with-out synthesizing invariants by resorting to induction techniques [14]. Alterna-tively to invariant synthesis, user-provided annotations can be used within a deductive verification framework [55]. Termination is a property not yet addressed by Polar . Most tools for probabilistic termination analysis use martingale-based proof rules, automated through constraint solving [17,2,20,19,18]. Alternatively, the automation tech-niques implemented in the probabilistic termination tool Amber [46,47] are Polar: An Algebraic Analyzer for (Probabilistic) Loops 19 
+
+based on recurrence relations [45]. Analogous to invariant synthesis, neural net-works, and learning techniques have been employed for probabilistic termination analysis [1]. Additionally, tools for expected cost analysis can also be used to ver-ify finite expected runtimes [52,44,6]. Extending Polar with automated meth-ods (dis)proving loop termination is an interesting direction for future work. 
+
+# 7 Conclusion 
+
+We present the Polar framework for the automated analysis of classical and probabilistic loops using algebraic recurrences. Polar supports the analysis of (probabilistic) loops with if-statements, polynomial arithmetic, and draws from common probability distributions. The core functionality of Polar is the extraction of C-finite recurrences that describe the moments of loop variables. These recurrences yield exponential polynomial closed-forms, which Polar uses to compute the strongest polynomial invariant of a loop fully automatically. To ensure computability for the class of supported input programs, Polar 
+
+imposes certain restrictions on the variables within branching statements and allows only acyclic polynomial dependencies. In addition to closed-forms and invariants, Polar can also be used to compute the sensitivities of (moments of) program variables with respect to unknown model parameters. For loops violating the restriction of acyclic polynomial dependencies, Polar offers an incomplete, but sound, method for inferring closed-forms of combinations of variables. As such, Polar provides a multitude of algebraic features for the exact and automated analysis of (probabilistic) loops. 
+
+Acknowledgements. We thank Daneshvar Amrollahi, George Kenison and Miroslav Stankovic for valuable discussions and joint work related to Polar. We acknowl-edge generous funding from the ERC Consolidator Grant ARTIST 101002685, the WWTF 10.47379/ICT19018 grant ProbInG, the TU Wien Doctoral College SecInt, and the Amazon Research Award 2023 QuAT. 20 Marcel Moosbrugger, Julian Müllner, Ezio Bartocci, and Laura Kovács 
+
+# References 
+
+1. Abate, A., Giacobbe, M., Roy, D.: Learning probabilistic termination proofs. In: Proc. of CAV (2021). https://doi.org/10.1007/978-3-030-81688-9_1 
+
+2. Agrawal, S., Chatterjee, K., Novotný, P.: Lexicographic ranking supermartingales: an efficient approach to termination of probabilistic programs. Proc. ACM Pro-gram. Lang. (POPL) (2018). https://doi.org/10.1145/3158122 
+
+3. Aguirre, A., Barthe, G., Hsu, J., Kaminski, B.L., Katoen, J., Matheja, C.: A pre-expectation calculus for probabilistic sensitivity. Proc. ACM Program. Lang. (POPL) (2021). https://doi.org/10.1145/3434333 
+
+4. Amrollahi, D., Bartocci, E., Kenison, G., Kovács, L., Moosbrugger, M., Stankovic, M.: Solving Invariant Generation for Unsolvable Loops. In: Proc. of SAS (2022). 
+
+https://doi.org/10.1007/978-3-031-22308-2_3 
+
+5. Amrollahi, D., Bartocci, E., Kenison, G., Kovács, L., Moosbrugger, M., Stankovic, M.: (Un)Solvable Loop Analysis. Formal Methods Syst. Des. (2024), To appear. 6. Avanzini, M., Moser, G., Schaper, M.: A modular cost analysis for probabilistic programs. Proc. ACM Program. Lang. (OOPSLA) (2020). 
+
+https://doi.org/10.1145/3428240 
+
+7. Bao, J., Trivedi, N., Pathak, D., Hsu, J., Roy, S.: Data-driven in-variant learning for probabilistic programs. In: Proc. of CAV (2022). 
+
+https://doi.org/10.1007/978-3-031-13185-1_3 
+
+8. Barthe, G., Grégoire, B., Béguelin, S.Z.: Probabilistic relational hoare logics for computer-aided security proofs. In: Proc. of MPC (2012). 
+
+https://doi.org/10.1007/978-3-642-31113-0 
+
+9. Barthe, G., Katoen, J.P., Silva, A.: Foundations of Probabilistic Programming. Cambridge University Press (2020). https://doi.org/10.1017/9781108770750 
+
+10. Barthe, G., Köpf, B., Olmedo, F., Béguelin, S.Z.: Probabilistic rela-tional reasoning for differential privacy. In: Proc. of POPL (2012). 
+
+https://doi.org/10.1145/2103656.2103670 
+
+11. Bartocci, E., Kovács, L., Stankovic, M.: Automatic generation of moment-based invariants for prob-solvable loops. In: Proc. of ATVA (2019). 
+
+https://doi.org/10.1007/978-3-030-31784-3_15 
+
+12. Bartocci, E., Kovács, L., Stankovic, M.: Mora - automatic gen-eration of moment-based invariants. In: Proc. of TACAS (2020). 
+
+https://doi.org/10.1007/978-3-030-45190-5_28 
+
+13. Batz, K., Chen, M., Junges, S., Kaminski, B.L., Katoen, J., Matheja, C.: Proba-bilistic program verification via inductive synthesis of inductive invariants. In: Proc. of TACAS (2023). https://doi.org/10.1007/978-3-031-30820-8_25 
+
+14. Batz, K., Chen, M., Kaminski, B.L., Katoen, J.P., Matheja, C., Schröer, P.: Lat-ticed k-induction with an application to probabilistic programs. In: Proc. of CAV (2021). https://doi.org/10.1007/978-3-030-81688-9_25 
+
+15. Batz, K., Kaminski, B.L., Katoen, J., Matheja, C., Verscht, L.: A calculus for amortized expected runtimes. Proc. ACM Program. Lang. (POPL) (2023). 
+
+https://doi.org/10.1145/3571260 
+
+16. Buchberger, B.: Bruno buchberger’s phd thesis 1965: An algorithm for finding the basis elements of the residue class ring of a zero dimensional polynomial ideal. J. Symb. Comput. (2006). https://doi.org/10.1016/j.jsc.2005.09.007 
+
+17. Chakarov, A., Sankaranarayanan, S.: Probabilistic pro-gram analysis with martingales. In: Proc. of CAV (2013). 
+
+https://doi.org/10.1007/978-3-642-39799-8_34 Polar: An Algebraic Analyzer for (Probabilistic) Loops 21 18. Chatterjee, K., Fu, H., Goharshady, A.K.: Termination Analysis of Prob-abilistic Programs Through Positivstellensatz’s. In: Proc. of CAV (2016). 
+
+https://doi.org/10.1007/978-3-319-41528-4_1 
+
+19. Chatterjee, K., Novotný, P., Zikelic, D.: Stochastic invariants for probabilistic ter-mination. In: Proc. of POPL (2017). https://doi.org/10.1145/3009837.3009873 
+
+20. Chen, J., He, F.: Proving almost-sure termination by omega-regular decomposition. In: Proc. of PLDI (2020). https://doi.org/10.1145/3385412.3386002 
+
+21. Chou, Y., Yoon, H., Sankaranarayanan, S.: Predictive runtime monitoring of vehi-cle models using bayesian estimation and reachability analysis. In: Proc. of IROS (2020). https://doi.org/10.1109/IROS45743.2020.9340755 
+
+22. Cox, D.A., Little, J., O’Shea, D.: Ideals, varieties, and algorithms - an introduction to computational algebraic geometry and commutative algebra (2. ed.). Springer (1997). https://doi.org/10.1137/1035171 
+
+23. Everest, G., van der Poorten, A.J., Shparlinski, I.E., Ward, T.: Recurrence Se-quences. Math. Surveys Monogr., Amer. Math. Soc., Providence (2003), iSBN 978-0-8218-3387-2 24. Farzan, A., Kincaid, Z.: Compositional recurrence analysis. In: Proc. of FMCAD (2015). https://doi.org/10.1109/FMCAD.2015.7542253 
+
+25. Feng, Y., Zhang, L., Jansen, D.N., Zhan, N., Xia, B.: Finding polyno-mial loop invariants for probabilistic programs. In: Proc. of ATVA (2017). 
+
+https://doi.org/10.1007/978-3-319-68167-2_26 
+
+26. Ghahramani, Z.: Probabilistic machine learning and artificial intelligence. Nature (2015). https://doi.org/10.1038/nature14541 
+
+27. Hark, M., Kaminski, B.L., Giesl, J., Katoen, J.: Aiming low is harder: induction for lower bounds in probabilistic program verification. Proc. ACM Program. Lang. (POPL) (2020). https://doi.org/10.1145/3371105 
+
+28. Humenberger, A., Jaroschek, M., Kovács, L.: Aligator.jl - A julia package for loop invariant generation. In: Proc. of CICM (2018). 
+
+https://doi.org/10.1007/978-3-319-96812-4_10 
+
+29. Humenberger, A., Jaroschek, M., Kovács, L.: Invariant generation for multi-path loops with polynomial assignments. In: Proc. of VMCAI (2018). 
+
+https://doi.org/10.1007/978-3-319-73721-8_11 
+
+30. Kaminski, B.L., Katoen, J., Matheja, C., Olmedo, F.: Weakest precondition rea-soning for expected run-times of probabilistic programs. In: Proc. of ESOP (2016). 
+
+https://doi.org/10.1007/978-3-662-49498-1 
+
+31. Kaminski, B.L., Katoen, J., Matheja, C., Olmedo, F.: Weakest precondition reasoning for expected runtimes of randomized algorithms. J. ACM (2018). 
+
+https://doi.org/10.1145/3208102 
+
+32. Katoen, J., McIver, A., Meinicke, L., Morgan, C.C.: Linear-invariant generation for probabilistic programs: - automated support for proof-based methods. In: Proc. of SAS (2010). https://doi.org/10.1007/978-3-642-15769-1_24 
+
+33. Katoen, J., Zapreev, I.S., Hahn, E.M., Hermanns, H., Jansen, D.N.: The ins and outs of the probabilistic model checker MRMC. Perform. Eval. (2011). 
+
+https://doi.org/10.1016/j.peva.2010.04.001 
+
+34. Kauers, M.: Algorithms for Nonlinear Higher Order Difference Equations. Ph.D. thesis, RISC, Johannes Kepler University, Linz (2005) 35. Kauers, M., Nuspl, P., Pillwein, V.: Order bounds for c2-finite sequences. In: Proc. of ISSAC (2023). https://doi.org/10.1145/3597066.3597070 
+
+36. Kauers, M., Paule, P.: The Concrete Tetrahedron - Symbolic Sums, Recur-rence Equations, Generating Functions, Asymptotic Estimates. Springer (2011). 
+
+https://doi.org/10.1007/978-3-7091-0445-3 22 Marcel Moosbrugger, Julian Müllner, Ezio Bartocci, and Laura Kovács 37. Kincaid, Z., Cyphert, J., Breck, J., Reps, T.W.: Non-linear reason-ing for invariant synthesis. Proc. ACM Program. Lang. (POPL) (2018). 
+
+https://doi.org/10.1145/3158142 
+
+38. Klinkenberg, L., Batz, K., Kaminski, B.L., Katoen, J., Moerman, J., Winkler, T.: Proc. of LOPSTR (2020). https://doi.org/10.1007/978-3-030-68446-4_12 
+
+39. Kofnov, A., Moosbrugger, M., Stankovic, M., Bartocci, E., Bura, E.: Moment-based invariants for probabilistic loops with non-polynomial assignments. In: Proc. of QEST (2022). https://doi.org/10.1007/978-3-031-16336-4_1 
+
+40. Kofnov, A., Moosbrugger, M., Stankovič, M., Bartocci, E., Bura, E.: Exact and approximate moment derivation for probabilistic loops with non-polynomial assignments. ACM Trans. Model. Comput. Simul. (2024). 
+
+https://doi.org/10.1145/3641545 , just Accepted 41. Kovács, L.: Reasoning algebraically about p-solvable loops. In: Proc. of TACAS (2008). https://doi.org/10.1007/978-3-540-78800-3_18 
+
+42. Kozen, D.: A probabilistic PDL. J. Comput. Syst. Sci. (1985). 
+
+https://doi.org/10.1016/0022-0000(85)90012-1 
+
+43. McIver, A., Morgan, C.: Abstraction, Refinement and Proof for Probabilistic Sys-tems. Springer (2005). https://doi.org/10.1007/b138392 
+
+44. Meyer, F., Hark, M., Giesl, J.: Inferring Expected Runtimes of Probabilis-tic Integer Programs Using Expected Sizes. In: Proc. of TACAS (2021). 
+
+https://doi.org/10.1007/978-3-030-72016-2_14 
+
+45. Moosbrugger, M., Bartocci, E., Katoen, J.P., Kovács, L.: Automated Termina-tion Analysis of Polynomial Probabilistic Programs. In: Proc. of ESOP (2021). 
+
+https://doi.org/10.1007/978-3-030-72019-3_18 
+
+46. Moosbrugger, M., Bartocci, E., Katoen, J.P., Kovács, L.: The Probabilistic Termination Tool Amber. In: Proc. of FM (2021). 
+
+https://doi.org/10.1007/978-3-030-90870-6_36 
+
+47. Moosbrugger, M., Bartocci, E., Katoen, J., Kovács, L.: The Proba-bilistic Termination Tool Amber. Formal Methods Syst. Des. (2022). 
+
+https://doi.org/10.1007/S10703-023-00424-Z 
+
+48. Moosbrugger, M., Müllner, J., Kovács, L.: Automated Sensitiv-ity Analysis for Probabilistic Loops. In: Proc. of iFM (2023). 
+
+https://doi.org/10.1007/978-3-031-47705-8_2 
+
+49. Moosbrugger, M., Stankovic, M., Bartocci, E., Kovács, L.: This Is The Mo-ment for Probabilistic Loops. Proc. ACM Program. Lang. (OOPSLA2) (2022). 
+
+https://doi.org/10.1145/3563341 
+
+50. Motwani, R., Raghavan, P.: Randomized Algorithms. Cambridge University Press (1995). https://doi.org/10.1017/cbo9780511814075 
+
+51. Müllner, J., Moosbrugger, M., Kovács, L.: Strong Invariants Are Hard: On the Hardness of Strongest Polynomial Invariants for (Probabilistic) Programs. Proc. ACM Program. Lang. (POPL) (2024). https://doi.org/10.1145/3632872 
+
+52. Ngo, V.C., Carbonneaux, Q., Hoffmann, J.: Bounded expectations: re-source analysis for probabilistic programs. In: Proc. of PLDI (2018). 
+
+https://doi.org/10.1145/3192366.3192394 
+
+53. Rodríguez-carbonell, E., Kapur, D.: Automatic generation of polyno-mial loop invariants: Algebraic foundations. In: Proc. of ISSAC (2004). 
+
+https://doi.org/10.1145/1005285.1005324 
+
+54. Rodríguez-Carbonell, E., Kapur, D.: Generating All Polyno-mial Invariants in Simple Loops. J. Symb. Comput. (2007). 
+
+https://doi.org/10.1016/j.jsc.2007.01.002 Polar: An Algebraic Analyzer for (Probabilistic) Loops 23 55. Schröer, P., Batz, K., Kaminski, B.L., Katoen, J., Matheja, C.: A deductive verifica-tion infrastructure for probabilistic programs. Proc. ACM Program. Lang. (OOP-SLA2) (2023). https://doi.org/10.1145/3622870 
+
+56. Selyunin, K., Ratasich, D., Bartocci, E., Islam, M.A., Smolka, S.A., Grosu, R.: Neural programming: Towards adaptive control in cyber-physical systems. In: Proc. of CDC (2015). https://doi.org/10.1109/CDC.2015.7403319 
+
+57. Stankovic, M., Bartocci, E., Kovács, L.: Moment-based analy-sis of bayesian network properties. Theor. Comput. Sci. (2022). 
+
+https://doi.org/10.1016/j.tcs.2021.12.021 
+
+58. Tao, T.: Structure and Randomness. American Mathematical Society (2008), iSBN 0-8218-4695-7
