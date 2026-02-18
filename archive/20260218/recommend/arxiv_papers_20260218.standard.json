@@ -1,0 +1,50 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-02-18T04:37:47.696459+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 1,
+    "deep_cap": 6,
+    "deep_selected": 1,
+    "quick_candidates": 0,
+    "quick_skim_target": 11,
+    "quick_selected": 0
+  },
+  "deep_dive": [
+    {
+      "id": "2602.15743v1",
+      "title": "Physics-informed data-driven inference of an interpretable equivariant LES model of incompressible fluid turbulence",
+      "abstract": "Restrictive phenomenological assumptions represent a major roadblock for the development of accurate subgrid-scale models of fluid turbulence. Specifically, these assumptions limit a model's ability to describe key quantities of interest, such as local fluxes of energy and enstrophy, in the presence of diverse coherent structures. This paper introduces a symbolic data-driven subgrid-scale model that requires no phenomenological assumptions and has no adjustable parameters, yet it outperforms leading LES models. A combination of a priori and a posteriori benchmarks shows that the model produces accurate predictions of various quantities including local fluxes across a broad range of two-dimensional turbulent flows. While the model is inferred using LES-style spatial coarse-graining, its structure is more similar to RANS models, as it employs an additional field to describe subgrid scales. We find that this field must have a rank-two tensor structure in order to correctly represent both the components of the subgrid-scale stress tensor and the various fluxes.",
+      "authors": [
+        "Matteo Ugliotti",
+        "Brandon Choi",
+        "Mateo Reynoso",
+        "Daniel R. Gurevich",
+        "Roman O. Grigoriev"
+      ],
+      "primary_category": "physics.flu-dyn",
+      "categories": [
+        "physics.flu-dyn",
+        "physics.comp-ph"
+      ],
+      "published": "2026-02-17 17:17:09+00:00",
+      "link": "https://arxiv.org/pdf/2602.15743v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "symbolic data-driven model for fluid turbulence",
+      "llm_evidence_cn": "流体湍流的符号数据驱动模型",
+      "llm_evidence": "流体湍流的符号数据驱动模型",
+      "llm_tldr_en": "Introduces an interpretable symbolic data-driven model for subgrid-scale fluid turbulence without adjustable parameters.",
+      "llm_tldr_cn": "引入了一种用于子格尺度流体湍流的可解释符号数据驱动模型，无需可调参数。",
+      "llm_tldr": "引入了一种用于子格尺度流体湍流的可解释符号数据驱动模型，无需可调参数。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    }
+  ],
+  "quick_skim": []
+}

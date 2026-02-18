@@ -1,5 +1,9 @@
 * [首页](/)
 * Daily Papers
+  * 2026-02-18 <!--dpr-date:20260218-->
+    * 精读区
+      * <a class="dpr-sidebar-item-link" href="#/202602/18/2602.15743v1-physics-informed-data-driven-inference-of-an-interpretable-equivariant-les-model-of-incompressible-fluid-turbulence"><div class="dpr-sidebar-title">Physics-informed data-driven inference of an interpretable equivariant LES model of incompressible fluid turbulence</div><div class="dpr-sidebar-tags"><span class="dpr-sidebar-tag dpr-sidebar-tag-score"><span class="dpr-stars" title="评分：10.0/10（5.0/5）" aria-label="5.0 out of 5"><span class="dpr-stars-bg">☆☆☆☆☆</span><span class="dpr-stars-fill" style="width:100%">★★★★★</span></span></span> <span class="dpr-sidebar-tag dpr-sidebar-tag-keyword">SR</span> <span class="dpr-sidebar-tag dpr-sidebar-tag-query">SR</span></div></a>
+    * 速读区
   * 2026-02-17 <!--dpr-date:20260217-->
     * 精读区
       * <a class="dpr-sidebar-item-link" href="#/202602/17/2602.14670v1-factorminer-a-self-evolving-agent-with-skills-and-experience-memory-for-financial-alpha-discovery"><div class="dpr-sidebar-title">FactorMiner: A Self-Evolving Agent with Skills and Experience Memory for Financial Alpha Discovery</div><div class="dpr-sidebar-tags"><span class="dpr-sidebar-tag dpr-sidebar-tag-score"><span class="dpr-stars" title="评分：8.0/10（4.0/5）" aria-label="4.0 out of 5"><span class="dpr-stars-bg">☆☆☆☆☆</span><span class="dpr-stars-fill" style="width:80%">★★★★★</span></span></span> <span class="dpr-sidebar-tag dpr-sidebar-tag-keyword">SR</span> <span class="dpr-sidebar-tag dpr-sidebar-tag-query">SR</span></div></a>
