@@ -1,0 +1,117 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-02-19T04:34:09.364742+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 1,
+    "deep_cap": 6,
+    "deep_selected": 1,
+    "quick_candidates": 2,
+    "quick_skim_target": 11,
+    "quick_selected": 2
+  },
+  "deep_dive": [
+    {
+      "id": "2602.16166v1",
+      "title": "Discovering Unknown Inverter Governing Equations via Physics-Informed Sparse Machine Learning",
+      "abstract": "Discovering the unknown governing equations of grid-connected inverters from external measurements holds significant attraction for analyzing modern inverter-intensive power systems. However, existing methods struggle to balance the identification of unmodeled nonlinearities with the preservation of physical consistency. To address this, this paper proposes a Physics-Informed Sparse Machine Learning (PISML) framework. The architecture integrates a sparse symbolic backbone to capture dominant model skeletons with a neural residual branch that compensates for complex nonlinear control logic. Meanwhile, a Jacobian-regularized physics-informed training mechanism is introduced to enforce multi-scale consistency including large/small-scale behaviors. Furthermore, by performing symbolic regression on the neural residual branch, PISML achieves a tractable mapping from black-box data to explicit control equations. Experimental results on a high-fidelity Hardware-in-the-Loop platform demonstrate the framework's superior performance. It not only achieves high-resolution identification by reducing error by over 340 times compared to baselines but also realizes the compression of heavy neural networks into compact explicit forms. This restores analytical tractability for rigorous stability analysis and reduces computational complexity by orders of magnitude. It also provides a unified pathway to convert structurally inaccessible devices into explicit mathematical models, enabling stability analysis of power systems with unknown inverter governing equations.",
+      "authors": [
+        "Jialin Zheng",
+        "Ruhaan Batta",
+        "Zhong Liu",
+        "Xiaonan Lu"
+      ],
+      "primary_category": "eess.SY",
+      "categories": [
+        "eess.SY"
+      ],
+      "published": "2026-02-18 03:46:02+00:00",
+      "link": "https://arxiv.org/pdf/2602.16166v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Integrates a sparse symbolic backbone to discover governing equations",
+      "llm_evidence_cn": "集成稀疏符号骨架以发现控制方程",
+      "llm_evidence": "集成稀疏符号骨架以发现控制方程",
+      "llm_tldr_en": "Proposes PISML to discover unknown inverter governing equations using symbolic and neural components.",
+      "llm_tldr_cn": "提出PISML框架，结合符号与神经网络发现逆变器控制方程。",
+      "llm_tldr": "提出PISML框架，结合符号与神经网络发现逆变器控制方程。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2602.16473v1",
+      "title": "Synthesis and Verification of Transformer Programs",
+      "abstract": "C-RASP is a simple programming language that was recently shown to capture concepts expressible by transformers. In this paper, we develop new algorithmic techniques for automatically verifying C-RASPs. To this end, we establish a connection to the verification of synchronous dataflow programs in Lustre, which enables us to exploit state-of-the-art model checkers utilizing highly optimized SMT-solvers. Our second contribution addresses learning a C-RASP program in the first place. To this end, we provide a new algorithm for learning a C-RASP from examples using local search. We demonstrate efficacy of our implementation for benchmarks of C-RASPs in the literature, in particular in connection to the following applications: (1) transformer program optimization, and (2) constrained learning of transformer programs (based on a partial specification).",
+      "authors": [
+        "Hongjian Jiang",
+        "Matthew Hague",
+        "Philipp Rümmer",
+        "Anthony Widjaja Lin"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.FL",
+        "cs.LO"
+      ],
+      "published": "2026-02-18 14:04:02+00:00",
+      "link": "https://arxiv.org/pdf/2602.16473v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "learning programs from examples using local search",
+      "llm_evidence_cn": "利用局部搜索从示例中学习程序",
+      "llm_evidence": "利用局部搜索从示例中学习程序",
+      "llm_tldr_en": "Presents algorithms for learning and verifying C-RASP programs from examples, relevant to program synthesis.",
+      "llm_tldr_cn": "提出了从示例中学习和验证C-RASP程序的算法，与程序合成相关。",
+      "llm_tldr": "提出了从示例中学习和验证C-RASP程序的算法，与程序合成相关。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    },
+    {
+      "id": "2602.16551v1",
+      "title": "Automated Extraction of Mechanical Constitutive Models from Scientific Literature using Large Language Models: Applications in Cultural Heritage Conservation",
+      "abstract": "The preservation of cultural heritage is increasingly transitioning towards data-driven predictive maintenance and \"Digital Twin\" construction. However, the mechanical constitutive models required for high-fidelity simulations remain fragmented across decades of unstructured scientific literature, creating a \"Data Silo\" that hinders conservation engineering. To address this, we present an automated, two-stage agentic framework leveraging Large Language Models (LLMs) to extract mechanical constitutive equations, calibrated parameters, and metadata from PDF documents. The workflow employs a resource-efficient \"Gatekeeper\" agent for relevance filtering and a high-capability \"Analyst\" agent for fine-grained extraction, featuring a novel Context-Aware Symbolic Grounding mechanism to resolve mathematical ambiguities. Applied to a corpus of over 2,000 research papers, the system successfully isolated 113 core documents and constructed a structured database containing 185 constitutive model instances and over 450 calibrated parameters. The extraction precision reached 80.4\\%, establishing a highly efficient \"Human-in-the-loop\" workflow that reduces manual data curation time by approximately 90\\%. We demonstrate the system's utility through a web-based Knowledge Retrieval Platform, which enables rapid parameter discovery for computational modeling. This work transforms scattered literature into a queryable digital asset, laying the data foundation for the \"Digital Material Twin\" of built heritage.",
+      "authors": [
+        "Rui Hu",
+        "Yue Wu",
+        "Tianhao Su",
+        "Yin Wang",
+        "Shunbo Hu",
+        "Jizhong Huang"
+      ],
+      "primary_category": "cs.DB",
+      "categories": [
+        "cs.DB"
+      ],
+      "published": "2026-02-18 15:53:15+00:00",
+      "link": "https://arxiv.org/pdf/2602.16551v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "automated extraction of constitutive equations from literature",
+      "llm_evidence_cn": "从文献中自动提取本构方程",
+      "llm_evidence": "从文献中自动提取本构方程",
+      "llm_tldr_en": "An LLM-based framework to extract mechanical constitutive equations and parameters from scientific papers.",
+      "llm_tldr_cn": "一个基于大模型的框架，用于从科学论文中提取机械本构方程和参数。",
+      "llm_tldr": "一个基于大模型的框架，用于从科学论文中提取机械本构方程和参数。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    }
+  ]
+}
