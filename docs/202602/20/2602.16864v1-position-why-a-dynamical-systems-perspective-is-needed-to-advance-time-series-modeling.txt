@@ -1,0 +1,1296 @@
+Title: Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling
+
+URL Source: https://arxiv.org/pdf/2602.16864v1
+
+Published Time: Fri, 20 Feb 2026 01:12:31 GMT
+
+Number of Pages: 43
+
+Markdown Content:
+# Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+Daniel Durstewitz * 1 2 3 Christoph J ¨ urgen Hemmer * 1 2 Florian Hess 1 2 Charlotte Ricarda Doll 1 2 
+
+Lukas Eisenmann 1 2 
+
+# Abstract 
+
+Time series (TS) modeling has come a long way from early statistical, mainly linear, approaches to the current trend in TS foundation models. With a lot of hype and industrial demand in this field, it is not always clear how much progress there really is. To advance TS forecasting and analysis to the next level, here we argue that the field needs a 
+
+dynamical systems (DS) perspective. TS of obser-vations from natural or engineered systems almost always originate from some underlying DS, and arguably access to its governing equations would yield theoretically optimal forecasts. This is the promise of DS reconstruction (DSR) , a class of ML/AI approaches that aim to infer surrogate models of the underlying DS from data. But mod-els based on DS principles offer other profound advantages: Beyond short-term forecasts, they enable to predict the long-term statistics of an ob-served system, which in many practical scenarios may be the more relevant quantities. DS theory furthermore provides domain-independent theo-retical insight into mechanisms underlying TS generation, and thereby will inform us, e.g., about upper bounds on performance of any TS model, generalization into unseen regimes as in tipping points, or potential control strategies. After re-viewing some of the central concepts, methods, measures, and models in DS theory and DSR, we will discuss how insights from this field can advance TS modeling in crucial ways, enabling better forecasting with much lower computational and memory footprints. We conclude with a num-ber of specific suggestions for translating insights from DSR into TS modeling. 
+
+> *
+
+Equal contribution 1Dept. of Theoretical Neuroscience, Cen-tral Institute of Mental Health, Mannheim, Germany 2Faculty of Physics & Astronomy, Heidelberg Univ., Heidelberg, Germany 
+
+> 3
+
+Interdisciplinary Center for Scientific Computing, Heidelberg, Germany. Correspondence to: Daniel Durstewitz, Christoph Hem-mer <{daniel.durstewitz,christoph.hemmer }@zi-mannheim.de >.
+
+Preprint. February 20, 2026. 
+
+# 1. Introduction: The DS Perspective 
+
+Any system that evolves in time, where this temporal evo-lution can be described by a set of rules in either discrete time (as a recursive map) or in continuous time (as a set of differential equations), is a dynamical system (DS). DS theory is the mathematical theory dealing with the behavior of such systems. Almost any time series (TS) from natural or human-made systems originates from some underlying DS. Whether we consider chemical and molecular systems (Bhalla & Iyengar, 1999), weather (Kalnay, 2003), climate (Tziperman et al., 1997), the brain (Izhikevich, 2007), phys-iological processes (Govindan et al., 1998), ecosystems and animal populations (Turchin & Taylor, 1992; Mumby et al., 2007), disease and epidemics (Dehning et al., 2020), behavior (Staddon, 2001), psychiatric conditions (Durste-witz et al., 2020), societal processes like opinion dynamics (Hołyst et al., 2001), or the economy (Mandelbrot & Hud-son, 2007), all of them can be understood and formulated as DS at some level. Also the machine learning (ML) tools used to analyze and forecast TS, from simple statistical auto-regressive moving-average (ARMA) models to recur-rent neural networks (RNNs), as well as the gradient-based techniques we use to train them, are DS in a strict formal sense. Hence, it appears intuitively clear that a mathematical theory dealing with the temporal behavior of such systems should be able to inform TS analysis (TSA) and forecasting (TSF), and help to improve training and modeling. But how specifically? This is the question we are going to explore in this position paper, calling for a paradigm shift: 
+
+Position: A DS perspective is necessary for mak-ing further progress in TSF/A and solving some of its most challenging generalization problems. 
+
+We will first review central concepts, definitions, measures, and models in DS theory and DS reconstruction (DSR) . In DSR the goal is to learn a generative surrogate model of the DS that produced the observed TS. Since DSR models are trained to approximate the underlying governing equations, they can also be used for TS forecasting and analysis. We will then explore important lessons for TSF gained from the 1
+
+> arXiv:2602.16864v1 [cs.LG] 18 Feb 2026 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling
+
+DS perspective. We will also examine the alternative view 
+
+that DS theory is of little practical use for most real-world TSF tasks, before we conclude with a couple of specific action items and recommendations. 
+
+# 2. Overview of key concepts in DS theory 
+
+DS theory is the mathematical theory which examines the temporal behavior of systems that are described by sets of (coupled) differential equations, dx/dt ≡ ˙x = f (x) with 
+
+vector field f (x), or recursive maps, xt = F (xt−1), x ∈
+
+E ⊆ RM (Guckenheimer & Holmes, 1983; Alligood et al., 1996; Perko, 2001; Strogatz, 2024). When a DS explicitly 
+
+depends on time, i.e. ˙x = f (x, t ) or xt = F (xt−1, st), it is called non-autonomous , otherwise we call it autonomous .In theory, a non-autonomous DS can always be recast as an autonomous DS by introducing an additional variable 
+
+xM +1 = t, ˙xM +1 = 1 (whether useful in practice, is a different question). The set E ⊆ RM in which a DS lives, i.e. the set of all possible states x(t) or xt can assume, is called its state space . A DS is more generally defined as a (semi-)group (T, E, Φ) with a set of times T (typically 
+
+T = R in continuous time, and T = Z in discrete time) and flow or evolution operator Φ( t, x0) ≡ Φt(x0), t ∈
+
+T, x0 ∈ E, with the property Φs+t = Φ s ◦ Φt = Φ t ◦ Φs.In continuous time, Φ may be thought of as the solution operator Φt(x0) = x0 + R t 
+
+> 0
+
+f (x(s)) ds . In discrete time it is just given by the map F .The idea of a state space, illustrated in Fig. 1, is central to DS theory. A trajectory (or orbit) Ωx0 = {x(t) | ∃ t :
+
+x(t) = Φ t(x0)} is the unique curve in this state space that leads through point x0 following the vector field f (x).Two trajectories in this space may never intersect, since if they would, the vector field would not be uniquely de-fined at the intersection point and the state space would not be complete, as we mathematically require. Observed TS 
+
+{yτ }, τ = 1 . . . T , correspond to trajectories x(t) in the state space, assessed through some measurement or observa-tion function yτ = g(x(τ )) at discrete time points τ . A key point about state spaces is that they introduce geometri-cal and topological concepts into the analysis of temporal behavior. It is the topological and geometrical properties of the state space which determine the fate of trajectories, and hence the nature of the associated time series. If we know the state space of a DS, we can predict its behavior starting anywhere in state space for all time. The limiting behavior of a time series is determined by the limiting behavior of the corresponding trajectory in state space, which will follow the vector field and may ultimately converge into specific topological sets called attractors (Appx. A.1). An attractor may just be a single point (an equilibrium or fixed point ; Fig. 1), a closed orbit called a limit cycle (Fig. 1), or may have a more complex, fractal geometry, a chaotic attractor (Fig. 3). Formally, an attractor can be defined as follows: 
+
+Definition 2.1 (Attractor and basin of attraction ). Let 
+
+(R, E, Φ) be a DS with state space E ⊆ RM and flow 
+
+Φt(x). An attractor A ⊂ B ⊆ E is a closed set with the following properties: 1. Φt(A) ⊆ A ∀t (invariance under the flow) 2. ∀x0 ∈ B , t ≥ 0 : lim t→∞ d(Φ t(x0), A) = 0 (conver-gence from an open set B, the basin of attraction )3. A is the minimal set with such properties, while B is the maximal such set. An important insight from DS theory is that many of such at-tractors, each with its own basin of attraction, can co-exist in the same DS for the very same set of parameters, so-called 
+
+multistability , an example of which is provided in Fig. 1. In such systems, noise may push the system’s state from one basin of attraction into another, leading to an abrupt change in dynamical regime, also called N-tipping (Fig. 1b), one type of tipping point (Ashwin et al., 2012). Multistability is not a curiosity, but actually the rule in high-dimensional complex systems such as the brain (Izhikevich, 2007) or climate systems (Lohmann et al., 2024). Another type of tipping point, so-called B-tipping , can occur when a slowly changing control parameter of a DS drives it across a bifur-cation , which denotes a qualitative, topological change in the system’s state space, pushing it abruptly into a different dynamical regime (Fig. 2; Appx. A.3). By ‘topological change’ we mean that the vector fields of the DS before and after the bifurcation point are no longer topologically equivalent according to the following definition: 
+
+Definition 2.2 (Topological equivalence and conjugacy ).
+
+Let (R, A, Φ) and (R, B, Ψ) be two DS. These are said to be topologically equivalent if there is a homeomor-phism h : A → B such that for each x0 ∈ A we have 
+
+h(Φ t(x0)) = Ψ τ (h(x0)) with dτ (t, x0) 
+
+> dt
+
+> 0 everywhere (i.e., if h preserves the direction of flow). They are said to be topologically conjugate , if τ (t, x0) = t (i.e., if the parameterization by time is the same). Fixed points (equilibria), limit cycles and chaotic sets may not be stable, i.e. might not be attractors towards which states converge from all directions for t → ∞ . They could also be unstable or half-stable , with states diverging along one or more directions which span their unstable manifold 
+
+(Fig. 1). An important quantity for characterizing the degree of convergence (contraction) vs. divergence (expansion) in different directions as we move along trajectories is the 
+
+Lyapunov spectrum , given for discrete-time DS by 
+
+λi := lim  
+
+> T→∞
+
+1
+
+T log σi 
+
+> T−1
+
+Y
+
+> t=0
+
+JT −t
+
+!
+
+, (1) where σi is the i-th singular value of the product of Ja-cobians Jt := ∂F (xt−1) 
+
+> ∂xt−1
+
+. This can be defined analo-gously for continuous-time DS via the flow map Φ. For 2Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling          
+
+> Figure 1. a) State space of a bistable neuron model with co-existing point (left basin) and limit cycle (right basin) attractor (see Appx. D.2 for details). The two basins are separated by the stable manifold of a saddle node . Trajectories follow the system’s vector field, indicated by arrows with red shading indicating flow velocity (darker = faster). The corresponding TS (right) of model variables V(t)(solid) and
+> n(t)(dashed) converge either to a point attractor (top) or a stable limit cycle (bottom) depending on the basin in which the trajectory was initialized (as indicated by the blue arrows). b) N-tipping in the true neuron model (gray) and in an AL-RNN (red) trained on trajectories from both basins. Noise was added in both models and eventually drives them across the basin boundary into cyclic activity (cf. Fig. 12).
+
+a point attractor we have all λi < 0, for a stable limit cy-cle λmax := max( λi) = 0 , and for a chaotic attractor 
+
+λmax > 0 (while, for the object to be an attractor, we still need P λi < 0). In fact, at least one positive Lyapunov ex-ponent is defining for chaos (together with the condition that a chaotic set A must be bounded; Alligood et al. (1996)). Another characteristic feature of chaos is that TS are irregu-lar , aperiodic : Unlike a limit cycle (nonlinear oscillation), trajectories never close up and the system never returns to the same precise value, even in the complete absence of noise. See Appx. A for further discussion of DS concepts.       
+
+> Figure 2. a) Bifurcation diagram of a spiking neuron model de-pending on a control parameter h(see Appx. D.2; Durstewitz (2009)). Stable fixed points are indicated by solid black lines, unstable ones by dashed black lines. The gray-shaded area corre-sponds to a stable limit cycle. Graphs below give snapshots of the state space for different values of h.b) B-tipping from a ‘bursting’ into a ‘spiking’ regime in the full simulated neuron model (gray) is successfully predicted by an AL-RNN (red) trained only on TS data up to the black dashed line.
+
+# 3. Dynamical Systems Reconstruction (DSR) 
+
+In DSR, we aim to learn a surrogate model from TS data that, after training, behaves equivalently to the observed system in a DS sense (Fig. 7). Topologically speaking, let 
+
+(T, E, Φ) be the true data-generating DS and (T ∗, E ∗, Φ∗)
+
+our reconstructed (modeled) DS, with h : E → E∗ and 
+
+τ : T → T ∗ homeomorphisms, then ideally we would like 
+
+Φ∗ to be topologically conjugate (see Def. 2.2) to Φ on the whole of E (Durstewitz et al., 2023). This is challeng-ing (G ¨oring et al., 2024), and custom-trained approaches often content with topological conjugacy on a single basin of attraction B (cf. Figs. 1 & 24). While topological proper-ties are often considered most important from a theoretical perspective, we commonly would also like to preserve geo-metrical and temporal properties of the underlying DS. In particular, a proper DSR model should have the same be-havior in the limit t → ∞ , i.e. should converge to the same attractor objects with the same geometrical and temporal 
+
+structure. For that reason, the focus in DSR is often on train-ing algorithms and loss functions that incentivize the correct long-term behavior (Appx. C; Mikhaeil et al. (2022); Hess et al. (2023); Platt et al. (2022; 2023); Jiang et al. (2023); Schiff et al. (2024)), and evaluation is done with measures that assess the long-term (“climate”) statistics (Fig. 3). Common measures to assess overlap in attractor geometry 
+
+compare true and model-generated trajectory distributions in state space , e.g. based on the Kullback-Leibler diver-gence or Wasserstein distance (Brenner et al., 2022; G ¨oring et al., 2024; Park et al., 2024; Fumagalli et al., 2025), see Appx. B for details. An attractor’s geometrical structure can also be quantified through its box-counting or correlation di-mension , or the Kaplan-Yorke dimension computed from the Lyapunov spectrum as as an upper bound (see Appx. B.1; Alligood et al. (1996); Kantz & Schreiber (2004)). These specifically capture the fractal geometry of the object. To 3Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling          
+
+> Figure 3. DSR measures: Comparison of geometrical (dis)agreement ( Dstsp ), power spectral distance ( DH), Kaplan-Yorke fractal dimension ( DKY ), and max. Lyapunov exponent (λmax ) on a) a poor and b) a good reconstruction of the chaotic Lorenz-63 system by an AL-RNN. See also Fig. 11.
+
+compute these measures for empirical data, since we usually have only access to lower-dimensional observations from a much higher-dimensional DS, temporal delay embedding 
+
+techniques are commonly used to lift the empirical obser-vations into a higher-dimensional space where trajectories become diffeomorphic to those in the true underlying system according to the delay embedding theorems (Takens (1981); Sauer et al. (1991); see Appx. A.2). To assess agreement in the long-term temporal structure of true and generated tra-jectories, measures based on the system’s auto-correlation function (Wood, 2010; Brenner et al., 2024b) or power spec-trum (Mikhaeil et al., 2022; Brenner et al., 2022) could be used, for instance the Hellinger distance between appropri-ately smoothed power spectra (Mikhaeil et al., 2022; Hess et al., 2023). It is important to note that most of these mea-sures only make sense in the ergodic long-term limit t → ∞ .A transient trajectory is not informative about attractor ge-ometry, nor can a power spectrum or Lyapunov exponents be reasonably computed from just short, potentially tran-sient (non-stationary) trajectory bits (see Appx. B for more details). Thus, commonly time series of length T ≥ 1000 
+
+(depending on scale), often T ≥ 10 4, are simulated from the trained model, and initial transients are cut off in estimation. DSR models have been formulated based on various types of RNNs (Vlachas et al., 2018; Brenner et al., 2022; 2024a; Hess et al., 2023), reservoir computers (Pathak et al., 2017; Verzelli et al., 2021; Platt et al., 2022; 2023), library-based methods like SINDy (Brunton et al., 2016; Champion et al., 2019), Koopman operator theory (Otto & Rowley, 2019; Brunton et al., 2022; Naiman & Azencot, 2021; Azencot et al., 2020; Wang et al., 2022; Lusch et al., 2018), or continuous-time models such as Neural ODEs (Chen et al., 2018; Karlsson & Svanstr ¨om, 2019; Alvarez et al., 2020; Ko et al., 2023); see Appx. E. Transformer-based architectures, in contrast, are uncommon in this field, mainly because they lack a natural representation of time as required for approximating a flow map or its integral . In fact, in sharp contrast to the TS modeling field, we are not aware of any transformer-based model which is able to reconstruct DS in the sense, and according to the measures, defined above (see Tables 1 & 2 and Figs. 8 & 9). As already indicated, far more important than the archi-tecture itself is the training procedure: To encourage the correct long-term behavior and combat exploding gradients, which are – mathematically – an inevitable consequence of training on chaotic DS (Mikhaeil et al., 2022), control-theoretic training methods like sparse (STF) (Mikhaeil et al., 2022; Brenner et al., 2022) and generalized teacher forcing (GTF) (Hess et al., 2023; Doya, 1992) have been devised (not to be confused with conventional TF), see Appx. C for details. These enable long roll-outs, allowing model-generated trajectories to ‘explore the future’ whilst train-ing, either by replacing model-generated by data-inferred states ˆzt+kτ = g−1(xt+kτ ) at time lags τ optimally cho-sen according to the system’s maximal Lyapunov expo-nent (STF), or by striking an optimal balance between model-generated and data-inferred states at each time step, 
+
+ˆzt = (1 − α)zt + αg −1(xt) (GTF). Other common proce-dures are explicitly including longer-term forecasts (Platt et al., 2022; Vlachas & Koumoutsakos, 2024; Lusch et al., 2018) and/or invariant statistics like the maximal Lyapunov exponent or an estimate of fractal dimensionality (Platt et al., 2023), or invariant measures (Jiang et al., 2023; Schiff et al., 2024), in the loss function. A final important aspect about DSR models that may also impact the TSA field concerns their interpretability and mathematical tractability . DSR models are not mere pre-diction tools, they are supposed to provide insight into the 
+
+dynamical mechanisms underlying the data, as relevant in scientific or medical applications (Durstewitz et al., 2023; Fechtelpeter et al., 2025). We would like to be able to ana-lyze the topological and geometrical properties of their state spaces to learn how the underlying system works, and to understand its behavior even outside of the immediate data regime . Having access to an approximate flow operator or vector field also enables to derive optimal control strategies ,e.g. for designing optimal interventions in medical settings (Fechtelpeter et al., 2025). For that reason, many important DSR models are piecewise-linear (PL) (De Feo & Storace (2007); Storace & De Feo (2004); Hess et al. (2023); Bren-ner et al. (2024a); Linderman et al. (2016); see Appx. E for a more detailed overview of models classes): For linear 
+
+DS we have a complete analytical understanding, but they 4Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+cannot produce many important DS phenomena such as sta-ble oscillations, multistability, or chaos (Perko, 2001). PL models are the next-best alternative which can reconstruct arbitrary DS (Brenner et al., 2024a; Linderman et al., 2016), yet still allow for semi-analytical computation of many of their topological and geometrical properties (Eisenmann et al., 2023). For that reason, PL models have been popular in engineering (Bemporad et al., 2000; Carmona et al., 2002; Juloski et al., 2005) and DS theory (Alligood et al., 1996; Avrutin et al., 2019; Coombes et al., 2024; Simpson, 2023) for many decades. 
+
+# 4. Lessons for TSF from the DSR angle 
+
+DS theory and DSR, unlike pure TS modeling, provide us with an understanding of the processes that led to the TS observed, and allow to infer properties of the system beyond what a pure TS model could provide. This understanding can help predicting previously unobserved phenomena or devising control strategies. It is also a type of understanding that does not require domain knowledge about the system at hand: DS principles and phenomena, such a multistability, chaos, or bifurcations, are universal , they can be observed the same way in arbitrary systems from interacting particles to social interactions (Strogatz, 2024). Let us now examine in more detail where DSR could improve TS modeling. 
+
+Chaos and the limits of predictability Chaos is funda-mentally relevant for TSF since most complex systems en-countered in nature and society are almost inevitably chaotic (Sivakumar, 2004; Durstewitz & Gabriel, 2007; Govindan et al., 1998; Turchin & Taylor, 1992; Field et al., 1972), a natural consequence if many highly nonlinear and diverse elements are combined in a network (van Vreeswijk & Som-polinsky, 1996; Ispolatov et al., 2015). By virtue of its positive Lyapunov exponent, chaos imposes principle limits on the forecast horizon: It implies that minuscule differ-ences in initial conditions grow exponentially fast, meaning that – depending on the exact size of λmax – two TS from the very same chaotic DS will quickly and inevitably be completely misaligned after only a short time (Fig. 4). This has also implications for evaluation : Standard statistical quantities like MSE or MAPE, commonly used to evaluate TS model performance, become meaningless after some finite time (Wood, 2010). In the presence of noise (Fig. 4), this becomes a principle limitation, nothing we can really ameliorate that much by improving knowledge about the initial condition or the model design. Claims, therefore, about models being able to forecast noisy chaotic systems for more than one Lyapunov time (Liu et al., 2025) should be treated with great care! 
+
+Short- and long-term forecasts While DSR models are intended for understanding dynamical mechanisms behind     
+
+> Figure 4. The limits of predictability: Three TS from the same Lorenz-63 system (same parameters) started at the same initial condition quickly diverge even with just 1% of noise, while with
+> 10% noise prediction beyond 1 Lyapunov time becomes hopeless.
+
+TS generation, we may nevertheless ask whether the princi-ples by which they are designed and trained also improve TSF. This is examined in Table 1 for a set of SOTA custom-trained DSR and TS models, and in Table 2 for DSR and TS foundation models (FMs); see also Fig. 5. For the custom-trained TS models, we chose AutoARIMA as a sim-ple statistical model, PatchTST as a transformer-based (Nie et al., 2023), and NBEATS as MLP-based model (Oreshkin et al., 2020). For DSR, we used the shPLRNN trained by GTF (Hess et al., 2023), AL-RNN trained by STF (Brenner et al., 2024a) and an RC for DSR (Platt et al., 2023). We compare both short-term prediction using MASE, and pre-diction of long-term statistical properties using Dstsp and 
+
+DH (see Appx. B). We trained all models on a variety of real-world data, including energy, weather, and traffic data, and physiological signals such as human fMRI and EEG. As expected, DSR models have a clear edge over pure TS models in terms of correct reproduction of long-term prop-erties (Fig. 5a). This is also vividly illustrated in Figs. 5c, 8 & 9, which show that in the long-term typical TS models – in contrast to DSR models – either diverge or converge to a fixed point (flat line), retaining none of the true long-term dynamics. While expected, since this is what DSR models are optimized for, it is in itself an important observation: 
+
+There are many empirical scenarios where the long-term properties are the more important prediction target. For instance, in a patient with long-Covid (Thaweethai et al., 2025) or mental health issues (Fechtelpeter et al., 2025) we are less interested in the daily fluctuations in well-being but more in the long-term trend, e.g. in order to evaluate whether a specific pharmaceutical or behavioral intervention is effective. Similarly, in climate research we are primarily concerned with long-term predictions (Kirtman et al., 2013; Patel & Ott, 2023). More surprisingly, however, Fig. 5b reveals that SOTA DSR models can also outperform SOTA TS models in short-term prediction on at least some of the datasets. Thus, there seems to be something inherent in the training or design of DSR models that could also improve short-term prediction, although not their primary target. These observations carry over to comparisons between DSR 5Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling           
+
+> Figure 5. a): Long-term geometrical ( Dstsp ) and temporal ( DH) forecast accuracy (cf. Appx. B) as median ±MAD, comparing DSR and TS models, evaluated on 10 ,000 -step roll-outs. Lower = better. Results for both custom-trained (triangles) and foundation models (dots) are shown. b): Short-term forecasting accuracy ( MASE ); lighter colors = better, green stars = best MASE .c): Example long-term forecasts of ETTh1 data for DSR and TS models, exposing the failure of TS models to capture long-term behavior. See also Figs. 8 & 9.
+
+and TS FMs, as shown in Fig. 5 & Table 2, where zero-shot 
+
+(no fine-tuning) short- and long-term forecasts are com-pared. Here we included Chronos (Ansari et al., 2024), Chronos-2 (Ansari et al., 2025), Panda (Lai et al., 2025), TiRex (Auer et al., 2025) as TS FMs, and DynaMix as the, to our knowledge, so far only true DSR FM trained by DSR principles (see Appx. E for further details on all models). 1
+
+As evidenced in Table 2 and further illustrated in Fig. 5 (and as already reported in Hemmer & Durstewitz (2025)), DynaMix is the only FM which can correctly reproduce attractor geometries and the system’s long-term behavior. All other models converge to either simple fixed points or limit cycles in the long-term limit, not capturing any of the hallmark features of a chaotic attractor. For instance, context parroting is a phenomenon commonly observed in TS FMs like Chronos (Zhang & Gilpin, 2025). Context parroting leads to (nearly) periodic activity (Hemmer & Durstewitz (2025); see Fig. 10), and thus to not just geometrically but 
+
+topologically incorrect long-term behavior on chaotic sys-tems, failing to reconstruct the underlying DS. Furthermore, as above for the custom-trained models, we observe that DynaMix often even outperforms the TS FMs on short-term forecasts. 
+
+The surprising simplicity of DSR models Another re-markable observation is that DSR models achieve perfor-
+
+> 1While Panda, similar to DynaMix, was trained purely on TS from simulated DS, we still group it with the TS FMs here since it was not optimized for DSR.
+
+mance on par in short-term prediction with those of even the most sophisticated TS models despite their much simpler architectural design and lower parameter and training costs, see Tables 1 & 2. DynaMix, for instance, has only 0.01% 
+
+the number trainable parameters that Chronos has, hence also ≈ 100 × faster inference times, and a minimal training corpus of only 34 different DS. The AL-RNN, as another example, one of the SOTA DSR models included in Table 1, features a simple PL structure (Appx. E), essentially just a 1-layer RNN with a small number of ReLU nonlinearities. This reinforces a point we were making earlier: The actual training algorithms used may be far more important than the network architecture ! TS models, on the other hand, may often tend to be overly complex. For FMs, besides the train-ing algorithm, there may be another key feature that leads to the superior performance of DSR models, and that is their 
+
+training corpus . While Chronos and many other TS FMs are largely trained on artificially assembled TS, constructed from concatenations of more basic processes, DynaMix is trained on TS from simulated chaotic DS . On the one hand side this may lead to a training corpus that is much more nat-ural in a sense, much closer to real-world processes, which, as noted above, are often chaotic. On the other hand, many chaotic attractors are known to harbor an infinity of unstable periodic orbits of any period , with smeared out, long-tailed power spectra (Guckenheimer & Holmes, 1983; Alligood et al., 1996). Despite the much smaller training corpus, this may thus endow models like DynaMix with a much richer repertoire of experienced time scales and temporal 6Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+patterns. A more compact, DS-inspired architecture and training corpus may also lead to a more natural integration of the different datasets. For Transformer-based FMs, in contrast, it has been reported that different training datasets tend to engage different task-relevant subnetworks within the model (Zhao et al., 2025). That is, unlike DynaMix, these models do not learn an integrated representation, but more or less a collection of separate subnetworks, different for each type of dataset. 
+
+Tipping points and abrupt transitions in dynamical regime It has been argued in TSA for a while that abrupt changes in the behavior of a TS are unpredictable (i.e., usu-ally not inferrable just from historical records) unless the 
+
+underlying process is known or modeled (Pesaran et al., 2006). There are indeed many important cases where a DS perspective provides hope. These are situations where the system under study undergoes a tipping point and enters a new dynamical regime. For multistable DS, for instance, we might be able to predict the likelihood of transitions among different regimes at different times (N-tipping), as illustrated in Fig. 1b. Granted, of course, access to the system’s state space, as DSR models promise to provide. Many DS un-dergo tipping points as a consequence of a slowly changing control parameter (B-tipping), like climate systems due to rising levels of greenhouse gases, or sepsis (blood poison-ing) in a patient due to buildup of bacterial load. A DSR model trained on a non-stationary TS or stationary snap-shots sampled across different dynamical regimes may be able to pick up such driving forces and predict a bifurcation in the underlying DS (Kong et al., 2023; Patel & Ott, 2023; K ¨oglmayr & R ¨ath, 2024; Huh et al., 2025; Van Tegelen et al., 2025), an example of which is shown in Fig. 2b. Fore-casting tipping points and post-tipping dynamics is still a hard problem. It is a type of out-of-domain (OOD) general-ization which is much harder than that imposed by a ‘mere’ distribution shift, because it represents a topological shift in dynamics (G ¨oring et al., 2024). In fact, in its most general form, the topological OOD problem is intractable (G ¨oring et al., 2024). However, exploiting topological constraints and functional dependencies within a DS (Huh et al., 2025), pre-training on related systems (Brenner et al., 2025; Hem-mer & Durstewitz, 2025), physics-informed priors (Raissi et al., 2019; Lim et al., 2020), or methods for inferring rel-evant control parameters jointly with the dynamics (Huh et al., 2025), start to show promise. This is another active research area in DSR from which TS modeling may hugely benefit. 
+
+# 5. Alternative Views 
+
+Most of DS theory deals with low-dimensional ( ≤ 3d), deterministic, autonomous DS, assuming access to all the system’s dynamical variables (Perko, 2001; Alligood et al., 1996; Strogatz, 2024). The most common benchmark sce-narios for testing DSR performance are also of this type. In contrast, most TS of empirical relevance come from pre-sumably much higher-dimensional underlying DS, which are only partially observed, and exhibit (highly) stochastic, non-autonomous and non-stationary dynamics (see Appx. A.4 for formal definition). Sometimes knowledge about ex-ternal events or inputs may be more relevant in forecasting a TS than the history of the TS itself (Williams et al., 2025). Hence, one may argue that most of DS theory is of little rele-vance in practical, real-world settings, and that consideration of statistical properties, external regressors/ covariates, and context knowledge about the system in question (Williams et al., 2025) is far more important. For instance, integrat-ing TSF into LLMs which enhance the forecasting process through their background and world knowledge may be a more rewarding future direction (Cho et al., 2025). First of all, although less strongly developed than for au-tonomous, deterministic DS, there is some theory also for stochastic and non-autonomous DS (Kloeden & Yang, 2020). In the simplest case, one may see (and analyze) external inputs and noise as perturbations that drive the system’s state around in its state space (Fig. 12), such that the deter-ministic, autonomous analysis can still help to understand the DS’ behavior. In other cases we may have to evoke more advanced concepts like that of a pullback attractor 
+
+defined in the limit t → −∞ (Kloeden & Yang, 2020). More importantly, essentially all DSR models naturally can handle external inputs, important theorems still apply in that case (Mikhaeil et al., 2022), and many DSR approaches that explicitly incorporate process (dynamical) noise have been advanced (Kramer et al., 2022; Koppe et al., 2019; Pals et al., 2024; Li et al., 2020; Oh et al., 2024). Second, some of the limitations noted above concern more the analysis of trained models rather than their application. The training algorithms developed in this field (Mikhaeil et al., 2022; Hess et al., 2023; Platt et al., 2023), for instance, are largely indifferent w.r.t. the system’s dimensionality or noise level. After all, DSR models have been applied to high-dimensional, complex, noisy empirical data such as physiological recordings or temperature records (Mikhaeil et al., 2022; Hess et al., 2023; Hemmer & Durstewitz, 2025) (see Tables 1 & 2, Fig. 5, & Appx. F). Analysis of high-dimensional DS is also an area of active research, with several algorithms advanced in recent years to dissect the topological structure of high-dimensional models and to detect fixed points, cycles, or un-/stable manifolds, for in-stance (Sussillo & Barak, 2013; Eisenmann et al., 2023; Pals et al., 2024; Eisenmann et al., 2025; Dabholkar & Barak, 2025). Finally, the different approaches are not mutually exclusive. 
+
+Ergodic theory (Appx. A.4), for instance, uses probability 7Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+measures to characterize chaotic sets (Katok et al., 1995), and thus may build a natural bridge to statistical approaches and stochastic DS. Or DSR models may also be integrated into (fine-tuned jointly with) LLMs to inform the DSR pro-cess by external events and driving functions based on the LLM’s world and context knowledge. Nevertheless, it is likely that not for all types of data and TS the DSR ap-proach is equally well suited. While DSR methods have been developed also for count, ordinal, or categorical data (Kramer et al., 2022; Brenner et al., 2024b), such data types are certainly more challenging, especially when the TS are rather short (Volkmann et al., 2024). Other data constraints may even impose principle limits on the feasibility of DSR (G ¨oring et al., 2024; Park et al., 2024; Shumaylov et al., 2025). 
+
+# 6. Conclusions and Call to Action 
+
+What are the major take homes of the preceding discussion for the TS analysis field? Here we summarize our major recommendations for the further development of the field: 1⃝ Incorporate DSR training techniques First, as our analysis in Fig. 5 suggests, incorporating training techniques from the DSR field into TS mod-eling may pay off, even if the goal is just short-term prediction . Methods like STF (Mikhaeil et al., 2022) and GTF (Hess et al., 2023), or regularization criteria based on invariant measures (Platt et al., 2023; Jiang et al., 2023), are general and do not depend much on the specific architecture used. They do not impose much of an additional burden in training, and allow for predicting longer-term horizons , in particular statisti-cal long-term properties , and potentially other features. Better training may also enable to simplify models and 
+
+reduce the computational resources required. 2⃝ Pre-train FMs on simulations from DS models Another important aspect concerns the training data used: Instead of artificially assembled TS that might lack many of the features present in TS produced by real-world DS, we suggest to employ DS simulation data in TS FMs as in DynaMix (Hemmer & Durste-witz, 2025) or Panda (Lai et al., 2025), which emulate realistic time courses and patterns in TS data. Chaotic DS might be of particular advantage here, since many of them naturally express an infinity of timescales and temporal patterns, injecting sufficient temporal variety 
+
+into the training process. 3⃝ Move back to modern RNN variants for TSF The field may want to rethink the current transformer dominance. While transformers certainly were ‘trans-formative’ for NLP and many other areas of AI, they may be less suited for TS modeling (Zeng et al., 2023; Tan et al., 2024; Hewamalage et al., 2023). They lack a natural representation of time and hence cannot easily model truly dynamical processes in the data, which are defined through recursion in continuous or discrete time. Rather, they operate on the principle of tem-poral pattern recognition, as evidenced by the failure modes of models such as Chronos or Panda (Hemmer & Durstewitz, 2025). In our minds the field should put a stronger focus on (discrete- or continuous-time) RNNs ,for which GPU-efficient techniques as in Mamba (Gu & Dao, 2024; Dao & Gu, 2024) or xLSTM (Beck et al., 2024) make them also computationally increasingly at-tractive alternatives to transformers. RNNs are further dynamically universal and can approximate arbitrary DS (Hanson & Raginsky, 2020; Aguiar et al., 2023). 4⃝ Address the hard problems: topological shifts DS theory also provides a more nuanced view on the issue of OOD generalization in TS modeling, and may help to crack problems (tipping points) that the TS field felt were largely out of scope so far. The hardest problems are those where there is not just a distribu-tion shift from training to test, or even within a given non-stationary TS, but where the TS-generating DS un-dergoes a topological shift , entering a new dynamical regime. Understanding and reconstructing the underly-ing DS from data and approximating its governing equa-tions provides potential solutions to such forecasting problems. Currently there are two major ways we see for addressing this: First, simulations from DS which undergo various types of tipping points may be explic-itly included in the training data. Second, methods may be devised for extracting control parameters from TS 
+
+and using them to extrapolate into unseen dynamical regimes (Huh et al., 2025; Brenner et al., 2025). 5⃝ Focus on mechanisms underlying TS generation Finally, and more generally, we encourage to adopt a DS perspective on TS processes as it provides a kind of 
+
+mechanistic understanding of TS generation, without requiring specific domain knowledge in the area the TS come from. Such an understanding may help to forecast the behavior of a system under unseen, novel, and unexpected conditions, e.g. when external events such as natural disasters or changes in governmental policies impact the observed process. 8Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+# Acknowledgements 
+
+This work was funded by the German Research Foundation (DFG) through individual grants Du 354/15-1 (project no. 502196519) & Du 354/18-1 (project no. 567025973) to DD, and via Germany’s Excellence Strategy EXC 2181/1 – 390900948 (STRUCTURES). We also would like to thank Konstantin Dibbern for providing the code and model for producing Fig. 2b. 
+
+# Impact Statement 
+
+Time series analysis is a huge field with many potential ap-plications, some of which potentially with profound societal implications (positive or negative) requiring ethical scrutiny. However, since our paper focuses on methodological and technical aspects which concern the field as a whole, we feel there is nothing specifically to be highlighted here. 
+
+# References 
+
+Abarbanel, H. D. Predicting the Future: Completing Models of Observed Complex Systems . Springer, 2013. doi: 10. 1007/978-1-4614-7218-6. URL https://doi.org/ 10.1007/978-1-4614-7218-6 .Abarbanel, H. D. I. The Statistical Physics of Data Assimilation and Machine Learning . Cam-bridge University Press, 1 edition, January 2022. ISBN 978-1-009-02484-6 978-1-316-51963-9. doi: 10.1017/9781009024846. URL https: //www.cambridge.org/core/product/ identifier/9781009024846/type/book .Aguiar, M., Das, A., and Johansson, K. H. Universal approx-imation of flows of control systems by recurrent neural networks. In 2023 62nd IEEE Conference on Decision and Control (CDC) , 2023. Alligood, K. T., Sauer, T. D., and Yorke, J. A. Chaos: An Introduction to Dynamical Systems . Textbooks in Mathematical Sciences. Springer, 1996. ISBN 978-0-387-94677-1 978-0-387-22492-3. doi: 10.1007/b97589. Alvarez, V. M. M., Ro s¸ ca, R., and F ˘alcu t¸escu, C. G. Dyn-ode: Neural ordinary differential equations for dynam-ics modeling in continuous control. arXiv preprint arXiv:2009.04278 , 2020. Ansari, A. F., Stella, L., Turkmen, C., Zhang, X., Mer-cado, P., Shen, H., Shchur, O., Rangapuram, S. S., Pineda Arango, S., Kapoor, S., Zschiegner, J., Mad-dix, D. C., Mahoney, M. W., Torkkola, K., Gordon Wil-son, A., Bohlke-Schneider, M., and Wang, Y. Chronos: Learning the language of time series. Transactions on Machine Learning Research , 2024. ISSN 2835-8856. URL https://openreview.net/forum? id=gerNCVqqtR .Ansari, A. F., Shchur, O., K ¨uken, J., Auer, A., Han, B., Mercado, P., Rangapuram, S. S., Shen, H., Stella, L., Zhang, X., et al. Chronos-2: From univariate to universal forecasting. arXiv preprint arXiv:2510.15821 , 2025. Ashwin, P., Wieczorek, S., Vitolo, R., and Cox, P. Tipping points in open systems: bifurcation, noise-induced and rate-dependent examples in the climate system. 
+
+Philosophical Transactions of the Royal Society A: Mathematical, Physical and Engineering Sciences , 370 (1962):1166–1184, 2012. doi: 10.1098/rsta.2011.0306. URL https://royalsocietypublishing. org/doi/abs/10.1098/rsta.2011.0306 .Auer, A., Podest, P., Klotz, D., B ¨ock, S., Klambauer, G., and Hochreiter, S. TiRex: Zero-Shot Forecasting Across Long and Short Horizons with Enhanced In-Context Learning. In The Thirty-Ninth Annual Conference on Neural Information Processing Systems , 2025. URL 
+
+https://arxiv.org/abs/2505.23719 .Avrutin, V., Gardini, L., Sushko, I., and Tramontana, F. 
+
+Continuous And Discontinuous Piecewise-smooth One-dimensional Maps: Invariant Sets And Bifurcation Struc-tures . World Scientific, May 2019. ISBN 978-981-12-0471-5. Google-Books-ID: ltacDwAAQBAJ. Azencot, O., Erichson, N. B., Lin, V., and Mahoney, M. W. Forecasting Sequential Data using Consistent Koopman Autoencoders. In Proceedings of the 37th International Conference on Machine Learning , 2020. URL http: //arxiv.org/abs/2003.02236 .Beck, M., P ¨oppel, K., Spanring, M., Auer, A., Prudnikova, O., Kopp, M., Klambauer, G., Brandstetter, J., and Hochreiter, S. xlstm: Extended long short-term mem-ory. Advances in Neural Information Processing Systems ,37:107547–107603, 2024. Bemporad, A., Borrelli, F., and Morari, M. Piecewise linear optimal controllers for hybrid systems. In Proceedings of the 2000 American Control Conference. ACC (IEEE Cat. No. 00CH36334) , volume 2, pp. 1190–1194. IEEE, 2000. Bengio, S., Vinyals, O., Jaitly, N., and Shazeer, N. Sched-uled sampling for sequence prediction with recurrent neu-ral networks. Advances in neural information processing systems , 28, 2015. Bengio, Y., Simard, P., and Frasconi, P. Learning long-term dependencies with gradient descent is difficult. IEEE transactions on neural networks , 5(2):157–166, 1994. ISSN 1045-9227. doi: 10.1109/72.279181. 9Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+Bhalla, U. S. and Iyengar, R. Emergent properties of net-works of biological signaling pathways. Science , 283 (5400):381–387, 1999. doi: 10.1126/science.283.5400. 381. Billingsley, P. Probability and measure . John Wiley & Sons, 2017. Bock, H. G. and Plitt, K.-J. A multiple shooting algorithm for direct solution of optimal control problems. IFAC Proceedings Volumes , 17(2):1603–1608, 1984. Bolager, E. L., Cukarska, A., Burak, I., Monfared, Z., and Dietrich, F. Gradient-free training of recurrent neural networks. 2025. URL https://arxiv.org/abs/ 2410.23467 .Bonneel, N., Rabin, J., Peyr ´e, G., and Pfister, H. Sliced and radon wasserstein barycenters of measures. Journal of Mathematical Imaging and Vision , 51(1):22–45, 2015. Box, G. E. P., Jenkins, G. M., Reinsel, G. C., and Ljung, G. M. Time Series Analysis: Forecasting and Control .John Wiley & Sons, 5 edition, 2015. ISBN 978-1-118-67502-1. Brenner, M., Hess, F., Mikhaeil, J. M., Bereska, L. F., Mon-fared, Z., Kuo, P.-C., and Durstewitz, D. Tractable Den-dritic RNNs for Reconstructing Nonlinear Dynamical Systems. In Proceedings of the 39th International Confer-ence on Machine Learning , pp. 2292–2320. PMLR, June 2022. URL https://proceedings.mlr.press/ v162/brenner22a.html . ISSN: 2640-3498. Brenner, M., Hemmer, C. J., Monfared, Z., and Durstewitz, D. Almost-linear rnns yield highly interpretable symbolic codes in dynamical systems reconstruction. In Glober-son, A., Mackey, L., Belgrave, D., Fan, A., Paquet, U., Tomczak, J., and Zhang, C. (eds.), Advances in Neural Information Processing Systems , volume 37, pp. 36829– 36868. Curran Associates, Inc., 2024a. Brenner, M., Hess, F., Koppe, G., and Durstewitz, D. Inte-grating Multimodal Data for Joint Generative Modeling of Complex Dynamics. In Proceedings of the 41st Interna-tional Conference on Machine Learning , pp. 4482–4516. PMLR, July 2024b. URL https://proceedings. mlr.press/v235/brenner24a.html . ISSN: 2640-3498. Brenner, M., Weber, E., Koppe, G., and Durstewitz, D. Learning interpretable hierarchical dynamical systems models from time series data. In The Thirteenth Interna-tional Conference on Learning Representations (ICLR) ,2025. URL https://openreview.net/forum? id=Vp2OAxMs2s .Brunton, S. L., Proctor, J. L., and Kutz, J. N. Discovering governing equations from data by sparse identification of nonlinear dynamical systems. Proceedings of the Na-tional Academy of Sciences USA , 113(15):3932–3937, 2016. ISSN 0027-8424. doi: 10.1073/pnas.1517384113. Brunton, S. L., Budi ˇsi ´c, M., Kaiser, E., and Kutz, J. N. Modern koopman theory for dynamical systems. 
+
+SIAM Review , 64(2):229–340, 2022. doi: 10.1137/ 21M1401243. URL https://doi.org/10.1137/ 21M1401243 .Carmona, V., Freire, E., Ponce, E., and Torres, F. On sim-plifying and classifying piecewise-linear systems. IEEE Transactions on Circuits and Systems I: Fundamental Theory and Applications , 49(5):609–620, 2002. Champion, K., Lusch, B., Kutz, J. N., and Brunton, S. L. Data-driven discovery of coordinates and govern-ing equations. Proceedings of the National Academy of Sciences USA , 116(45):22445–22451, 2019. ISSN 0027-8424, 1091-6490. doi: 10.1073/pnas.1906995116. URL http://www.pnas.org/lookup/doi/10. 1073/pnas.1906995116 .Chen, R. T. Q., Rubanova, Y., Bettencourt, J., and Duvenaud, D. Neural Ordinary Differential Equations. In Advances in Neural Information Processing Systems 31 , 2018. URL 
+
+http://arxiv.org/abs/1806.07366 .Cho, S., Shin, C., Jo, S., Yan, X., Chaudhuri, S. A., and Sala, F. Llm-integrated bayesian state space models for multimodal time-series forecasting. arXiv preprint arXiv:2510.20952 , 2025. Cooley, J. W. and Tukey, J. W. An algorithm for the machine calculation of complex fourier series. Mathematics of computation , 19(90):297–301, 1965. Coombes, S., S¸ ayli, M., Thul, R., Nicks, R., Porter, M. A., and Lai, Y. M. Oscillatory networks: Insights from piecewise-linear modeling. SIAM Review , 66(4):619–679, 2024. doi: 10.1137/22M1534365. Dabholkar, K. V. and Barak, O. Finding separatrices of dynamical flows with deep koopman eigenfunc-tions. In Advances in Neural Information Process-ing Systems (NeurIPS) , 2025. URL https:// neurips.cc/virtual/2025/poster/119952 .arXiv:2505.15231. Dao, T. and Gu, A. Transformers are SSMs: Generalized models and efficient algorithms through structured state space duality. In Salakhutdinov, R., Kolter, Z., Heller, K., Weller, A., Oliver, N., Scarlett, J., and Berkenkamp, F. (eds.), Proceedings of the 41st International Conference 
+
+10 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+on Machine Learning , volume 235 of Proceedings of Ma-chine Learning Research , pp. 10041–10071. PMLR, 21– 27 Jul 2024. URL https://proceedings.mlr. press/v235/dao24a.html .De Feo, O. and Storace, M. Piecewise-Linear Identifica-tion of Nonlinear Dynamical Systems in View of Their Circuit Implementations. IEEE Transactions on Cir-cuits and Systems I: Regular Papers , 54(7):1542–1554, July 2007. ISSN 1558-0806. doi: 10.1109/TCSI.2007. 899613. URL https://ieeexplore.ieee.org/ document/4268404 . Conference Name: IEEE Trans-actions on Circuits and Systems I: Regular Papers. Dehning, J., Zierenberg, J., Spitzner, F. P., Wibral, M., Pin-heiro Neto, J. P., Wilczek, M., and Priesemann, V. Infer-ring change points in the spread of covid-19 reveals the ef-fectiveness of interventions. Science , 2020. doi: 10.1126/ science.abb9789. URL https://www.science. org/doi/10.1126/science.abb9789 .Doya, K. Bifurcations in the learning of recurrent neural networks. In Proceedings of the 1992 IEEE International Symposium on Circuits and Systems , 1992. ISBN 978-0-7803-0593-9. doi: 10.1109/ISCAS.1992.230622. Duan, X.-Y., Kurths, J., and Li, X.-Z. Embedding theory of reservoir computing and reducing reservoir network using time delays. Physical Review Research , 5(2):L022041, 2023. doi: 10.1103/PhysRevResearch.5.L022041. Durstewitz, D. Implications of synaptic biophysics for re-current network dynamics and active memory. Neural Networks , 22(8):1189–1200, 2009. ISSN 08936080. doi: 10.1016/j.neunet.2009.07.016. Durstewitz, D. Advanced Data Analysis in Neuroscience: In-tegrating Statistical and Computational Models . Springer, 2017. doi: 10.1007/978-3-319-59976-2. URL https: //doi.org/10.1007/978-3-319-59976-2 .Durstewitz, D. and Gabriel, T. Dynamical Basis of Irregular Spiking in NMDA-Driven Prefrontal Cortex Neurons. 
+
+Cerebral Cortex , 17(4):894–908, April 2007. ISSN 1047-3211. doi: 10.1093/cercor/bhk044. URL https:// doi.org/10.1093/cercor/bhk044 .Durstewitz, D., Huys, Q. J. M., and Koppe, G. Psychiatric Illnesses as Disorders of Network Dynamics. Biol Psychi-atry Cogn Neurosci Neuroimaging , January 2020. ISSN 2451-9030. doi: 10.1016/j.bpsc.2020.01.001. Durstewitz, D., Koppe, G., and Thurm, M. I. Reconstructing computational system dynamics from neural data with recurrent neural networks. Nature Reviews. Neuroscience ,24(11):693–710, November 2023. ISSN 1471-0048. doi: 10.1038/s41583-023-00740-7. Eckmann, J.-P. and Ruelle, D. Ergodic theory of chaos and strange attractors. Reviews of Mod-ern Physics , 57(3):617–656, 1985. doi: 10.1103/ RevModPhys.57.617. URL https://doi.org/10. 1103/RevModPhys.57.617 .Eisenmann, L., Monfared, Z., G ¨oring, N., and Durstewitz, D. Bifurcations and loss jumps in RNN training. Advances in Neural Information Processing Systems , 36, 2023. Eisenmann, L., Br ¨andle, A., Monfared, Z., and Durstewitz, D. Detecting invariant manifolds in relu-based rnns, 2025. URL https://arxiv.org/abs/2510.03814 .Faraway, J. J. and Jhun, M. Bootstrap choice of bandwidth for density estimation. Journal of the American Statistical Association , 85(412):1119–1122, 1990. doi: 10.1080/ 01621459.1990.10474983. Fechtelpeter, J., Rauschenberg, C., Goetzl, C., Emonds, N., Hiller, S., Krumm, S., Reininghaus, U., Durstewitz, D., Koppe, G., and Wierzba, E. Computational network models for forecasting and control of mental health tra-jectories in digital applications. npj Digital Medicine ,2025. doi: 10.1038/s41746-025-02252-3. URL https: //doi.org/10.1038/s41746-025-02252-3 .Field, R. J., Koros, E., and Noyes, R. M. Oscillations in chemical systems. ii. thorough analysis of temporal oscillation in the bromate-cerium-malonic acid system. 
+
+Journal of the American Chemical Society , 94(25):8649– 8664, 1972. Frederickson, P., Kaplan, J. L., Yorke, E. D., and Yorke, J. A. The liapunov dimension of strange attractors. Journal of differential equations , 49(2):185–207, 1983. Fumagalli, L., L ¨udge, K., de Wiljes, J., Haario, H., and Jaurigue, L. Data-driven performance measures using global properties of attractors for testing black-box sur-rogate models of chaotic systems. Chaos: An Interdisci-plinary Journal of Nonlinear Science , 35(11):113121, 11 2025. ISSN 1054-1500. doi: 10.1063/5.0283424. URL 
+
+https://doi.org/10.1063/5.0283424 .Garza, A., Canseco, M. M., Chall ´u, C., and Olivares, K. G. StatsForecast: Lightning fast forecasting with statistical and econometric models. PyCon Salt Lake City, Utah, US 2022, 2022. URL https://github.com/Nixtla/ statsforecast .Gilpin, W. Chaos as an interpretable benchmark for fore-casting and data-driven modelling. In Thirty-fifth Confer-ence on Neural Information Processing Systems Datasets and Benchmarks Track (Round 2) , 2022. URL https: //openreview.net/forum?id=enYjtbjYJrf .11 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+Gilpin, W. Model scale versus domain knowledge in sta-tistical forecasting of chaotic systems. Physical Review Research , 5(4):043252, 2023. Godahewa, R. W., Bergmeir, C., Webb, G., Hyndman, R., and Montero-Manso, P. Monash time series forecasting archive. In Vanschoren, J. and Yeung, S. (eds.), Proceed-ings of the Neural Information Processing Systems Track on Datasets and Benchmarks , volume 1, 2021. Goodfellow, I., Bengio, Y., and Courville, A. Deep Learning . MIT Press, 2016. http://www. deeplearningbook.org .Govindan, R., Narayanan, K., and Gopinathan, M. On the evidence of deterministic chaos in ecg: Surrogate and predictability analysis. Chaos: An Interdisciplinary Journal of Nonlinear Science , 8(2):495–502, 1998. Gu, A. and Dao, T. Mamba: Linear-time sequence mod-eling with selective state spaces. In First conference on language modeling , 2024. Guckenheimer, J. and Holmes, P. Nonlinear Oscilla-tions, Dynamical Systems, and Bifurcations of Vector Fields , volume 42 of Applied Mathematical Sciences .Springer, New York, NY, 1983. ISBN 978-1-4612-7020-1 978-1-4612-1140-2. doi: 10.1007/978-1-4612-1140-2. URL http://link.springer.com/10.1007/ 978-1-4612-1140-2 .G ¨oring, N. A., Hess, F., Brenner, M., Monfared, Z., and Durstewitz, D. Out-of-Domain General-ization in Dynamical Systems Reconstruction. In 
+
+Proceedings of the 41st International Conference on Machine Learning , pp. 16071–16114. PMLR, July 2024. URL https://proceedings.mlr.press/ v235/goring24a.html . ISSN: 2640-3498. Haley, C. L. and Anitescu, M. Optimal bandwidth for multitaper spectrum estimation. IEEE Signal Process-ing Letters , 24(11):1696–1700, November 2017. doi: 10.1109/LSP.2017.2719943. Hanson, J. and Raginsky, M. Universal simulation of stable dynamical systems by recurrent neural nets. In 
+
+Proceedings of the 2nd Conference on Learning for Dynamics and Control , volume 120 of Proceedings of Machine Learning Research , pp. 384–392. PMLR, 2020. URL https://proceedings.mlr.press/ v120/hanson20a.html .Hemmer, C. J. and Durstewitz, D. True zero-shot infer-ence of dynamical systems preserving long-term statis-tics. In The Thirty-ninth Annual Conference on Neural Information Processing Systems , 2025. URL https: //openreview.net/forum?id=RE97LT26w8 .Hershey, J. R. and Olsen, P. A. Approximating the kull-back leibler divergence between gaussian mixture mod-els. 2007 IEEE International Conference on Acoustics, Speech and Signal Processing - ICASSP ’07 , 4:IV–317– IV–320, 2007. Hess, F., Monfared, Z., Brenner, M., and Durstewitz, D. Generalized Teacher Forcing for Learning Chaotic Dynamics. In Proceedings of the 40th International Conference on Machine Learning , pp. 13017–13049. PMLR, July 2023. URL https://proceedings. mlr.press/v202/hess23a.html . ISSN: 2640-3498. Hewamalage, H., Ackermann, K., and Bergmeir, C. Forecast evaluation for data scientists: common pitfalls and best practices. Data Mining and Knowledge Dis-covery , 37(2):788–832, 2023. URL https://link. springer.com/content/pdf/10.1007/ s10618-022-00894-5.pdf?pdf=button . (IF 4.8, Q2 in “Computer Science, Artificial Intelligence”, JCR 2022). Hochreiter, S. and Schmidhuber, J. Long short-term memory. 
+
+Neural Comput. , 9(8):1735–1780, nov 1997. ISSN 0899-7667. doi: 10.1162/neco.1997.9.8.1735. Hołyst, J. A., Kacperski, K., and Schweitzer, F. Social impact models of opinion dynamics. Annual Reviews Of Computational PhysicsIX , pp. 253–273, 2001. Huang, Y., Bathiany, S., Ashwin, P., and Boers, N. Deep learning for predicting rate-induced tip-ping. Nature Machine Intelligence , 6(12):1556–1565, November 2024. ISSN 2522-5839. doi: 10.1038/ s42256-024-00937-0. URL https://www.nature. com/articles/s42256-024-00937-0 .Huh, I., Jeong, C., and Alam, M. Context-informed neu-ral ODEs unexpectedly identify broken symmetries: In-sights from the poincar ´e–hopf theorem. In Singh, A., Fazel, M., Hsu, D., Lacoste-Julien, S., Berkenkamp, F., Maharaj, T., Wagstaff, K., and Zhu, J. (eds.), Pro-ceedings of the 42nd International Conference on Ma-chine Learning , volume 267 of Proceedings of Machine Learning Research , pp. 26311–26337. PMLR, 13–19 Jul 2025. URL https://proceedings.mlr.press/ v267/huh25a.html .Hurley, L. A. and Shaheen, S. E. Reservoir computing with large valid prediction time for the lorenz system. arXiv preprint arXiv:2508.06730 , 2025. Hyndman, R. J. and Khandakar, Y. Automatic Time Se-ries Forecasting: The forecast Package for R. Jour-nal of Statistical Software , 27(3), 2008. ISSN 1548-7660. doi: 10.18637/jss.v027.i03. URL http://www. jstatsoft.org/v27/i03/ .12 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+Ispolatov, I., Madhok, V., Allende, S., and Doebeli, M. Chaos in high-dimensional dissipative dynamical sys-tems. Scientific Reports , 5:12506, 2015. doi: 10.1038/ srep12506. URL https://doi.org/10.1038/ srep12506 .Izhikevich, E. M. Dynamical systems in neuroscience: the geometry of excitability and bursting . Computational neuroscience. MIT Press, Cambridge, Mass, 2007. ISBN 978-0-262-09043-8. OCLC: ocm65400606. Jaeger, H. and Haas, H. Harnessing Nonlinearity: Pre-dicting Chaotic Systems and Saving Energy in Wireless Communication. Science , 304(5667):78–80, 2004. ISSN 0036-8075, 1095-9203. doi: 10.1126/science.1091277. Jiang, R., Lu, P. Y., Orlova, E., and Willett, R. Training neural operators to preserve invariant measures of chaotic attractors. Advances in Neural Information Processing Systems , 36:27645–27669, 2023. Juloski, A., Weiland, S., and Heemels, W. A Bayesian approach to identification of hybrid systems. IEEE Trans-actions on Automatic Control , 50(10):1520–1533, Oc-tober 2005. ISSN 1558-2523. doi: 10.1109/TAC.2005. 856649. URL https://ieeexplore.ieee.org/ document/1516255 . Conference Name: IEEE Trans-actions on Automatic Control. Kalnay, E. Atmospheric Modeling, Data Assimilation and Predictability . Cambridge University Press, 2003. Kantz, H. and Schreiber, T. Nonlinear time series analysis ,volume 7. Cambridge university press, 2004. Karlsson, D. and Svanstr ¨om, O. Modelling Dynamical Systems Using Neural Ordinary Differential Equations, 2019. URL https://hdl.handle.net/20.500. 12380/256887 .Katok, A., Katok, A. B., and Hasselblatt, B. Introduc-tion to the Modern Theory of Dynamical Systems . Cam-bridge University Press, 1995. ISBN 978-0-521-57557-7. Google-Books-ID: 9nL7ZX8Djp4C. Kennel, M. B., Brown, R., and Abarbanel, H. D. I. Determin-ing embedding dimension for phase-space reconstruction using a geometrical construction. Physical Review A , 45 (6):3403–3411, 1992. doi: 10.1103/PhysRevA.45.3403. Kirtman, B., Power, S. B., Adedoyin, J., Boer, G. J., Bojariu, R., Camilloni, I., Doblas-Reyes, F. J., Fiore, A. M., Kimoto, M., Meehl, G. A., Prather, M., Sarr, A., Sch ¨ar, C., Sutton, R., van Oldenborgh, G. J., Vecchi, G., and Wang, H. Near-term climate change: Projections and predictability. In Climate Change 2013: The Physical Science Basis. Contribution of Working Group I to the Fifth Assessment Report of the Intergovernmental Panel on Climate Change .Cambridge University Press, 2013. URL https: //www.ipcc.ch/site/assets/uploads/ 2018/02/WG1AR5_Chapter11_FINAL.pdf .Kloeden, P. E. and Yang, M. An Introduction to Nonautonomous Dynamical Systems and their Attrac-tors . WORLD SCIENTIFIC, 2020. doi: 10.1142/ 12053. URL https://www.worldscientific. com/doi/abs/10.1142/12053 .Ko, J.-H., Koh, H., Park, N., and Jhe, W. Homotopy-based training of neuralodes for accurate dynamics discovery. 
+
+Advances in Neural Information Processing Systems , 36: 64725–64752, 2023. Kong, L.-W., Fan, H.-W., Grebogi, C., and Lai, Y.-C. Machine learning prediction of critical tran-sition and system collapse. Physical Review Re-search , 3(1):013090, January 2021. ISSN 2643-1564. doi: 10.1103/PhysRevResearch.3.013090. URL https://link.aps.org/doi/10.1103/ PhysRevResearch.3.013090 .Kong, L.-W., Weng, Y., Glaz, B., Haile, M., and Lai, Y.-C. Reservoir computing as digital twins for nonlinear dynamical systems. Chaos: An Interdisciplinary Journal of Nonlinear Science , 33(3):033111, March 2023. ISSN 1054-1500, 1089-7682. doi: 10.1063/5.0138661. Koppe, G., Toutounji, H., Kirsch, P., Lis, S., and Durstewitz, D. Identifying nonlinear dynamical systems via genera-tive recurrent neural networks with applications to fMRI. 
+
+PLOS Computational Biology , 15(8):e1007263, 2019. ISSN 1553-7358. doi: 10.1371/journal.pcbi.1007263. Kramer, D., Bommer, P. L., Tombolini, C., Koppe, G., and Durstewitz, D. Reconstructing nonlinear dynam-ical systems from multi-modal time series. In Pro-ceedings of the 39th International Conference on Ma-chine Learning , volume 162 of Proceedings of Machine Learning Research , pp. 11613–11633. PMLR, 17–23 Jul 2022. URL https://proceedings.mlr.press/ v162/kramer22a.html .Kr ¨amer, K.-H., Datseris, G., Kurths, J., Kiss, I. Z., Ocampo-Espindola, J. L., and Marwan, N. A unified and automated approach to attractor reconstruction. New Journal of Physics , 23(3):033017, 2021. Kuznetsov, Y. A. Elements of Applied Bifurcation Theory (2nd Ed.) . Springer-Verlag, Berlin, Heidelberg, 1998. ISBN 0387983821. K ¨oglmayr, D. and R ¨ath, C. Extrapolating tipping points and simulating non-stationary dynamics of complex systems using efficient machine learning. Scientific Reports , 14 13 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+(1):507, January 2024. ISSN 2045-2322. doi: 10.1038/ s41598-023-50726-9. URL https://www.nature. com/articles/s41598-023-50726-9 .Lai, J., Bao, A., and Gilpin, W. Panda: A pretrained forecast model for universal representation of chaotic dynamics. 
+
+arXiv preprint arXiv:2505.13755 , 2025. Lamb, A. M., ALIAS PARTH GOYAL, A. G., Zhang, Y., Zhang, S., Courville, A. C., and Bengio, Y. Professor forc-ing: A new algorithm for training recurrent networks. In Lee, D., Sugiyama, M., Luxburg, U., Guyon, I., and Gar-nett, R. (eds.), Advances in Neural Information Process-ing Systems , volume 29. Curran Associates, Inc., 2016. Lee, T. C. M. A stabilized bandwidth selection method for kernel smoothing of the periodogram. Signal Process-ing , 81(2):419–430, 2001. doi: 10.1016/S0165-1684(00) 00218-8. Li, X., Wong, T.-K. L., Chen, R. T., and Duvenaud, D. Scalable gradients for stochastic differential equations. In International Conference on Artificial Intelligence and Statistics , pp. 3870–3882. PMLR, 2020. Lim, S. H., Theo Giorgini, L., Moon, W., and Wettlaufer, J. S. Predicting critical transitions in multiscale dynamical systems using reservoir computing. Chaos: An Interdisci-plinary Journal of Nonlinear Science , 30(12):123126, December 2020. ISSN 1054-1500, 1089-7682. doi: 10.1063/5.0023764. Lind, D. and Marcus, B. An Introduction to Symbolic Dy-namics and Coding . Cambridge Mathematical Library. Cambridge University Press, 2 edition, 2021. Linderman, S., Johnson, M., Miller, A., Adams, R., Blei, D., and Paninski, L. Bayesian Learning and Inference in Recurrent Switching Linear Dynamical Systems. In 
+
+Proceedings of the 20th International Conference on Arti-ficial Intelligence and Statistics , pp. 914–922. PMLR, April 2017. URL https://proceedings.mlr. press/v54/linderman17a.html . ISSN: 2640-3498. Linderman, S. W., Miller, A. C., Adams, R. P., Blei, D. M., Paninski, L., and Johnson, M. J. Recurrent switching linear dynamical systems. arXiv:1610.08466 [stat] , Oc-tober 2016. URL http://arxiv.org/abs/1610. 08466 . arXiv: 1610.08466. Liu, C., Zhao, B., Ding, J., Wang, H., and Li, Y. Mamba inte-grated with physics principles masters long-term chaotic system forecasting. arXiv preprint arXiv:2505.23863 ,2025. Lohmann, J., Dijkstra, H. A., Jochum, M., Lucarini, V., and Ditlevsen, P. D. Multistability and intermediate tipping of the atlantic ocean circulation. Science Ad-vances , 10(12):eadi4253, 2024. doi: 10.1126/sciadv. adi4253. URL https://www.science.org/doi/ abs/10.1126/sciadv.adi4253 .Lorenz, E. N. Deterministic nonperiodic flow. Journal of atmospheric sciences , 20(2):130–141, 1963. Lusch, B., Kutz, J. N., and Brunton, S. L. Deep learn-ing for universal linear embeddings of nonlinear dynam-ics. Nat Commun , 9(1):4950, December 2018. ISSN 2041-1723. doi: 10.1038/s41467-018-07210-0. URL 
+
+http://arxiv.org/abs/1712.09707 . arXiv: 1712.09707. Mandelbrot, B. and Hudson, R. L. The Misbehavior of Markets: A fractal view of financial turbulence . Basic books, 2007. Mikhaeil, J., Monfared, Z., and Durstewitz, D. On the difficulty of learning chaotic dynamics with RNNs. Ad-vances in Neural Information Processing Systems , 35: 11297–11312, December 2022. Monfared, Z. and Durstewitz, D. Transformation of ReLU-based recurrent neural networks from discrete-time to continuous-time. In Proceedings of the 37th International Conference on Machine Learning , 2020. URL http://proceedings.mlr.press/v119/ monfared20a.html .Mumby, P. J., Hastings, A., and Edwards, H. J. Thresholds and the resilience of caribbean coral reefs. Nature , 450 (7166):98–101, 2007. doi: 10.1038/nature06252. URL 
+
+https://doi.org/10.1038/nature06252 .Naiman, I. and Azencot, O. A Koopman Approach to Un-derstanding Sequence Neural Models. arXiv:2102.07824 [cs, math] , October 2021. URL http://arxiv.org/ abs/2102.07824 . arXiv: 2102.07824. Nie, Y., Nguyen, N. H., Sinthong, P., and Kalagnanam, J. A time series is worth 64 words: Long-term forecasting with transformers. In The Eleventh International Conference on Learning Representations , 2023. URL https:// openreview.net/forum?id=Jbdc0vTOcol .Oh, Y., Lim, D., and Kim, S. Stable neural stochastic dif-ferential equations in analyzing irregular time series data. In The Twelfth International Conference on Learning Representations , 2024. URL https://openreview. net/forum?id=4VIgNuQ1pY .Olivares, K. G., Challu, C., Garza, A., Canseco, M. M., and Dubrawski, A. NeuralForecast: User friendly state-of-the-art neural forecasting models. PyCon Salt Lake 14 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+City, Utah, US, 2022. URL https://github.com/ Nixtla/neuralforecast .Oreshkin, B. N., Carpov, D., Chapados, N., and Bengio, Y. N-beats: Neural basis expansion analysis for inter-pretable time series forecasting. In International Confer-ence on Learning Representations , 2020. URL https: //openreview.net/forum?id=r1ecqn4YwB .Otto, S. E. and Rowley, C. W. Linearly recurrent autoen-coder networks for learning dynamics. SIAM Journal on Applied Dynamical Systems , 18(1):558–593, 2019. doi: 10.1137/18M1177846. URL https://doi.org/10. 1137/18M1177846 .Ozaki, T. Time Series Modeling of Neuroscience Data . CRC Press / Chapman & Hall, Boca Raton, FL, 2012. ISBN 978-1-4200-9460-2. doi: 10.1201/b11527. Pals, M., Sa ˘gtekin, A. E., Pei, F., Gloeckler, M., and Macke, J. H. Inferring stochastic low-rank recurrent neural net-works from neural data. In Globerson, A., Mackey, L., Belgrave, D., Fan, A., Paquet, U., Tomczak, J., and Zhang, C. (eds.), Advances in Neural Information Processing Sys-tems , volume 37, pp. 18225–18264. Curran Associates, Inc., 2024. doi: 10.52202/079017-0579. Papoulis, A. and Pillai, S. U. Probability, Random Variables, and Stochastic Processes . McGraw-Hill, New York, 4th edition, 2002. Park, J., Yang, N. T., and Chandramoorthy, N. When are dynamical systems learned from time series data statistically accurate? In The Thirty-eighth Annual Conference on Neural Information Processing Systems ,2024. URL https://openreview.net/forum? id=4t3ox9hj3z .Pascanu, R., Mikolov, T., and Bengio, Y. On the difficulty of training recurrent neural networks. In Proceedings of the 30th International Conference on Machine Learning ,2013. URL http://proceedings.mlr.press/ v28/pascanu13.html .Patel, D. and Ott, E. Using machine learning to anticipate tipping points and extrapolate to post-tipping dynamics of non-stationary dynamical systems. Chaos (Woodbury, N.Y.) , 33(2):023143, February 2023. ISSN 1089-7682. doi: 10.1063/5.0131787. Pathak, J., Lu, Z., Hunt, B. R., Girvan, M., and Ott, E. Using Machine Learning to Replicate Chaotic Attractors and Calculate Lyapunov Exponents from Data. Chaos: An Interdisciplinary Journal of Nonlinear Science , 27(12): 121102, December 2017. ISSN 1054-1500, 1089-7682. doi: 10.1063/1.5010300. URL http://arxiv.org/ abs/1710.07313 . arXiv: 1710.07313. Pathak, J., Hunt, B., Girvan, M., Lu, Z., and Ott, E. Model-Free Prediction of Large Spatiotemporally Chaotic Systems from Data: A Reservoir Computing Ap-proach. Phys. Rev. Lett. , 120(2):024102, 2018. ISSN 0031-9007, 1079-7114. doi: 10.1103/PhysRevLett.120. 024102. URL https://link.aps.org/doi/10. 1103/PhysRevLett.120.024102 .Pearlmutter. Learning state space trajectories in recurrent neural networks. In International 1989 Joint Conference on Neural Networks , pp. 365–372. IEEE, 1989. Perko, L. Differential equations and dynamical systems .Number 7 in Texts in applied mathematics. Springer, New York, 3rd ed edition, 2001. ISBN 978-0-387-95116-4. Pesaran, M. H., Pettenuzzo, D., and Timmermann, A. Fore-casting time series subject to multiple structural breaks. 
+
+The Review of Economic Studies , 73(4):1057–1084, 2006. Pineda, F. J. Dynamics and architecture for neural computa-tion. Journal of Complexity , 4(3):216–245, 1988. Platt, J. A., Wong, A., Clark, R., Penny, S. G., and Abar-banel, H. D. Robust forecasting using predictive general-ized synchronization in reservoir computing. Chaos: An Interdisciplinary Journal of Nonlinear Science , 31(12), 2021. Platt, J. A., Penny, S. G., Smith, T. A., Chen, T.-C., and Abarbanel, H. D. A systematic exploration of reservoir computing for forecasting complex spatiotemporal dy-namics. Neural Networks , 153:530–552, 2022. Platt, J. A., Penny, S. G., Smith, T. A., Chen, T.-C., and Abar-banel, H. D. Constraining chaos: Enforcing dynamical invariants in the training of reservoir computers. Chaos: An Interdisciplinary Journal of Nonlinear Science , 33 (10), 2023. Raffel, C., Shazeer, N., Roberts, A., Lee, K., Narang, S., Matena, M., Zhou, Y., Li, W., and Liu, P. J. Exploring the limits of transfer learning with a unified text-to-text transformer. Journal of machine learning research , 21 (140):1–67, 2020. Raissi, M., Perdikaris, P., and Karniadakis, G. Physics-informed neural networks: A deep learning frame-work for solving forward and inverse problems in-volving nonlinear partial differential equations. Jour-nal of Computational Physics , 378:686–707, Febru-ary 2019. ISSN 00219991. doi: 10.1016/j.jcp.2018. 10.045. URL https://linkinghub.elsevier. com/retrieve/pii/S0021999118307125 .Ranzato, M., Chopra, S., Auli, M., and Zaremba, W. Se-quence level training with recurrent neural networks. In 
+
+4th International Conference on Learning Representa-tions, ICLR 2016 , 2016. 15 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+Sain, S. R. Multivariate locally adaptive density estimation. 
+
+Computational Statistics & Data Analysis , 39(2):165– 186, 2002. doi: 10.1016/S0167-9473(01)00053-6. Sauer, T. Reconstruction of dynamical systems from inter-spike intervals. Physical Review Letters , 72(24):3811, 1994. Sauer, T. Interspike interval embedding of chaotic signals. 
+
+Chaos: An Interdisciplinary Journal of Nonlinear Sci-ence , 5(1):127–132, 1995. Sauer, T., Yorke, J. A., and Casdagli, M. Embedology. 
+
+Journal of statistical Physics , 65(3):579–616, 1991. Schalk, G., McFarland, D. J., Hinterberger, T., Birbaumer, N., and Wolpaw, J. R. BCI2000: a general-purpose brain-computer interface (BCI) system. IEEE transactions on bio-medical engineering , 51(6):1034–1043, 2000. ISSN 0018-9294. doi: 10.1109/TBME.2004.827072. Schiff, Y., Wan, Z. Y., Parker, J. B., Hoyer, S., Kuleshov, V., Sha, F., and Zepeda-N ´u ˜nez, L. Dyslim: Dynamics stable learning by invariant measure for chaotic systems. In International Conference on Machine Learning , pp. 43649–43684. PMLR, 2024. Schmidt, D., Koppe, G., Monfared, Z., Beutelspacher, M., and Durstewitz, D. Identifying nonlinear dynamical systems with multiple time scales and long-range de-pendencies. In Proceedings of the 9th International Conference on Learning Representations , 2021. URL 
+
+http://arxiv.org/abs/1910.03471 .Scott, D. W. Multivariate density estimation: theory, prac-tice, and visualization . John Wiley & Sons, 2015. Shumaylov, Z., Zaika, P., Scholl, P., Kutyniok, G., Horesh, L., and Sch ¨onlieb, C.-B. When is a system discoverable from data? discovery requires chaos, 2025. URL https: //arxiv.org/abs/2511.08860 .Silverman, B. W. Density estimation for statistics and data analysis . Routledge, 2018. Simpson, D. J. W. How to compute multi-dimensional stable and unstable manifolds of piecewise-linear maps. arXiv preprint arXiv:2310.09941 , 2023. Sivakumar, B. Chaos theory in geophysics: past, present and future. Chaos, Solitons & Frac-tals , 19(2):441–462, 2004. ISSN 0960-0779. URL https://www.sciencedirect.com/ science/article/pii/S0960077903000559 .Staddon, J. E. R. Adaptive Dynamics: The Theoretical Analysis of Behavior . MIT Press, 2001. Storace, M. and De Feo, O. Piecewise-linear approximation of nonlinear dynamical systems. IEEE Transactions on Circuits and Systems I: Regular Papers , 51(4):830–842, 2004. Strogatz, S. H. Nonlinear dynamics and chaos: with appli-cations to physics, biology, chemistry, and engineering .Chapman and Hall/CRC, 2024. Sussillo, D. and Barak, O. Opening the black box: Low-dimensional dynamics in high-dimensional recurrent neural networks. Neural Computation , 2013. doi: 10.1162/NECO a 00409. URL https://dl.acm. org/doi/10.1162/NECO_a_00409 .Takens, F. Detecting strange attractors in turbulence. In 
+
+Dynamical Systems and Turbulence, Warwick 1980 , vol-ume 898, pp. 366–381. Springer, 1981. ISBN 978-3-540-11171-9 978-3-540-38945-3. URL http://link. springer.com/10.1007/BFb0091924 .Tan, M., Merrill, M., Gupta, V., Althoff, T., and Hartvigsen, T. Are language models actually useful for time series forecasting? Advances in Neural Information Processing Systems , 37:60162–60191, 2024. Teutsch, P. and M ¨ader, P. Flipped classroom: Effec-tive teaching for time series forecasting. Transactions on Machine Learning Research , 2022. ISSN 2835-8856. URL https://openreview.net/forum? id=w3x20YEcQK .Thaweethai, T., Donohue, S. E., Martin, J. N., Hornig, M., Mosier, J. M., Shinnick, D. J., Ashktorab, H., Atieh, O., Blomkalns, A., Brim, H., et al. Long covid trajectories in the prospectively followed recover-adult us cohort. Na-ture communications , 16(1):9557, 2025. Tsung, F.-S. and Cottrell, G. Phase-space learning. Ad-vances in neural information processing systems , 7, 1994. Turchin, P. and Taylor, A. D. Complex dynam-ics in ecological time series. Ecology , 73(1):289– 305, 1992. doi: https://doi.org/10.2307/1938740. URL https://esajournals.onlinelibrary. wiley.com/doi/abs/10.2307/1938740 .Tziperman, E., Scher, H., Zebiak, S. E., and Cane, M. A. Controlling spatiotemporal chaos in a realis-tic el ni ˜no prediction model. Phys. Rev. Lett. , 79: 1034–1037, Aug 1997. doi: 10.1103/PhysRevLett. 79.1034. URL https://link.aps.org/doi/10. 1103/PhysRevLett.79.1034 .Van Tegelen, E., Van Voorn, G., Athanasiadis, I. N., and Van Heijster, P. Neural ordinary differential equations for learning and extrapolating system dynamics across bifurcations. Chaos: An Interdisciplinary Journal of 
+
+16 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+Nonlinear Science , 35(10):101103, October 2025. ISSN 1054-1500, 1089-7682. doi: 10.1063/5.0288264. van Vreeswijk, C. and Sompolinsky, H. Chaos in neuronal networks with balanced excitatory and inhibitory activity. Science , 274(5293):1724–1726, 1996. doi: 10.1126/science.274.5293.1724. URL 
+
+https://www.science.org/doi/abs/10. 1126/science.274.5293.1724 .Verzelli, P., Alippi, C., and Livi, L. Learn to synchronize, synchronize to learn. Chaos: An Interdisciplinary Journal of Nonlinear Science , 31(8):083119, August 2021. ISSN 1054-1500, 1089-7682. doi: 10.1063/5.0056425. Villani, C. et al. Optimal transport: old and new , volume 338. Springer, 2009. Vlachas, P. R. and Koumoutsakos, P. Learning on predic-tions: Fusing training and autoregressive inference for long-term spatiotemporal forecasts. Physica D: Nonlin-ear Phenomena , 470:134371, 2024. Vlachas, P. R., Byeon, W., Wan, Z. Y., Sapsis, T. P., and Koumoutsakos, P. Data-driven forecasting of high-dimensional chaotic systems with long short-term memory networks. Proc. R. Soc. A. ,474(2213):20170844, 2018. ISSN 1364-5021, 1471-2946. doi: 10.1098/rspa.2017.0844. URL 
+
+https://royalsocietypublishing.org/ doi/10.1098/rspa.2017.0844 .Vlachas, P. R., Pathak, J., Hunt, B. R., Sapsis, T. P., Gir-van, M., Ott, E., and Koumoutsakos, P. Backpropagation Algorithms and Reservoir Computing in Recurrent Neu-ral Networks for the Forecasting of Complex Spatiotem-poral Dynamics. arXiv:1910.05266 [physics] , Febru-ary 2020. URL http://arxiv.org/abs/1910. 05266 . arXiv: 1910.05266. Volkmann, E., Br ¨andle, A., Durstewitz, D., and Koppe, G. A scalable generative model for dynamical system recon-struction from neuroimaging data. Advances in Neural Information Processing Systems , 37:80328–80362, 2024. Voss, H. U., Timmer, J., and Kurths, J. Nonlinear dynamical system identification from uncertain and indirect measurements. International Journal of Bifurcation and Chaos , 14(6):1905–1933, 2004. ISSN 0218-1274. doi: 10.1142/S0218127404010345. URL 
+
+https://www.worldscientific.com/doi/ abs/10.1142/S0218127404010345 .Wang, R., Dong, Y., Arik, S. ¨O., and Yu, R. Koopman Neural Forecaster for Time Series with Temporal Dis-tribution Shifts, October 2022. URL http://arxiv. org/abs/2210.03675 . arXiv:2210.03675 [cs, stat]. Werbos, P. J. Backpropagation through time: what it does and how to do it. Proceedings of the IEEE , 78(10):1550– 1560, 1990. Williams, A. R., Ashok, A., Marcotte, ´E., Zantedeschi, V., Subramanian, J., Riachi, R., Requeima, J., Lacoste, A., Rish, I., Chapados, N., and Drouin, A. Context is key: A benchmark for forecasting with essential tex-tual information. In Forty-second International Con-ference on Machine Learning , 2025. URL https: //openreview.net/forum?id=ih2WuBT1Fn .Williams, R. J. and Zipser, D. A learning algorithm for continually running fully recurrent neural networks. 
+
+Neural Computation , 1(2):270–280, June 1989. ISSN 0899-7667, 1530-888X. doi: 10.1162/neco.1989.1. 2.270. URL https://direct.mit.edu/neco/ article/1/2/270-280/5490 .Wood, S. N. Statistical inference for noisy nonlinear ecological dynamic systems. Nature , 466(7310):1102– 1104, August 2010. ISSN 1476-4687. doi: 10.1038/ nature09319. URL https://www.nature.com/ articles/nature09319 . Number: 7310 Publisher: Nature Publishing Group. Zeng, A., Chen, M., Zhang, L., and Xu, Q. Are transformers effective for time series forecasting? In Proceedings of the AAAI conference on artificial intelligence , volume 37, pp. 11121–11128, 2023. Zhang, Y. and Gilpin, W. Zero-shot forecasting of chaotic systems. In The Thirteenth International Conference on Learning Representations , 2025. URL https:// openreview.net/forum?id=TqYjhJrp9m .Zhao, L., Shen, Y., Liu, Z., Wang, X., and Deng, J. Less is more: Unlocking specialization of time series foundation models via structured pruning. In The Thirty-ninth Annual Conference on Neural Information Processing Systems ,2025. URL https://openreview.net/forum? id=jy4bBsr1Jc .Zhou, H. and Cheng, S. Improving long-term autoregressive spatiotemporal predictions: A proof of concept with fluid dynamics. Computer Methods in Applied Mechanics and Engineering , 447:118332, 2025. Zhou, H., Zhang, S., Peng, J., Zhang, S., Li, J., Xiong, H., and Zhang, W. Informer: Beyond efficient transformer for long sequence time-series forecasting. In The Thirty-Fifth AAAI Conference on Artificial Intelligence, AAAI 2021, Virtual Conference , volume 35, pp. 11106–11115. AAAI Press, 2021. 17 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+# A. Further Concepts in Dynamical Systems Theory 
+
+A.1. Limit Sets and Attractors 
+
+Consider a DS defined by (R, E, Φt). For t → −∞ and t → ∞ , Φt(x0) will often converge to certain sets for an x0 ∈ E,called the α and ω limit sets, respectively (Guckenheimer & Holmes, 1983): 
+
+Definition A.1. For a flow Φt : E → E and initial condition x0 ∈ E, the ω-limit set (forward limit set) of x0 is defined as 
+
+ω(x0) = \
+
+> T > 0
+
+{Φt(x0) : t ≥ T } , (2) and the α-limit set (backward limit set) as 
+
+α(x0) = \
+
+> T > 0
+
+{Φt(x0) : t ≤ − T } , (3) where the overline denotes closure of the set. Often these sets are isolated points (equilibria), closed orbits (limit cycles), quasi-periodic sets densely filling a torus (i.e., 
+
+α(x0), ω (x0) = Tk), or chaotic sets, although there are several other possibilities like manifolds of dense (non-isolated) equilibria or cycles, homoclinic orbits (connecting an equilibrium to itself), heteroclinic orbits (connecting two different equilibria), or the entire state space, for instance. An equilibrium of a continuous-time DS ˙x = f (x) is defined by the condition f (x) = 0 , while a fixed point of a recursive map F is a point x∗ for which we have x∗ = F (x∗). Equilibria (and likewise fixed points) of DS can be classified according to the eigenvalue spectrum of the local Jacobians at those points. Consider a linear continuous-time DS 
+
+˙x = f (x) = Ax , which has the general solution x(t) = exp ( At)x0 (Perko, 2001). Such a system cannot exhibit any limit cycles (stable oscillations; only dense sets of closed orbits given by purely trigonometric forms), multistability, or chaos. Define λi := eig i(A), i = 1 . . . M , as the eigenvalues of A, with real and imaginary parts αi = Re (λi) and ωi = Im (λi),respectively. Then a node is a point for which ∀i : ωi = 0 , and a spiral a point for which ∃i : ωi̸ = 0 (in the latter case there are at least two eigenvalues with imaginary parts, since they always come as conjugate pairs). For a spiral point, we have damped or growing oscillations in its vicinity. An equilibrium is called stable (making it a point attractor) if ∀i : αi < 0,
+
+unstable (a repeller) if ∀i : αi > 0, and a saddle if ∃i : αi < 0 ∧ ∃ j : αj > 0 (analogous definitions exist for discrete-time DS defined by recursive maps). Importantly, these concepts carry over to nonlinear DS by virtue of the Hartman-Grobman theorem (Perko, 2001), which states that for hyperbolic DS (see below) in a neighborhood Nϵ(x0) of an equilibrium x0, the nonlinear DS is topologically conjugate (see Def. 2.2) to a linear DS with the Jacobian Jx0 := ∂f (x) 
+
+> ∂x
+
+|x0 as its evolution operator. If there exists one αi = 0 (making the system non-hyperbolic ), then we have a dense, continuous set of equilibria or cycles along those directions. If there is either no motion or convergence along all other directions (i.e., ∀j̸ = i : αj ≤ 0), the set is called marginally stable (sometimes called a manifold attractor ) and has some interesting properties. Manifold attractors are interesting from an ML and a TSA perspective, since they form perfect integrators of perturbations into the system and can be exploited for long-range sequential problems and for learning DS with arbitrary timescales (Schmidt et al., 2021). A limit cycle is defined as an isolated (not dense) closed orbit Ω in state space (i.e., for which we have Φt(x0) = Φ t+τ (x0)
+
+for a fixed period τ > 0 and all x0 ∈ Ω). Like equilibria, limit cycles may be stable (attractors), unstable, or of the saddle type. An analogous concept for a discrete-time DS F is that of a k-cycle, which is an orbit Ω = {x∗
+
+> 1
+
+, x∗
+
+> 2
+
+, . . . , x∗
+
+> k
+
+} such that all x∗ 
+
+> i
+
+, i = 1 . . . k , are distinct and ∀i : x∗ 
+
+> i
+
+= F k(x∗ 
+
+> i
+
+). Hence, for a discrete-time DS each cyclic point is a fixed point of the 
+
+k-times iterated map F , and its stability can thus be determined from the Jacobians of F k(x∗ 
+
+> i
+
+). Unlike on a limit cycle, trajectories on a chaotic attractor , characterized by high sensitivity to initial conditions due to the maximum Lyapunov exponent > 0 causing exponential divergence, never close up (i.e., there is no τ > 0 for which Φt(x0) = Φ t+τ (x0)) and hence are aperiodic and irregular .A final remark concerns the relation between discrete and continuous time DS, which may be connected through the idea of the flow map. Consider, for convenience, a linear continuous-time DS ˙x = Ax with solution x(t) = exp ( At)x0. Then assuming we sample the continuous-time DS at fixed intervals k∆t, k ∈ Z, and defining ˜A := exp ( A∆t), the discrete-time DS defined by xk = ˜Ax k−1 produces outputs equivalent to those of the continuous-time DS on the temporal domain it is defined, and provided it is started in the same initial condition. This idea can be extended to define an equivalence between 18 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+discrete and continuous time ReLU-based RNNs (Monfared & Durstewitz, 2020), and applied at least approximately to translating between arbitrary nonlinear continuous- and discrete-time DS (Ozaki, 2012). Another important tool to connect continuous to discrete time DS is the Poincar ´e map (Perko, 2001): In a Poincar ´e map, an M − 1-dimensional manifold Σ
+
+transversal to the flow of an M -dimensional continuous time DS is inserted into its state space, and consecutive intersections 
+
+xk = Φ t(x0) ∩ Σ from one direction are recorded and formulated as a map xk = F (xk−1). These close formal connections between discrete and continuous-time DS can often been exploited for DS analysis; e.g., we can analyze the stability of a limit cycle through the stability of a cyclic point in a corresponding map, which is usually a simpler problem. 
+
+A.2. Temporal Delay Embedding 
+
+Say we have observed an underlying DS ˙x = f (x), x ∈ RM , through some generic measurement function yτ =
+
+g(x(τ )) , y ∈ RN , at time points τ = 1 . . . T , yielding an observed TS {yτ }. Let us consider the case N = 1 << M , i.e. a scalar TS {yτ }. Is there any hope of recovering the attractors of the original DS from just these scalar measurements? One of the most surprising and fundamental results as one moves from DS theory to empirical data is the delay embedding theorems, which state that in general the answer is ‘yes’ under quite generic conditions (Takens, 1981; Sauer et al., 1991). Loosely speaking, if all degrees of freedom in the underlying DS are coupled (i.e., our observations are not just from a subsystem which is completely isolated from another subsystem we are interested in), we can replace the missing observations from other dynamical variables through time-lagged versions yτ −k∆τ , k ∈ N. Intuitively, a single observation yτ won’t allow us to predict the future evolution of the underlying system because it is ambiguous, but the more past observations 
+
+yτ −∆τ , y τ −2∆ τ , . . . , we consider, the more constrained the potential future course of a trajectory becomes. Specifically, we build a delay coordinate vector from the scalar observations as follows: 
+
+yt := yt, y t−∆t, . . . , y t−(m−1)∆ t
+
+ . (4) This is also called a delay coordinate map , let us denote it by H. How should we choose the time lag ∆t and the embedding dimension m? The answer for m is given by the Fractal Delay Embedding Prevalence Theorem , which we loosely state here following (Sauer et al., 1991): 
+
+Theorem A.2. Let Φ : E → E be a Cr (r ≥ 2) flow on an open set E ⊆ RM . Let A ⊆ E be a compact set invariant under Φ (i.e., Φ( A) ⊆ A) with box-counting dimension dbox . Let g : RM → R be a smooth measurement function and 
+
+H∆t : E → Rm be a delay coordinate map with time lag ∆t, defined on the measurements as in Eq. 4. Then, if m > 2dbox ,for almost every (in the sense of prevalence) choice of g and ∆t the map H∆t restricted to A is 1. one-to-one on A (injective), 2. an immersion on A, i.e. the derivative map DH has full rank at every point in A.Therefore, H restricted to A is a diffeomorphism onto its image H(A).
+
+By ‘prevalent’ measurement function g we mean a proper g is dense in the space of functions, i.e. with probability → 1
+
+g will have the required properties. By ‘almost every’ ∆t we mean that there are only specific, measure-0 choices of ∆t
+
+that don’t work, e.g. ∆t should not correspond to the exact multiple of the period of a limit cycle we aim to reconstruct. Intuitively, the condition m > 2dbox guarantees that trajectories cannot intersect in the embedding space (two sets A and B
+
+with dimensions m and n, respectively, will intersect with probability → 0 in a d > m + n dimensional space), and that there are no discontinuities in the embedded vector field. Practically, we can determine m by the technique of false-nearest neighbors (Kennel et al., 1992): False nearest neighbors are defined as points between which the distance suddenly grows over-proportionally as we move from an m- to a m + 1 -dimensional embedding space, indicating that in the m-dimensional space trajectories were not yet properly disentangled (but close to forming an intersection). The optimal time lag ∆t, on the other hand, while nearly irrelevant theoretically, matters practically in noisy settings: If ∆t is too small, the geometrical structure will not be sufficiently resolved as data points tend to cluster in lower-dimensional subspaces due to high auto-correlations among immediate temporal neighbors. If, on the other hand, ∆t is too large, points in the embedding space will tend to erratically jump around as all correlations are lost. Hence, we seek an intermediate choice of ∆t, often determined close to the first trough of the auto-correlation function or auto-mutual information (Kantz & Schreiber, 2004). More recent methods extend the principle of delay embeddings to multivariate TS observations and non-uniform lags between time points (Kr ¨amer et al., 2021). Delay embedding theorems have also been advanced for non-continuous observations like point processes (Sauer, 1994; 1995). Most DSR models, in principle, can perform ‘intrinsic delay embeddings’ in their 19 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+latent space (Duan et al., 2023), but practically an explicit prior delay embedding of the data may often help and ease the task for the DSR algorithm, providing it direct access to temporal context at each time step. 
+
+A.3. Bifurcations and Tipping Points 
+
+A.3.1. B IFURCATIONS 
+
+Consider a continuous-time dynamical system ˙x = f (x, c) with x ∈ RM and c ∈ Rdc a vector of control parameters. A bifurcation is a topological change (see Def. 2.2) in the structure or stability of attractors and their basins that occurs when a control parameter passes a critical value called the bifurcation point (Kuznetsov, 1998). Different types of bifurcations can be distinguished, depending on whether they depend on one (codimension 1) or more (codimension 2 etc.) control parameters, on whether they are local (at a fixed point) or global, and depending on which types of objects (fixed points, cycles, etc.) and what types of stability changes they involve. Like all other DS phenomena, bifurcations are universal 
+
+phenomena, i.e. can be observed in equivalent form in many different systems from interacting molecules to interacting individuals in a society (Strogatz, 2024). Local bifurcations are defined by their universal normal forms, simplified canonical equations that reproduce the dynamics in a neighborhood of such bifurcation points to which the original system can be reduced by a suitable change of variables (Guckenheimer & Holmes, 1983), examples of which are provided in Fig. 6. The minimal state space dimension required for a particular bifurcation is thus given by the dimension of its normal form (Kuznetsov, 1998).    
+
+> Figure 6. Normal forms and bifurcation diagrams for saddle-node and supercritical pitchfork and Hopf bifurcations. Shown are the stable and unstable equilibria as solid and dashed black lines, respectively, and the limit cycle as shaded region between its minimum–maximum branches (gray lines), as the control parameter cin the respective normal form is varied.
+
+In practice, a small number of bifurcations already captures many qualitative regime changes observed in real systems. A prominent example in one dimension is the saddle-node bifurcation, whose normal form describes the creation (or annihilation) of a pair of equilibria, one stable and one unstable (Fig. 6). Another common example is the pitchfork bifurcation, often observed in systems with certain symmetries, which gives rise to two symmetric branches of equilibria as one equilibrium in the center changes its stability. Saddle node and pitchfork bifurcations can, for instance, be observed in a single neural unit with sigmoid activation function as the bias parameter (saddle) or the weight and thus slope of the sigmoid (pitchfork) is varied (Doya, 1992). In two dimensions, the Hopf bifurcation is the most common local mechanism for the emergence or disappearance of a limit cycle around a spiral point, a stable limit cycle in the supercritical case and an unstable one in the subcritical case, with growing amplitude as the control parameter changes. Hopf bifurcations can give rise, for instance, to spiking activity in real neurons (Izhikevich, 2007). Beyond the mere onset of oscillations, other bifurcations of periodic orbits can provide standard routes to chaos. Period-doubling bifurcations occur when a periodic orbit loses stability and is replaced by a new orbit of twice the period, and repeated iterations of this local mechanism can produce a cascade of doublings that accumulates until the onset of chaotic dynamics with a backbone of infinitely many unstable periodic orbits (Guckenheimer & Holmes, 1983). Another classical, but global, route to chaos is via homoclinic bifurcations, where the stable and unstable manifolds of a saddle reconnect to form a homoclinic loop, in the vicinity of which trajectory flows become highly sensitive to minuscule perturbations (Strogatz, 2024). Homoclinic orbits lead to ‘reinjection’ of trajectories into the same region of space, one of the mechanisms by which fractal structure of a chaotic attractor can be created. 20 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+A.3.2. T IPPING POINTS 
+
+Tipping points are abrupt changes in the dynamical behavior of a DS, corresponding to qualitative (topological) changes (cf. Def. 2.2) in the effective attractor governing the dynamics. While most commonly tipping points in TS may be induced by bifurcations (called B-tipping), at least two other types of tipping mechanisms have been identified, termed R-tipping (rate-induced, caused by rapid changes in external forcing) and N-tipping (noise-induced, driven by fluctuations) (Ashwin et al., 2012). 
+
+B-tipping As control parameters vary, attractors of a DS can undergo bifurcations, leading to modifications of vector field topology, and thus changes in the behavior of observed trajectories. From a modeling perspective, predicting such B-tipping events as well as post-tipping dynamics requires learning not only the state evolution but also its dependence on the underlying control parameter. In the DSR context, this can, for example, be implemented by adding an explicitly time-dependent forcing function to the reconstruction model (Kong et al., 2021; K ¨oglmayr & R ¨ath, 2024; Van Tegelen et al., 2025), or by using a hierarchical scheme in which a given or learnable parameter controls the parametrization of model instances (Brenner et al., 2025; Huh et al., 2025). In Fig. 2b we gave an example of B-tipping in a spiking neuron model (Appx. D.2). For this, the model parameter gN M DA (Eq. 35) was linearly varied over time, and an AL-RNN was trained only on a piece of trajectory prior to the bifurcation into the regular (simple) spiking regime (without any knowledge of the control parameter). 
+
+R-tipping Non-autonomous DS with time-dependent control parameters c(t) may also exhibit tipping in the absence of bifurcations, if the rate of change, r = dc/dt , is too fast for trajectories to adiabatically follow the evolving attractor. In such cases, the system will undergo a qualitative shift in its dynamic behavior, as trajectories are pulled out from one quasi-static stable set associated with the current parameter value. In multistable DS this may cause the state to tip across a basin boundary, pushing it towards a different attractor (Ashwin et al., 2012). Recent deep learning approaches aimed at estimating tipping probabilities in systems undergoing R-tipping (Huang et al., 2024), but so far, to our knowledge, no attempt has been made to capture the phenomenon with a proper DSR model. 
+
+N-tipping In multistable systems with fixed parameters (as in Fig. 1), transitions between coexisting stable states can be triggered by stochastic fluctuations that push the state across the boundary of one basin of attraction into another basin (see Def. 2.1), leading to an abrupt regime shift in absence of a bifurcation (Ashwin et al., 2012). One way of approaching such scenarios in multiscale systems is to infer an effective fast driving process from observations of the slow dynamics and to model this forcing separately for prediction (Lim et al., 2020). Figure 1b (see also Fig. 12) gives an example of N-tipping where noise pushes the system from the point attractor into the limit cycle attractor regime. To create this specific example, an AL-RNN was trained on trajectories from both attractor basins, and both the AL-RNN after training and the neuron model were run with additive Gaussian noise. 
+
+A.4. Ergodic Theory and Stationarity 
+
+Strictly, stationarity is not a DS but a statistical concept that is fundamental to the understanding of some of the most challenging problems in TSA. It is, however, intimately related to important concepts and phenomena in DS theory, specifically to ergodic theory through Birkhoff’s ergodic theorem and the idea of measure-preserving maps (Billingsley, 2017). For instance, if a process is ergodic, it is also strictly stationary, and if it is strictly stationary, it is measure-preserving (i.e., the measure is invariant under the map describing the process). Most chaotic attractors have the property that the underlying process on the attractor is topologically mixing , defined as (Katok et al., 1995; Lind & Marcus, 2021) 
+
+Definition A.3. Let f ∈ C1(E) be a vector field defined on an open set E, with associated flow map Φt. The DS given by 
+
+(R, E, Φt) is said to be topologically mixing if for any two open nonempty subsets A, B ⊆ E there is a t0 > 0 such that 
+
+∀t ≥ t0 : Φ t(A) ∩ B̸ = ∅.For measure-theoretic mixing we require lim t→∞ μ(Φ t(A) ∩ B) = μ(A)μ(B). This mixing condition implies ergodicity, hence also strict (strong-sense) stationarity. If a dynamical process crosses a tipping point, a topological shift is induced, and the process is no longer ergodic or stationary. In mathematical terms, strong sense stationarity is defined by the condition that all moments of the joint probability distribution across TS observations X = {xt} are constant in time, i.e. it requires p({xt}| t0 ≤ t ≤ t1) = p({xt}| t0 +∆ t ≤
+
+t ≤ t1 + ∆ t) ∀t0 ≤ t1, ∆t ≥ 0. It is important to note that this definition is assumed to be across an ensemble of TS 21 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+drawn from many different random realizations of that process (Durstewitz, 2017); this is the reason why an oscillatory process is still considered stationary, because if we draw many TS realizations from that process with random initial phase, across the ensemble of these realizations the stationarity conditions will be fulfilled. A process is called weak sense stationary if the conditions above hold only for the first two moments of p(X), i.e. if E(xt) = const. ∀t and Cov (xt, xt+∆ t) = Cov (∆ t) ∀t, ∆t, i.e. if the mean and autocorrelation are constant across time and for all temporal lags. 
+
+# B. DSR Measures 
+
+In DSR, we are primarily concerned with the topology, geometry, and temporal structure of attractors, and hence with the behavior of the system in the ergodic limit t → ∞ . For calculating any of the measures discussed below, it is therefore 
+
+mandatory to draw sufficiently long trajectories , which in practice means generating long autoregressive roll-outs from the trained model (of, depending on the timescales in the data, at least T = 1 , 000 − 10 , 000 time steps), from which the initial transients are discarded (unless the model is already initialized on the attractor). 
+
+B.1. Characterizing Attractor Geometry 
+
+B.1.1. F RACTAL GEOMETRY 
+
+Attractors of chaotic DS famously have a fractal geometry , characterized by self-similarity across all spatial scales (Eckmann & Ruelle, 1985; Alligood et al., 1996; Kantz & Schreiber, 2004). This is a consequence of the divergent yet bounded nature of trajectories on chaotic attractors, which get ‘reinjected’ into the same region of space infinitely many times without ever closing up (Strogatz, 2024). The resulting structures are topologically often well characterized by the Smale horseshoe map, which describes the infinitely repeated stretching of a set along one and contraction along another direction, together with the folding of the set onto itself (Guckenheimer & Holmes, 1983), resulting in a 2d Cantor set (which has the peculiar property of being of length (measure) 0, yet consisting of uncountable infinitely many points). One idea to compute the dimension of such a chaotic set is to cover it with boxes of edge length ϵ, and then determine the number Nϵ of boxes needed to cover the whole object in the limit ϵ → 0. This gives rise to the so-called box-counting dimension defined as (Eckmann & Ruelle, 1985; Alligood et al., 1996) 
+
+dbox := lim 
+
+> ϵ→0
+
+log Nϵ
+
+log 1 /ϵ . (5) If this concept is applied to a classical 1d, 2d, 3d etc. geometrical object like a line segment, disc, or cube, dbox will be an integer number (i.e., 1, 2, 3, respectively). For Cantor sets and chaotic attractors, however, dbox will be a fraction, e.g. 
+
+dbox ≈ 2.06 for the Lorenz-63 attractor in Fig. 3. Practically, we can determine dbox as the (negative) slope of a line fitted to the graph of log Nϵ vs. log ϵ.Another, empirically in higher dimensions easier to apply estimate of the fractal dimension is the correlation dimension 
+
+(Eckmann & Ruelle, 1985; Kantz & Schreiber, 2004). Here the idea is to place balls of radius ϵ on the points xt along observed trajectories ST = {x1, x2, . . . , xT }, and count the number C(ϵ) of neighbors within those balls: 
+
+C(ϵ) := lim  
+
+> T→∞
+
+#{(xi, xj )|∥ xi − xj ∥22 < ϵ }
+
+#{(xi, xj )|xi, xj ∈ ST } . (6) 
+
+C(ϵ) is also called the correlation integral. Considering the limit ϵ → 0, we then obtain the definition 
+
+dcorr := lim 
+
+> ϵ→0
+
+log C(ϵ)log ϵ . (7) In implementing these measures , besides the fact that we require sufficiently long trajectories for the convergence of these measures, there are two practical considerations (Kantz & Schreiber, 2004): First, we need to remove purely temporal neighbors in the calculation of C(ϵ) and dbox , i.e. pairs (xt, xt′ ) for which |t − t′| < ∆t, since we intend to capture the 
+
+spatial geometry of the object independent of auto-correlations in the data. Second, for small ϵ the estimates will be conflated by noise, which tends to expand in all directions equally, so we are aiming for a reasonably linear region in the log-log plots after a potentially initially steep rise. Another estimate of fractal dimensionality, the Kaplan-Yorke dimension DKY as provided in Fig. 3, an upper bound to the information dimension and often close to the box-counting and correlation dimensions (Frederickson et al., 1983; Eckmann 22 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+& Ruelle, 1985; Kantz & Schreiber, 2004), is based on the DS’ Lyapunov spectrum as defined in Eq. 1: 
+
+DKY := j +
+
+Pji=1 λi
+
+|λj+1 | , (8) where we have sorted Lyapunov exponents λ1 ≥ λi ≥ λj ≥ · · · ≥ λM in descending order, and j is the largest integer such that Pji=1 λi ≥ 0 and Pj+1  
+
+> i=1
+
+λi < 0.B.1.2. D ISTRIBUTIONAL MEASURES 
+
+Other measures are based on probability measures defined on the attractor (Eckmann & Ruelle, 1985; Kantz & Schreiber, 2004). Consider the normalized occupation measure , which ‘measures the average amount of time’ a trajectory starting in 
+
+x0 across finite time T spends in some region (set) A of state space, defined by 
+
+μx0 (A, T ) := 1
+
+T
+
+Z T
+
+> 0
+
+I[Φ t(x0) ∈ A]dt , (9) where I is the indicator function and Φt the flow map. In the ergodic limit, t → ∞ , this converges to the so-called invariant measure , a probability measure defined on the attractor and invariant under the flow Φt (Eckmann & Ruelle, 1985). Common quantities used to compare geometries between true (observed) and reconstructed attractors are based on this normalized occupation measure. 
+
+Kullback-Leibler divergence Specifically, consider for T → ∞ and ϵ → 0 the probability densities p(x) and q(x) for true and model-generated distributions of trajectory points x across state space (potentially obtained via delay embedding), respectively, then one way to compare these distributions is the Kullback-Leibler divergence 
+
+Dstsp := DKL (p(x) || q(x)) = 
+
+Z
+
+> x∈RN
+
+p(x) log p(x)
+
+q(x) dx . (10) For low-dimensional state spaces, we may just bin the space into K disjoint sets Ak which completely cover the attractors, and approximate p(x) and q(x) through the relative frequencies ˆpk(x) = #{xt∈Ak } 
+
+> T
+
+and likewise for ˆqk(x) (Koppe et al., 2019; Mikhaeil et al., 2022; Hess et al., 2023), giving rise to the estimate 
+
+ˆDstsp = DKL (ˆ p(x) || ˆq(x)) = 
+
+> K
+
+X
+
+> k=1
+
+ˆpk(x) log ˆpk(x)ˆqk(x) (11) where K = mN is the total number of bins, with m the number of bins per dimension, ˆpk(x) ≈ μx1 (Ak, T ) (a finite, discrete time approximation) for the ground truth orbits X = {x1, . . . , xT } and ˆqk(x) likewise for the model-generated orbits. For high-dimensional systems, where the binning approach becomes computationally prohibitive, the densities p(x) and 
+
+q(x) may be approximated through Gaussian Mixture Models (GMMs) with Gaussians placed along orbits (Koppe et al., 2019; Brenner et al., 2022), i.e. ˆp(x) = 1 /T PTt=1 N (x; xt, Σ) and ˆq(x) = 1 /T PTt=1 N (x; ˆ xt, Σ), where xt and ˆxt
+
+are observed and generated states, respectively, N (x; xt, Σ) is a multivariate Gaussian with mean vector xt and covariance matrix Σ, where usually Σ = σ2IN ×N for standardized data, and T is the orbit length. There is no closed-form analytical expression for the KL divergence between two GMMs, but different approximations based on variational principles or sampling are provided in Hershey & Olsen (2007). A Monte Carlo approximation is given by 
+
+Dstsp = DKL (ˆ p(x) || ˆq(x)) ≈ 1
+
+n
+
+> n
+
+X
+
+> i=1
+
+log ˆp(x(i))ˆq(x(i)) , (12) with n Monte Carlo samples x(i) ∼ ˆp(x) drawn from the GMM approximating the empirical density. The variational approximation does not require sampling and has been shown to produce results similar to the Monte Carlo approximation (Koppe et al., 2019): 
+
+Dstsp = DKL (ˆ p(x) || ˆq(x)) ≈ 1
+
+T
+
+> T
+
+X
+
+> t=1
+
+log 
+
+PTj=1 e−DKL (N (x; xt,Σ) || N (x; xj ,Σ)) 
+
+PTk=1 e−DKL (N (x; xt,Σ) || N (x; ˆ xk ,Σ)) , (13) 23 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+where arguments of the exponentials are KL divergencies between the individual Gaussians of the GMMs, for which we have closed-form analytical expressions. One limitation of Dstsp is its dependence on hyperparameters, the number of bins m and the GMM covariance Σ, both of which can critically influence the sensitivity of the measure. For example, if m is chosen too small, the resulting spatial binning becomes overly coarse, preventing the accurate resolution of fine geometrical details as important for the assessment of chaotic attractors (see Appx. of Brenner et al. (2022) for illustration). In contrast, a large m produces mostly empty bins, may increase the impact of noise, and comes with high computational costs. In addition, arbitrary selection of these parameters will impede comparability of results across studies. To address such issues, here we suggest to adopt statistically principled ways of selecting these parameters based on ideas in optimal multivariate kernel density estimation (Scott, 2015), for instance bootstrap estimators (Faraway & Jhun, 1990; Sain, 2002) or estimators based on the sample (co-)variance (Scott, 2015; Silverman, 2018). 
+
+Wasserstein distance Instead of the KL divergence, several authors based comparisons between trajectory distributions on the Wasserstein distance (Patel & Ott, 2023; Park et al., 2024; G ¨oring et al., 2024). For instance, G ¨oring et al. (2024) define a statistical error through the sliced Wasserstein-1 distance ( SW 1; Bonneel et al. (2015)) between the occupation measures μΦ 
+
+> x,T
+
+of the ground-truth DS Φ and μΦR 
+
+> x,T
+
+of the DSR model ΦR:SW 1(μΦ 
+
+> x,T
+
+, μ ΦR 
+
+> x,T
+
+) = Eξ∼U (SN −1)
+
+h
+
+W1(gξ♯μ Φ 
+
+> x,T
+
+, g ξ♯μ ΦR 
+
+> x,T
+
+)
+
+i
+
+, (14) where SN −1 := {ξ ∈ RN | ∥ ξ∥22 = 1 } is the unit hyper-sphere, gξ♯μ denotes the pushforward of μ, gξ(x) = ξT x is the one-dimensional slice projection, and W1 the Wasserstein-1 distance (Villani et al., 2009). Eq. (14) is defined across distributions generated by single trajectories, typically to assess agreement between attractor geometries. The measure can be generalized, however, to compare the geometrical behavior across entire subsets U of state space E by considering trajectories from a whole subset of initial conditions (G¨ oring et al., 2024): 
+
+EU
+
+> stat
+
+ Φ, ΦR
+
+ =
+
+Z 
+
+> U⊆E
+
+SW 1(μΦ 
+
+> x,T
+
+, μ ΦR 
+
+> x,T
+
+) dx, (15) where practically integration is performed across (initial conditions from) U . This allows for a more general comparison between vector field topologies, beyond the attracting limit set, but – unfortunately – is usually not computable for real-world datasets as neither Φ nor trajectories generated by Φt(x0) for all x0 ∈ U are available. Following G¨ oring et al. (2024), Eq. (14) can be calculated using a Monte-Carlo approximation of the expectation SW 1(μΦ 
+
+> x,T
+
+, μ ΦR 
+
+> x,T
+
+) ≈ 1
+
+L
+
+> L
+
+X
+
+> l=1
+
+W1(gξ(l) ♯μ Φ 
+
+> x,T
+
+, g ξ(l) ♯μ ΦR 
+
+> x,T
+
+), (16) where projection vectors ξ(l) ∼ U (SN −1) are drawn uniformly across the unit hypersphere embedded in RN . The sliced Wasserstein-1 distance is computed across trajectories (empirical distributions) of the ground-truth flow Φ and the reconstructed flow ΦR. Trajectories are drawn by evolving the respective system for T time units from initial conditions 
+
+x ∈ RN . Between two 1D distributions (1D slices), the Wasserstein-1 distance can then efficiently be computed as 
+
+W1(μ, ν ) = 
+
+Z 10
+
+F −1 
+
+> μ
+
+(q) − F −1 
+
+> ν
+
+(q) dq, (17) where F −1 
+
+> •
+
+is the inverse cumulative distribution function (CDF). The integral is approximated by evaluating the CDFs at some finite resolution, e.g. ∆q = 10 −3, and using, for instance, L = 1000 projections. A major benefit of Wasserstein-based measures compared, e.g., to the Kullback-Leibler divergence, is the fact that differences in the support of the underlying probability measures are naturally resolved. Because it is an optimal transport metric, it is fundamentally less sensitive to shifts in the precise attractor location in state space or other rigid transformations than measures, like the KL divergence, that depend on the same binning grid and thus also on hyperparameters like the bin size or GMM covariance Σ.Various other distributional measures, e.g. based on the generalized correlation integral, have been defined in the literature (Fumagalli et al., 2025). 24 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+B.2. Characterizing Agreement in Long-Term Temporal Structure 
+
+In a famous paper, Wood (2010) discussed the problem that for chaotic systems likelihood landscapes will be rough, often fractal, and thus straightforward maximum likelihood or MSE estimation of model parameters will fail (see also Voss et al. (2004) for a related discussion). This is related to the high sensitivity to precise initial conditions and the exponential divergence of trajectories in chaotic DS that we had illustrated in Fig. 4. Wood (2010) therefore suggested to use summary statistics, like the coefficients of the auto-correlation function, in a surrogate likelihood, an approach followed in, e.g., Brenner et al. (2024b) to assess the agreement in true and reconstructed long-term temporal structure. Alternatively, one may compare the power spectra between true and reconstructed DS (recall that for stationary processes the power spectrum and auto-correlation are strictly related through the Wiener-Khinchin theorem; Papoulis & Pillai (2002)). One distance measure that has often been used in this context is the Hellinger distance (Mikhaeil et al., 2022; Hess et al., 2023; Pals et al., 2024). Specifically, given normalized power spectra fi(ω) and gi(ω) of the i-th dynamical variable of the observed and generated time series X and ˆX, respectively, where R ∞−∞ fi(ω)dω = 1 and R ∞−∞ gi(ω)dω = 1 , the Hellinger distance is given by 
+
+H(fi(ω), g i(ω)) = 
+
+s
+
+1 −
+
+Z ∞−∞ 
+
+pfi(ω)gi(ω) dω (18) The Hellinger distance is a scalar 0 ≤ H ≤ 1 which measures the discrepancy in frequency content, where 0 indicates perfect agreement. In practice, power spectra are computed using the Fast Fourier Transform (FFT; Cooley & Tukey (1965)), yielding 
+
+ˆfi =|F xi, 1: T |2 and ˆgi = |F ˆxi, 1: T |2, with vectors ˆfi and ˆgi discrete power spectra of ground truth TS xi, 1: T and model generated TS ˆxi, 1: T . Since raw power spectra tend to be quite noisy, some smoothing is usually applied using a Gaussian filter with standard deviation σs. The resulting spectra are normalized to fulfill P 
+
+> ω
+
+ˆfi,ω = 1 and P 
+
+> ω
+
+ˆgi,ω = 1 . H (18) is then computed as 
+
+H( ˆfi, ˆgi) = 1
+
+√2
+
+q
+
+ˆfi − pˆgi
+
+> 2
+
+, (19) where the square root is applied elementwise. The final measure DH is obtained by averaging H across all dimensions: 
+
+DH = 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+H( ˆfi, ˆgi). (20) The smoothing σs is commonly treated as a hyperparameter, set individually for each dataset at hand. Unfortunately, as for Dstsp , the performance of DH depends on the choice of σs, which is in particular a problem if different studies are to be compared. Choosing it too large leads to oversmoothing of the spectra such that important details might be lost, while without any smoothing irrelevant and minuscule shifts in frequency peaks will be overemphasized. Here we therefore suggest some potential improvements: 1) use of statistically optimal smoothing estimators for power spectra, for instance based on plug-in unbiased risk estimation (Lee, 2001) or minimizing an MSE estimate over Thomson’s multitaper spectrum (Haley & Anitescu, 2017); 2) calculating the Hellinger distance between logarithmized power spectra to level the importance of low- and high-frequency components; 3) replacing the Hellinger distance with the Wasserstein distance (e.g. W1, see Eq. (17) ), which – as indicated above – is more robust to shifts in the curves as long as their overall shapes match well. A caveat here is that the Wasserstein distance is not bounded from above, and hence more difficult to interpret than a normalized quantity like the Hellinger distance. 
+
+B.3. Valid Prediction Time 
+
+A common measure to assess short-term forecasts, especially when dealing with chaotic dynamics, is the Valid Prediction Time (VPT, Vlachas et al. (2020); Platt et al. (2022); Fumagalli et al. (2025)), which measures the time it takes for data and model forecasts to diverge as determined by some arbitrary error criterion ϵ. Given a pointwise forecast error E(xt, ˆxt) with data xt and corresponding model forecasts ˆxt, the VPT is defined by VPT = arg max 
+
+> t
+
+{t | E (xt, ˆxt) < ϵ }. (21) 25 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+The VPT is usually reported in units of the underlying DS’ Lyapunov time τLyap := 1 / λ max , if (an estimate of) it is available. Common choices for the forecast error are NRMSE or sMAPE combined with an arbitrarily chosen ϵ ∈ [0 .3, 0.5] 
+
+(Vlachas et al., 2020; Platt et al., 2022; Gilpin, 2023). For chaotic systems, a VPT approaching one Lyapunov time is a desirable outcome for any forecasting model. Sometimes cases with VPTs of multiple Lyapunov times (up to > 10 · τLyap ) were reported, but these are always very special scenarios where models were trained and evaluated on completely noise-free benchmark systems (Pathak et al., 2018; Platt et al., 2022; Gilpin, 2023; Vlachas & Koumoutsakos, 2024; Hurley & Shaheen, 2025), hence not representative of any empirical setting. Since the VPT is highly dependent on the choice of ϵ and thus an author’s subjective judgment of what constitutes a ‘valid’ forecast, evaluations based on the VPT should be treated with great care! 
+
+# C. Training Methods for DSR 
+
+The biggest difference between training methods for DSR vs. those for ‘standard’ TSF models is the emphasis on capturing the long-term dynamics of the observed DS. It is by now common knowledge that performing multi-step ahead prediction, or unrolling autoregressive models such as RNNs and Neural Operators into the future, improves long-term forecasts (Lusch et al., 2018; Platt et al., 2022; Mikhaeil et al., 2022; Brenner et al., 2022; Hess et al., 2023; Teutsch & M ¨ader, 2022; Vlachas & Koumoutsakos, 2024; Schiff et al., 2024; Park et al., 2024; Zhou & Cheng, 2025). Most autoregressive models are trained using backpropagation through time (BPTT, Werbos (1990)) to compute gradients of a loss function, which sums up contributions of individual time steps, w.r.t. parameters of the model, followed by a gradient descent update in parameter space. Assume the model map is given by zt = Fθ (zt−1, st) with states zt and optional external inputs st. Denote the loss as a function of parameters by L = P 
+
+> t
+
+Lt(θ), then BPTT involves calculating gradients of parameters θ ∈ θ w.r.t. the loss function L:
+
+∂L
+
+∂θ = X
+
+> t
+
+∂Lt
+
+∂θ with ∂Lt
+
+∂θ =
+
+> t
+
+X
+
+> r=1
+
+∂Lt
+
+∂zt
+
+∂zt
+
+∂zr
+
+∂+zr
+
+∂θ , (22) where ∂+ denotes the immediate derivative (Pascanu et al., 2013). The center term in the loss gradient for each individual time step can be further unwrapped by recursive application of the chain rule into a product series of Jacobians as 
+
+∂zt
+
+∂zr
+
+= ∂zt
+
+∂zt−1
+
+∂zt−1
+
+∂zt−2
+
+· · · ∂zr+1 
+
+∂zr
+
+=
+
+> t−r−1
+
+Y
+
+> k=0
+
+∂zt−k
+
+∂zt−k−1
+
+=
+
+> t−r−1
+
+Y
+
+> k=0
+
+Jt−k, (23) where Jt = ∂zt 
+
+> ∂zt−1
+
+is the model Jacobian at time step t. This Jacobian product during the backward pass in training exposes the famous exploding and/or vanishing gradient problem (Bengio et al., 1994; Pascanu et al., 2013): If in the geometric mean, maximum singular values of the individual Jacobian terms σmax (Ji) are larger than 1, the Jacobian product will diverge and hence the respective gradient ∂Lt/∂θ . Mikhaeil et al. (2022) showed that gradient explosion is inevitable when the model is trained to reproduce chaotic dynamics. Recall (cf. Eq. 1) that the maximum Lyapunov exponent λmax for a discrete map is defined as 
+
+λmax := lim  
+
+> T→∞
+
+1
+
+T log σmax  
+
+> T−1
+
+Y
+
+> t=0
+
+JT −t
+
+!
+
+, (24) where T is the orbit length. Comparing Eq. (24) and Eq. (23) , it is evident that the same Jacobian product series occurs both in the loss gradients as well as in the definition of the maximum Lyapunov exponent. Since for reconstructing chaotic dynamics we must have λmax > 0, this product series will inevitably diverge for T → ∞ . This is therefore a severe issue for training on real world data, since almost all complex systems, from the physical to the human world, are chaotic (Sivakumar, 2004; Durstewitz & Gabriel, 2007; Govindan et al., 1998; Turchin & Taylor, 1992; Field et al., 1972). Since long roll-outs in training are needed to properly capture the DS’ long-term statistics, major training methods for DSR aim to mitigate the problem of chaos-induced exploding gradients through mainly control-theoretic techniques (Abarbanel, 2013). Alternatively, long-term statistics could be built directly into the loss criterion, another line of training methods for DSR discussed below. 
+
+C.1. Control-Theoretic Training Through Variants of Teacher Forcing 
+
+Teacher forcing (TF) methods date back to work by Pineda (1988); Williams & Zipser (1989); Pearlmutter (1989); Doya (1992), who suggested that autoregressive models benefit from guidance by data to better learn the task at hand. Here we 26 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+discuss two TF variants specifically designed to improve DSR. 
+
+Sparse Teacher Forcing (STF) STF seeks to mitigate chaos-induced exploding gradients by periodically replacing the model-generated states z by data-inferred states ˆz (Mikhaeil et al., 2022): 
+
+zt+1 =
+
+(
+
+F ( ˆ zt) if t ∈ T = {t | t = nτ, n ∈ N0}
+
+F (zt) else (25) where τ is the forcing interval and T the set of forcing times. The forcing signal is produced by either inversion of the observation/decoder model ˆz = g−1(xt) (Mikhaeil et al., 2022; Hess et al., 2023), or by an encoder model E(xt) in a (variational) auto-encoder setting (Brenner et al., 2024b). For example, if g is given by a linear mapping Bz t which maps from a higher-dimensional latent space to the observations, one can estimate ˆzt = B+xt, where B+ denotes the Moore-Penrose pseudo-inverse. When the model is trained directly on data, the forcing signals may be given straight by ˆzt = xt. STF has two implications: first, it realigns model-generated trajectories with trajectories of the underlying DS, pulling them ‘back on track’; second, it truncates gradients by virtue of the forcing with data-inferred values as 
+
+Jnτ +1 = ∂F ( ˆ zt) 
+
+> ∂zt
+
+= 0 . In this approach, τ is a crucial hyperparameter that needs to be chosen in an optimal way: If it is too short, the system’s long-term properties won’t be captured, while if it is too large, gradients will diverge. Based on the observation that the rate of gradient divergence is determined by λmax , Mikhaeil et al. (2022) show that using the 
+
+predictability time τpred = ln 2  
+
+> λmax
+
+provides a good heuristic for most simulated and empirical systems. Brenner et al. (2022; 2024a;b); Hemmer & Durstewitz (2025) use a variant of STF where the state of the model is only partially forced (Tsung & Cottrell, 1994). Let z ∈ RM , then partially forcing the first k < M units results in 
+
+zt+1 = F ([ˆ z1, . . . , ˆzk, z k+1 , . . . z M ]⊤). This leaves a M − k-dimensional subspace through which gradients can flow freely. 
+
+Generalized Teacher Forcing (GTF) Instead of replacing the entire state at specific intervals τ as in STF, GTF replaces states at each time step by a linear interpolation between model-iterated state and forcing signal, weighted by a forcing strength 0 ≤ α ≤ 1 (Doya, 1992; Hess et al., 2023): 
+
+zt+1 = F ( (1 − α)zt + α ˆzt )= F ( ˜ zt), (26) where ˜z denotes the forced state. By virtue of this forcing, the model Jacobian decomposes during training as 
+
+Jt+1 = ∂F ( ˜ zt)
+
+∂zt
+
+= (1 − α) ∂F ( ˜ zt)
+
+∂ ˜zt
+
+. (27) Assuming ∂F ( ˜ zt)  
+
+> ∂˜zt
+
+≈ ∂F (zt) 
+
+> ∂zt
+
+, choosing α = 1 − 1 
+
+> σmax
+
+bounds the norm of the Jacobian product in Eq. (23) from above by 1
+
+(Hess et al., 2023), where σmax is the maximum singular value across all Jacobians evaluated along the sequence. While fully mitigating exploding gradients, too high settings of α can exacerbate vanishing gradients. Hence, best results are often achieved by treating α as a hyperparameter (Hess et al., 2023; Volkmann et al., 2024), or by curriculum learning strategies that adaptively estimate an optimal α using computationally efficient proxies to Jacobian products evaluated on the current training batch (Hess et al., 2023). In contrast, conventional, likelihood-based TF methods (Bengio et al., 2015; Goodfellow et al., 2016), where instead of 
+
+replacing the state teacher signals are fed through the input layer of the RNN, have mainly tried to address the exposure bias problem (Ranzato et al., 2016). Exposure bias refers to the discrepancy between training and testing of autoregressive models, where models are trained to predict the next state based on the previous ground truth (TF) but are tasked to generate predictions in the absence of any forcing signals during test time. To address this issue, mostly curriculum learning strategies have been developed (Bengio et al., 2015; Lamb et al., 2016; Teutsch & M ¨ader, 2022) and applied in DSR to improve long-term forecasts (Vlachas & Koumoutsakos, 2024). However, these methods do not address chaos-induced exploding gradients (Mikhaeil et al., 2022) and hence often fall short in solving the long-term issues for noisy real-world data (Mikhaeil et al., 2022; Brenner et al., 2022; Hess et al., 2023). Although STF/GTF suffer similarly from exposure bias, their respective forcing parameters τ and α can control its severity and it comes down to a min-max game: Ideally, forcing should be as minimal as possible (high τ , small α) to reduce 27 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+exposure bias, yet large enough (small τ , high α) to avoid diverging trajectories and exploding gradients (Mikhaeil et al., 2022; Hess et al., 2023). Techniques like GTF also lead to smooth, often unimodal if optimally adjusted, loss landscapes (Voss et al., 2004; Abarbanel, 2013; 2022; Hess et al., 2023; Brenner et al., 2024b). 
+
+C.2. Multiple Shooting 
+
+An older method in the DS literature, originally introduced to solve boundary value problems and similar in spirit to STF, has been termed ‘multiple shooting’ (MS; Bock & Plitt (1984); Voss et al. (2004)). MS divides time into multiple sub-intervals, for each of which a separate initial value problem is to be solved. Continuity across interval boundaries is then enforced through a regularization term in the loss function (Voss et al., 2004). Thus, instead of state estimation through observation/decoder model inversion or through an encoder network as in STF/GTF, initial conditions for each sub-interval are trainable parameters which are jointly optimized with the model dynamics. Given an observed TS X = {xt} of length T , MS works by first dividing the TS into n = ⌊ TL ⌋ subsequences of (roughly) equal length L, such that the training data is given as a set of subsequences {Xi}ni=1 . For each subsequence Xi, a separate initial condition μi 
+
+> 0
+
+∈ RM is learned, where M is the dimensionality of the RNN. During training, the model freely generates trajectories of length L from initial conditions μi 
+
+> 0
+
+for Xi sampled from the training set, and a continuity regularization term is added to the (usually) MSE loss: 
+
+L = LM SE + λM S n−1X
+
+> i=1
+
+∥Fθ (ziL) − μi+1 0 ∥22 , (28) where Fθ is the DSR model with latent states zt, and λM S is a regularization parameter (note that, as the model evolves freely for L time steps, ziL = F L(μi
+
+> 0
+
+)). The sequence length L plays a similar role here as the forcing interval τ in STF (Brenner et al., 2024b) and determines the time after which gradients are truncated. However, MS scales less favorably than STF, since the number of learnable initial conditions μ0 grows linearly with dataset size, and there is no inbuilt mechanism to start the model from arbitrary initial conditions. 
+
+C.3. Specific DSR Loss Functions 
+
+Another idea is to replace or augment the standard MSE loss by a loss function that directly reflects the long-term objectives of DSR training, for instance by incorporating dynamical invariants into the loss through regularization. Along these lines, Platt et al. (2022; 2023) employ a ‘macro-scale’ loss function which measures the discrepancy between data- and model-derived dynamical invariant(s) Cdata and Cmodel , respectively: 
+
+Lmacro = ϵ1∥Cdata − Cmodel ∥2 + ϵ2
+
+> n
+
+X
+
+> k=1
+> t(k)
+> f
+
+X
+
+> t=t(k)
+> i
+
+∥ ˆx(k) 
+
+> t
+
+− x(k) 
+
+> t
+
+∥2 exp − t − t(k)
+
+> i
+
+t(k) 
+
+> f
+
+− t(k)
+
+> i
+
+!
+
+, t ∈ Z , (29) where n is the number of individual trajectory bits {xt(k) 
+
+> i:t(k)
+> f
+
+}nk=1 drawn i.i.d. from the total training data pool, ϵi are regularization parameters, ˆxt are freely generated forecasts of the model (a reservoir computer in their case) and xt the respective (observed) training data. ti and tf are initial and final forecast times. Thus, the first term punishes deviations in dynamical invariants, while the second term is an MSE loss with exponentially decaying weighting (with forecast horizon length) which accounts for trajectory divergence when modeling chaotic dynamics. For dynamical invariants C, Platt et al. (2023) suggest the use of quantities that can in principle be estimated from empirical data, such as the maximum Lyapunov exponent or the fractal dimension through the correlation dimension (see Appx. B.1.1). The macro-loss is then minimized in conjunction with a vanilla MSE loss using a two-step optimization process, where Eq. (29) is optimized through Bayesian techniques or evolutionary methods (Platt et al., 2022; 2023). Platt et al. (2023) show that including just a single Lyapunov exponent in the macro-loss can significantly improve long-term forecasts of reservoir computers. Jiang et al. (2023) designed a more general loss function for neural operators that aims to preserve invariant measures (probability measures invariant under the flow) for accurate long-term forecasts using optimal transport and contrastive learning. If prior knowledge in form of ns summary statistics s(x) = [ s(1) (x), . . . s (ns)(x)] , si := s(xi), that can be 28 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+computed from trajectories is available, an optimal transport loss may be defined as 
+
+LOT (S, ˆS) = 12 W γ (S, ˆS)2 − W γ (S, S)2 + W γ ( ˆS, ˆS)2
+
+2
+
+!
+
+, (30) where W γ denotes the entropy-regularized Wasserstein distance with regularization parameter γ, and S = {si}Ki=1 ,
+
+ˆS = {ˆsi}Ki=1 are summary statistics obtained from data and model generated distributions, respectively. When no such prior knowledge is available, Jiang et al. (2023) propose to instead add a contrastive learning loss to the total loss that encourages similarity between features predicted from data and model trajectories through a separate encoder network fψ :
+
+LCL (xt:t+L, ˆxt:t+L; fψ ) = X
+
+> i
+
+DC
+
+ f iψ (xt:t+L), f iψ ( ˆ xt:t+L) , (31) where xt:t+L, ˆxt:t+L are subsequences of data and model trajectories, DC is the cosine distance and f iψ denotes the output of the i-th layer of the encoder network. The encoder network is pretrained using contrastive learning on a larger pool of trajectories, where sequences xt:t+L from the same trajectory are treated as positive pairs, while sequences from different trajectories are treated as negative pairs. Hence, the encoder is trained to produce features that distinguish trajectories that follow different invariant measures. These loss terms, Eq. (30) & (31) , targeting long-term dynamics are then paired with a straightforward relative root MSE (RMSE) error between sequences 
+
+LRMSE (xt:t+L, ˆxt:t+L) = 1
+
+L
+
+> L
+
+X
+
+> i=t
+
+∥xi − ˆxi∥2
+
+∥xi∥2
+
+. (32) When prior knowledge is available the optimal transport loss is used, L = LRMSE + λLOT , where λ is a regularization parameter. Otherwise, informative features are learned and matched using the contrastive learning loss, i.e. L = LRMSE +
+
+λLCL .Relatedly, Schiff et al. (2024) introduce the Dynamics Stable Learning by Invariant Measure (DySLIM) objective 
+
+LD 
+
+> λ
+
+(θ) = Lobj (θ) + λ1 bD ( μ∗, (F n 
+
+> θ
+
+)♯μ∗) + λ2 bD (( F n)♯μ∗, (F n 
+
+> θ
+
+)♯μ∗) , (33) where λi are regularization parameters, Lobj (θ) is an ( n-step) autoregressive roll-out error (e.g. MSE), Fθ is the model map, 
+
+F is the ground truth DS, μ∗ is the invariant measure given by the data, (F n 
+
+> θ
+
+)♯μ∗ denotes the pushforward of measure μ∗
+
+under the n-times iterated map, xt+n = F n 
+
+> θ
+
+(xt), and D is a distance measure between distributions, such as the Maximum Mean Discrepancy (MMD) (Schiff et al., 2024). As in Jiang et al. (2023), this loss function encourages the model to preserve the invariant measure by treating data and model generated states as samples from the respective invariant measures and minimizing their distance. As observed by many other groups (Platt et al., 2021; Mikhaeil et al., 2022), Park et al. (2024) also demonstrate that using mere 1-step-ahead predictions to train NN based DSR models is insufficient for capturing the long-term statistics of DS. Their strategy is to augment the loss by a Jacobian term that aims to match local derivatives along trajectories: 
+
+L = 1
+
+T − 1 
+
+> T−1
+
+X
+
+> t=1
+
+∥Fθ (xt) − F (xt)∥2 + λ∥Jθ,t − Jt∥2 , (34) where Jt and Jθ,t are the Jacobians of the ground-truth DS F underlying the data and of the DSR model Fθ , respectively. Park et al. (2024) show that this enables DSR models to learn the invariant measure of the true DS without the need to unroll dynamics over several steps during training. However, an obvious caveat here is that full temporally resolved Jacobians are not available (or extremely hard to reliably estimate) for real empirical data. 
+
+# D. Simulation Models and Datasets 
+
+D.1. Lorenz-63 Model of Atmospheric Convection 
+
+The Lorenz-63 system (Lorenz, 1963) is a continuous-time DS that was originally proposed as a minimal, low-order Galerkin model of atmospheric convection. It is given by nonlinear ODEs for three state variables governing the temporal evolution 29 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+of convective overturning, horizontal temperature contrast, and vertical temperature distortion as 
+
+dx 1
+
+dt = σ(x2 − x1),dx 2
+
+dt = x1(ρ − x3) − x2,dx 3
+
+dt = x1x2 − βx 3,
+
+We chose the standard parameters σ = 10 , ρ = 28 , and β = 83 that place the system into a chaotic regime. 
+
+D.2. Spiking Neuron Model 
+
+We used a simplified Hodgkin-Huxley-type 3d biophysical neuron model describing the temporal evolution of the membrane potential V and two gating variables n and h which control the opening of fast and slow potassium currents, respectively (Durstewitz, 2009): 
+
+˙V = 1
+
+C
+
+h
+
+I − gL(V − EL) − gNa m∞(V ) ( V − ENa ) − gK n (V − EK ) (35) 
+
+− gM h (V − EK ) − gNMDA s∞(V ) ( V − EN M DA )
+
+i
+
+,
+
+˙n = n∞(V ) − nτn
+
+, (36) 
+
+˙h = h∞(V ) − hτh
+
+, (37) with 
+
+m∞(V ) = 11 + exp  (Vh, Na − V )/k Na 
+
+ , (38) 
+
+n∞(V ) = 11 + exp  (Vh,K − V )/k K
+
+ , (39) 
+
+h∞(V ) = 11 + exp  (Vh,M − V )/k M
+
+ , (40) 
+
+s∞(V ) = 11 + 0 .33 exp  −0.0625 V  . (41) Chosen model parameters are provided in the Table below. For creating Figs. 1 & 2a, the h variable was fixed to certain values ( h = 0 .05 in Fig. 1), reducing the model to 2 dimensions, while Fig. 2b shows the dynamics of the full 3d model with the parameter gN M DA linearly increasing across time (making the DS non-autonomous). 
+
+Neuron model parameter settings 
+
+I C gL EL gNa ENa Vh, Na kNa gK EK Vh,K kK τn gM Vh,M kM τh gNMDA ENMDA 
+
+0 6 8 −80 20 60 −20 15 10 −90 −25 5 1 25 −15 5 200 10 .2 0
+
+D.3. Real-World Datasets 
+
+Here we give a brief description of the real-world datasets used to compare DSR and TS models. The traffic data consist of hourly measurements of the number of vehicles passing through road junctions ( https://www.kaggle.com/ datasets/fedesoriano/traffic-prediction-dataset/data ). The cloud data are publicly available from 30 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+Huawei Cloud ( https://github.com/sir-lab/data-release ) and contain records of function requests from Huawei’s serverless cloud platform. The weather data comprise daily soil temperature and air pressure readings from a city in Germany provided by the German Weather Service, and can be obtained from https://www.dwd.de/EN/ ourservices/cdc/cdc_ueberblick-klimadaten_en.html . The functional magnetic resonance imaging (fMRI) data comes from human participants performing various cognitive tasks and is publicly available on GitHub (Kramer et al., 2022). Kramer et al. (2022) report a positive maximum Lyapunov exponent for models reconstructed from these time series, suggesting that the underlying dynamics is chaotic (see also (Volkmann et al., 2024)). The ETTh1 dataset belongs to the Electricity Transformer Temperature (ETT) benchmark, a standard benchmark for TS forecasting. It comprises hourly measurements from a power transformer station (Zhou et al., 2021) and is available at https://github.com/ zhouhaoyi/ETDataset . The electroencephalogram (EEG) data are from a study by Schalk et al. (2000) and contain recordings from human subjects engaged in various motor and motor imagery tasks. In line with Brenner et al. (2022), the EEG signals were smoothed using a Hann window of length 15 . The non-stationary Air Passengers dataset, consisting of airline passenger counts, is available at https://www.kaggle.com/datasets/chirag19/air-passengers .
+
+# E. Methodological Details on DSR and TS Models  
+
+> Figure 7. Illustration of DSR process. “ ≈” is meant here in the sense of topological conjugacy (cf. Def. 2.2) and (potentially) geometrical & temporal invariants (like the Lyapunov spectrum or fractal dimension).
+
+Fig. 7 provides the general layout of DSR. For all models described in this section, implementations from the original code repositories as indicated below in the respective subsections were used for the comparisons shown in Fig. 5 and Tables 1 & 2. Optimal hyperparameters were determined for all models by following the authors’ original methodology, and by conducting hyperparameter tuning through either grid search or Bayesian optimization. 
+
+E.1. Custom Trained DSR Models 
+
+Most DSR models are more or less standard architectures (like RNNs or Neural ODEs) with, however, often an emphasis on either physical (Brunton et al., 2016; Champion et al., 2019; Raissi et al., 2019) or mathematical (Linderman et al., 2017; Lusch et al., 2018; Brenner et al., 2022; 2024a; Bolager et al., 2025) interpretability, since these models are commonly employed with scientific or medical applications in mind. Comparatively easy accessibility of mathematical (topological/ geometrical) properties using DS theoretical tools is thus an important criterion in model design. Apart from this, as discussed in the main text, the more important aspect are the training techniques used to achieve proper DSRs (cf. Appx. C). Below we therefore only review the models used for the comparisons in Fig. 5 and Table 1. Generally, most DSR models (like all RNNs essentially) aim to learn an approximation to the flow operator Φ∆t(x), while some continuous-time models (like Neural ODEs or SINDy) aim to approximate the vector field f (x).
+
+AL-RNN The Almost-Linear RNN (AL-RNN; Brenner et al. (2024a)) aims, as the name suggests, to reduce the number of nonlinearities to a bare minimum in order to achieve maximal mathematical tractability. Nevertheless it has been shown to be on par with other SOTA DSR models when properly trained by techniques as reviewed in Appx. C, such as STF and GTF. It also induces a natural symbolic encoding (Lind & Marcus, 2021) that preserves key topological properties of the 31 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+underlying DS. The AL-RNN combines linear units and ReLUs according to 
+
+zt = A z t−1 + W Φ∗(zt−1) + h, (42) where zt is the model’s latent state, A ∈ RM ×M is a purely linear (diagonal) term, W ∈ RM ×M , and bias vector h ∈ RM .The function Φ∗ : RM → RM applies a ReLU nonlinearity only to a subset of P neurons: 
+
+Φ∗(z) = z1, . . . , z M −P , max(0 , z M −P +1 ), . . . , max(0 , z M )⊤. (43) This divides the state space into 2P ≪ 2M distinct regions with linear dynamics, easing model analysis. For evaluation, we used the code provided by https://github.com/DurstewitzLab/ALRNN-DSR .
+
+shPLRNN The shallow PLRNN (shPLRNN; Hess et al. (2023)) is another SOTA DSR model with a piecewise-linear structure to allow for deeper mathematical analysis (Eisenmann et al., 2023). It is based on a one hidden layer RNN with ReLU activation, mapping the latent states into a higher dimensional hidden space, thus enhancing expressivity, and is defined by 
+
+zt = A z t−1 + W1 ϕ W2 zt−1 + h2
+
+ + h1, (44) where A ∈ RM ×M is a diagonal matrix, W1 ∈ RM ×H and W2 ∈ RH×M are weight matrices, with usually H > M ,
+
+h2 ∈ RH and h1 ∈ RM are bias vectors, and ϕ(·) is the ReLU activation. The model is trained by GTF (see Appx. C). For evaluation, we used the implementation given by https://github.com/DurstewitzLab/GTF-shPLRNN .
+
+Reservoir Computing Reservoir Computers (RC) are a type of RNN with a huge pool of recurrently coupled nonlinear units (the ‘reservoir’) and a commonly linear readout layer that maps activity in the reservoir to a much smaller set of outputs (Jaeger & Haas, 2004). They are one of the most popular DSR models (Platt et al., 2022; Pathak et al., 2017; Verzelli et al., 2021; Patel & Ott, 2023). A key property of RCs is that only the weights of the linear output layer are trained, while those in the reservoir are kept fixed. The central idea in RCs is that the reservoir provides a huge but fixed repertoire of (basis for) potential dynamics (a bit similar in spirit to SVMs) that can be harvested to approximate any DS. While various architectures exist, a common formulation is given by (Patel & Ott, 2023): 
+
+rt = αrt−1 + (1 − α) tanh ( W r t−1 + Win ut + b)ˆxt = Wout rt, (45) where rt ∈ RM is the reservoir state, α ∈ R a leakage parameter, W ∈ RM ×M the fixed reservoir connectivity matrix, 
+
+Win ∈ RM ×N a likewise fixed input-to-reservoir matrix weighing inputs ut ∈ RN , b ∈ RM a fixed bias vector, and 
+
+Wout ∈ RN ×M the only trainable matrix mapping reservoir states to the observed data. Since parameter {W , Win , b} are fixed and not trained, training an RC becomes particularly easy and fast, since it boils down to a simple linear regression problem, making this approach highly attractive. Specifically, given data X = [ x1, . . . , xT ] ∈ RN ×T and the reservoir trajectory R = [ r1, . . . , rT ] ∈ RM ×T obtained by driving the model through the inputs ( ut = xt−1 during training and 
+
+ut = ˆ xt−1 = Wout rt−1 at test time), the loss function 
+
+L = ∥X − Wout R∥2 
+
+> F
+
++ λ∥Wout ∥2 
+
+> F
+
+(46) results in a straightforward ridge regression problem with closed form solution 
+
+Wout = XR T  RR T + λI−1 . (47) However, since parameters of the reservoir are fixed after initialization, RCs generally depend on a large (and thus less tractable) reservoir ( M ≥ 500 ) and carefully designed initialization schemes (Patel & Ott, 2023). For our evaluation, we employed code adapted from Patel & Ott (2023), which we obtained upon request. 
+
+E.2. Custom trained TS models AutoARIMA Autoregressive Integrated Moving Average models with seasonal components, ARIMA (p, d, q )( P, D, Q )m
+
+for short, are classical linear TSF tools that have been in use for decades (Box et al., 2015), given in compact notation by 
+
+ΨP (Bm)ψp(B)(1 − Bm)D (1 − B)dyt = c + Θ Q(Bm)θq (B)ϵt , (48) 32 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+where c is a constant offset, {ϵt} comes from a white noise process with zero mean and variance σ2, B denotes the backshift operator, Bkyt = yt−k, and a seasonal component with period m. The non-seasonal AR and MA parts are in the polynomials 
+
+ψ(B) and θ(B) of orders p and q, respectively, while the seasonal components are given by the polynomials Ψ( Bm) and 
+
+Θ( Bm) of orders P and Q in the seasonal backshift Bm. The factors (1 − B)d and (1 − Bm)D apply non-seasonal and seasonal differencing for trend removal and seasonal variation. For our comparisons, we used an automatic ARIMA model selection procedure (AutoARIMA) (Hyndman & Khandakar, 2008) and its implementation in the StatsForecast package (Garza et al., 2022). AutoARIMA searches over a predefined hyperparameter space and selects the ARIMA specification that optimizes an information criterion, thereby automatically determining the autoregressive (AR), differencing (I), and moving average (MA) orders as well as potential seasonal terms. Depending on the selected orders, the resulting model can effectively reduce to pure AR, MA, ARMA, or non-seasonal ARIMA. Unlike the order parameters p, d, q, P, D, Q , the seasonality m is not optimized by AutoARIMA and therefore required a small grid search around plausible values. 
+
+NBEATS Neural basis expansion analysis for interpretable time series forecasting (N-BEATS), introduced in (Oreshkin et al., 2020), is a deep learning architecture for univariate TSF built from stacks of fully connected MLP blocks with ReLU activations and no recurrent, convolutional, or transformer components. It uses both backward and forward residual links between the MLP blocks to form the final prediction. Model parameters are learned by minimizing the sMAPE forecasting loss between predictions and ground truth. In addition to the generic configuration, N-BEATS also offers a variant that enforces trend and seasonality structure via polynomial and harmonic bases, enabling partial interpretability through this decomposition. In this work, AutoNBEATS from the neuralforecast library (Olivares et al., 2022) is used for model training and prediction. 
+
+PatchTST PatchTST (Nie et al., 2023) is a Transformer-based architecture for multivariate TSF. A key component of PatchTST is its patching mechanism, which segments an input time series x ∈ R1×T into NP (typically overlapping) subseries, or patches, xp ∈ RLP ×NP of length LP < T . These patches serve as input tokens to the encoder-only Transformer, enabling the model to capture richer context information than point-wise time step representations while simultaneously reducing the number of input tokens. Another core feature of PatchTST is channel independence: for multivariate forecasting, each time series dimension is treated as an independent univariate series, while sharing the same Transformer embeddings and weights across all N channels. The model is trained using MSE loss between the forecasts and ground truth values. In this work, we employ the AutoPatchTST implementation from the NeuralForecast library (Olivares et al., 2022) for training and prediction. 
+
+E.3. Foundation models DynaMix DynaMix (Hemmer & Durstewitz, 2025) is, to our knowledge, the only foundation model so far which achieves zero-shot DS reconstructions, i.e. performs a type of in-context generalization without parameter fine-tuning. It is based on a mixture-of-experts architecture employing J different AL-RNNs (cf. eq. 42) as experts. Their individual next-state predictions are combined into a single prediction through a weighted sum zt+1 = PJj=1 wexp j,t · zjt+1 , with weights wexp j,t 
+
+obtained from a gating network 
+
+wexp t = σ MLP ( ˜Cw att t , zt)
+
+τexp 
+
+!
+
+∈ RJ , (49) which takes as input a context signal C ∈ RN ×TC transformed into a set of temporal features ˜C = CNN (C) by a CNN, which are in turn weighted by time-dependent attention weights watt t through a state-attention mechanism defined as 
+
+watt t = σ C − (Dz t + ϵ) 1⊤ 
+
+> TC
+> ⊤
+
+1N
+
+τatt 
+
+!
+
+∈ RTC . (50) 
+
+τexp and τatt are temperature parameters in these equations, D is a learnable matrix, and 1{N,T C } denotes column vectors of ones. This fully recurrent foundation model was trained following DSR principles by STF, where the training corpus consisted of ≈ 6 · 10 5 trajectories drawn from 34 distinct cyclic or chaotic DS. For evaluation we used the implementation from https://github.com/DurstewitzLab/DynaMix-python .33 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+Chronos Chronos is a transformer-based foundation model for probabilistic time series forecasting that repurposes LLM architectures for temporal data (Ansari et al., 2024). It converts real-valued time series into discrete token sequences through scaling and quantization, enabling autoregressive forecasting using a standard transformer architecture. The model is pretrained on large-scale datasets consisting of both synthetic TS created using Gaussian processes and a broad collection of real-world TS (Ansari et al., 2024; Godahewa et al., 2021), including traffic, weather/climate, electricity, and web data. This broad pretraining enables Chronos to perform zero-shot forecasts on a wide variety of TS without task-specific fine-tuning. For our evaluation we used the standard pipeline as described in https://github.com/ amazon-science/chronos-forecasting .
+
+Chronos-2 Chronos-2 is a recently proposed multivariate extension of the original Chronos model (Ansari et al., 2025). It retains the T5 encoder architecture (Raffel et al., 2020) used in the initial Chronos design, and augments it with a novel group-attention mechanism. This group-attention mechanism enables sharing information across related groups of TS, such as different variables or covariates. Through this the model can, in contrast to the original Chronos, also handle multivariate or covariate-informed TS in a zero-shot manner. The model was trained in both univariate and multivariate configurations. For the univariate case, the Chronos training corpus was employed together with GIFT-EVAL for pretraining. In the multivariate case, the model was trained exclusively on synthetic data generated using methods such as KernelSynth (Ansari et al., 2024). With this training scheme, the model not only supports multivariate forecasting but also often outperforms the original Chronos. For our evaluation we followed the standard pipeline as described in 
+
+https://github.com/amazon-science/chronos-forecasting .
+
+TiRex TiRex is a recently introduced foundation model for zero-shot time series forecasting based on the LSTM (Hochreiter & Schmidhuber, 1997). Specifically, it uses the xLSTM architecture (Auer et al., 2025), an enhanced LSTM variant that combines explicit state tracking with improved in-context learning capabilities. TiRex adopts a decoder-only recurrent design for autoregressive multi-step forecasting. The model is pre-trained on the same data as in (Ansari et al., 2024), comprising real-world time series and synthetic data generated using the KernelSynth method. In addition, subsets of the GiftEVAL pre-training dataset are included, resulting in a total of 47.5 million training TS. Overall, TiRex achieves state-of-the-art zero-shot forecasting performance on benchmarks such as GiftEVAL while using fewer parameters than competing transformer-based models. Evaluation is performed using the pipeline given in https://github.com/NX-AI/tirex .
+
+Panda Panda is a recently proposed foundation model for zero-shot short-term forecasting of DS (Lai et al., 2025). Like Chronos, it is based on a transformer architecture that operates on patched representations of TS. Unlike Chronos, however, the model is trained on simulation data from 2 · 10 4 different DS created by combining base DS from Gilpin (2022) in so-called skew-product form, where one dependent system is driven by the other independently evolving system. Evaluation is performed as in https://github.com/abao1999/panda .34 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+# F. Further Results 
+
+Figure 8. Long-term forecasts of ETTh1 dataset for different DSR and TS models. 
+
+Figure 9. Long-term forecasts of weather temperature dataset for different DSR and TS models. 
+
+35 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+Table 1. Performance comparison of custom trained DSR and TS models on empirical time series in terms of geometrical divergence (Dstsp ), long-term temporal distance ( DH ), and forecast error (MASE). Best in red, second-best in blue.                                                                                                                                                                                                                                                                                                                             
+
+> System ALRNN shPLRNN RC AutoARIMA PatchTST NBEATS
+> Dstsp DHMASE Dstsp DHMASE Dstsp DHMASE Dstsp DHMASE Dstsp DHMASE Dstsp DHMASE ETTh1 0.46 ±0.34 0 .16 ±0.02 3 .09 ±0.07 0 .21 ±0.13 0 .18 ±0.01 1 .61 ±0.08 0 .35 ±0.01 0 .17 ±0.01 1.09 ±0.00 3.92 0.22 1.46 3.85 ±2.66 0 .16 ±0.05 4 .78 ±1.82 3 .14 ±0.57 0 .38 ±0.13 3 .77 ±0.42
+> Traffic 1.14 ±0.57 0 .14 ±0.03 1 .90 ±0.04 0 .25 ±0.08 0 .09 ±0.01 2 .35 ±0.06 0 .10 ±0.02 0 .13 ±0.02 1.26 ±0.27 8.98 0.41 2.16 1.23 ±0.68 0 .24 ±0.10 0 .98 ±0.08 1 .54 ±0.12 0 .13 ±0.03 0 .92 ±0.06
+> Cloud Requests 1.28 ±0.12 0 .12 ±0.00 3 .02 ±0.05 1 .14 ±0.10 0 .12 ±0.00 2 .88 ±0.03 0 .73 ±0.00 0 .74 ±0.01 23 .12 ±2.06 0.61 0.10 1.90 3.21 ±2.04 0 .15 ±0.03 2 .40 ±0.37 2 .10 ±0.34 0 .12 ±0.02 4 .05 ±0.79
+> Weather (Temp.) 0.73 ±0.02 0 .11 ±0.00 1 .80 ±0.04 0 .71 ±0.28 0 .12 ±0.00 1 .62 ±0.12 0 .07 ±0.02 0 .12 ±0.03 2.53 ±0.28 0.11 0.11 2.60 1.04 ±0.87 0 .12 ±0.03 3 .19 ±1.25 1 .22 ±0.83 0 .11 ±0.02 2 .09 ±0.12
+> Weather (Press.) 0.23 ±0.09 0 .29 ±0.02 4 .66 ±0.22 0 .25 ±0.03 0 .30 ±0.02 4 .80 ±0.24 1 .90 ±1.05 0 .89 ±0.05 4.68 ±0.62 13 .26 1 .00 4.63 5.90 ±0.38 0 .45 ±0.01 5 .63 ±0.54 5 .42 ±2.45 0 .49 ±0.18 8 .47 ±3.98
+> Human fMRI 0.27 ±0.09 0 .21 ±0.04 5 .38 ±0.10 0 .26 ±0.01 0 .21 ±0.01 4 .88 ±0.31 0 .24 ±0.03 0 .20 ±0.01 4.20 ±0.27 10 .48 1 .00 2.59 6.08 ±1.42 0 .25 ±0.05 3 .60 ±0.64 8 .15 ±3.01 0 .42 ±0.26 2 .87 ±0.46
+> Human EEG 0.39 ±0.23 0 .35 ±0.18 2 .78 ±0.61 0 .22 ±0.02 0 .25 ±0.02 1 .95 ±0.11 0 .23 ±0.01 0 .21 ±0.02 4.44 ±0.49 12 .36 1 .00 2.37 4.86 ±3.81 0 .41 ±0.11 3 .50 ±0.27 5 .16 ±0.39 0 .46 ±0.04 2 .33 ±0.28
+> Air Passengers 2.78 ±1.63 0 .18 ±0.03 5 .55 ±1.54 4 .39 ±1.86 0 .21 ±0.12 9 .01 ±5.02 9 .06 ±0.17 0 .28 ±0.01 5.50 ±0.15 1.15 0.05 1.25 1.96 ±1.27 0 .13 ±0.03 6 .31 ±0.34 1 .98 ±0.03 0 .11 ±0.01 2 .41 ±0.11
+> # Trainable Param. O(10 2)− O (10 3)O(10 2)− O (10 3)O(10 4)O(10 1)O(10 4)− O (10 6)O(10 6)
+
+Table 2. Performance comparison of DSR and TS foundation models on empirical time series in terms of geometrical divergence ( Dstsp ), long-term temporal distance ( DH ), and forecast error (MASE). Best in red, second-best in blue. 
+
+System DynaMix Chronos-t5-base Chronos-2 TiRex Panda 
+
+Dstsp DH MASE Dstsp DH MASE Dstsp DH MASE Dstsp DH MASE Dstsp DH MASE ETTh1 0.60 ± 0.01 0 .15 ± 0.00 1 .61 ± 0.41 1.58 ± 0.23 0.20 ± 0.01 1 .30 ± 0.03 3.44 0.16 1.71 9.20 0 .29 1.46 8.18 0.69 2.86 
+
+Traffic 0.86 ± 0.02 0 .18 ± 0.02 0 .98 ± 0.10 0.78 ± 0.24 0.11 ± 0.01 0 .62 ± 0.01 0.55 0.13 0.65 3.41 0 .81 0.59 4.47 0.45 0.99 
+
+Cloud Requests 0.67 ± 0.00 0 .07 ± 0.01 2 .62 ± 0.02 3.72 ± 1.91 0.53 ± 0.08 2 .43 ± 0.02 2.10 0.14 1.66 3.06 0 .89 1.44 7.20 0.23 2.38 
+
+Weather (Temp.) 0.06 ± 0.00 0 .07 ± 0.01 1 .89 ± 0.04 8.92 ± 3.75 0.44 ± 0.24 7 .24 ± 0.40 2.27 0.17 1.59 3.00 0 .90 1.91 1.15 0.14 1.60 
+
+Weather (Press.) 0.18 ± 0.01 0 .26 ± 0.01 4 .21 ± 0.02 3.23 ± 0.67 0.54 ± 0.00 4 .76 ± 0.16 11 .16 0 .47 4.94 7.29 0 .75 4.75 10 .23 0 .68 4.72 
+
+Human fMRI 0.23 ± 0.01 0 .19 ± 0.00 2 .03 ± 0.10 9.05 ± 0.40 0.31 ± 0.01 2 .66 ± 0.07 10 .18 0 .22 2.61 8.44 0 .38 2.53 5.29 0.53 5.12 
+
+Human EEG 0.18 ± 0.00 0 .23 ± 0.01 3 .00 ± 0.44 11 .99 ± 0.18 0 .68 ± 0.07 3 .07 ± 0.04 8.91 0.41 2.76 8.71 0 .74 2.46 6.79 0.54 2.38 
+
+Air Passengers 0.78 ± 0.04 0 .11 ± 0.00 2 .83 ± 0.11 8.29 ± 0.71 0.16 ± 0.07 1 .56 ± 0.08 6.55 0.29 1.64 8.64 0 .11 1.43 9.25 0.13 2.48 
+
+# Parameters O(10 4) O(10 8) O(10 8) O(10 7) O(10 7)
+
+Figure 10. Example forecast of the chaotic Lorenz-63 system using DynaMix and Chronos-t5-base. Chronos’ tendency to parrot its context input leads to a cyclic repetition of a fixed pattern, and Chronos therefore fundamentally fails to capture the truly aperiodic, chaotic behavior. This manifests as cyclic trajectories in the delay-embedded (cf. Appx. A) state space (left), the close-to-zero maximum Lyapunov exponent (center) and by a sharply peaked (instead of the truly broad) power spectrum (right). Results reproduced from Hemmer & Durstewitz (2025). 
+
+36 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+Figure 11. Illustration of DSR measures: Comparison of geometrical (dis)agreement ( Dstsp ), power spectral distance ( DH), Kaplan-Yorke fractal dimension ( DKY ), and max. Lyapunov exponent ( λmax ) on reconstructions of the chaotic Lorenz-63 system of different quality from very poor ( a) to excellent ( d), obtained by an AL-RNN assessed at different training stages. 
+
+Figure 12. N-tipping in state space: Illustration of the basin boundary crossing of the noisy trajectory from Fig.1b. 
+
+37 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+Figure 13. TS forecasts using custom trained AutoARIMA. 
+
+Figure 14. TS forecasts using custom trained shallow PLRNN. 
+
+38 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+Figure 15. TS forecasts using custom trained AL-RNN. 
+
+Figure 16. TS forecasts using custom trained Reservoir Computers. 
+
+39 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+Figure 17. TS forecasts using custom trained PatchTST. 
+
+Figure 18. TS forecasts using custom trained NBEATS. 
+
+40 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+Figure 19. Zero-shot TS forecasts using DynaMix FM. 
+
+Figure 20. Zero-shot TS forecasts using Chronos-t5-base FM. 
+
+41 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+Figure 21. Zero-shot TS forecasts using Chronos-2 FM. 
+
+Figure 22. Zero-shot TS forecasts using TiRex FM. 
+
+42 Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling 
+
+Figure 23. Zero-shot TS forecasts using Panda FM. 
+
+Figure 24. A DSR model trained on just one short trajectory (center) from the chaotic R ¨ossler system (left) correctly reconstructs the full chaotic attractor and generalizes to novel initial conditions (right). Based on Suppl. Fig. 4 of Durstewitz et al. (2023). 
+
+43

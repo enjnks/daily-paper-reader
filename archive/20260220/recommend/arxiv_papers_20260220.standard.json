@@ -1,0 +1,149 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-02-20T04:30:32.669122+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 2,
+    "deep_cap": 6,
+    "deep_selected": 2,
+    "quick_candidates": 2,
+    "quick_skim_target": 11,
+    "quick_selected": 2
+  },
+  "deep_dive": [
+    {
+      "id": "2602.17082v1",
+      "title": "Order of Magnitude Analysis and Data-Based Physics-Informed Symbolic Regression for Turbulent Pipe Flow",
+      "abstract": "Friction losses in rough pipes are often predicted using semi-empirical correlations, such as the Colebrook-White equation (Colebrook,1939), which do not fully replicate Nikuradse's rough-pipe experiments (1950). This study derives scaling relations for the viscous and turbulent contributions to the streamwise pressure drop through an order-of-magnitude analysis of the Reynolds-averaged Navier-Stokes equations and the kinetic-energy transport equations. These relations impose constraints on the local sensitivity of the pressure drop to factors such as mean velocity, roughness, viscosity, and density through exponent envelopes and serve as a physical prior for symbolic regression. By combining Nikuradse's rough-pipe and smooth-pipe data of Zagarola and Smits (1998), we aim to derive compact correlations for the friction factor that fit experimental data while adhering to the derived constraints. A modified genetic programming engine (GPTIPS2) optimizes model structure and evaluates it based on fitness, complexity, and constraint violation. This method yields interpretable expressions that accurately reproduce friction factors across various roughness levels and Reynolds numbers, validated up to $Re \\sim 10^7$.",
+      "authors": [
+        "Yunus Emre Ünal",
+        "Özgür Ertunç",
+        "Ismail Ari",
+        "Ivan Otić"
+      ],
+      "primary_category": "physics.flu-dyn",
+      "categories": [
+        "physics.flu-dyn",
+        "physics.comp-ph"
+      ],
+      "published": "2026-02-19 05:02:58+00:00",
+      "link": "https://arxiv.org/pdf/2602.17082v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "physics-informed symbolic regression for fluid dynamics",
+      "llm_evidence_cn": "物理启发的符号回归用于流体动力学",
+      "llm_evidence": "物理启发的符号回归用于流体动力学",
+      "llm_tldr_en": "Combines physics-based scaling relations with symbolic regression to predict pipe flow friction losses.",
+      "llm_tldr_cn": "将物理缩放关系作为先验，利用符号回归预测管道流动的摩擦损失。",
+      "llm_tldr": "将物理缩放关系作为先验，利用符号回归预测管道流动的摩擦损失。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    },
+    {
+      "id": "2602.16864v1",
+      "title": "Position: Why a Dynamical Systems Perspective is Needed to Advance Time Series Modeling",
+      "abstract": "Time series (TS) modeling has come a long way from early statistical, mainly linear, approaches to the current trend in TS foundation models. With a lot of hype and industrial demand in this field, it is not always clear how much progress there really is. To advance TS forecasting and analysis to the next level, here we argue that the field needs a dynamical systems (DS) perspective. TS of observations from natural or engineered systems almost always originate from some underlying DS, and arguably access to its governing equations would yield theoretically optimal forecasts. This is the promise of DS reconstruction (DSR), a class of ML/AI approaches that aim to infer surrogate models of the underlying DS from data. But models based on DS principles offer other profound advantages: Beyond short-term forecasts, they enable to predict the long-term statistics of an observed system, which in many practical scenarios may be the more relevant quantities. DS theory furthermore provides domain-independent theoretical insight into mechanisms underlying TS generation, and thereby will inform us, e.g., about upper bounds on performance of any TS model, generalization into unseen regimes as in tipping points, or potential control strategies. After reviewing some of the central concepts, methods, measures, and models in DS theory and DSR, we will discuss how insights from this field can advance TS modeling in crucial ways, enabling better forecasting with much lower computational and memory footprints. We conclude with a number of specific suggestions for translating insights from DSR into TS modeling.",
+      "authors": [
+        "Daniel Durstewitz",
+        "Christoph Jürgen Hemmer",
+        "Florian Hess",
+        "Charlotte Ricarda Doll",
+        "Lukas Eisenmann"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "math.DS"
+      ],
+      "published": "2026-02-18 20:46:50+00:00",
+      "link": "https://arxiv.org/pdf/2602.16864v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Focuses on Dynamical Systems Reconstruction (DSR) to infer governing equations from time series data.",
+      "llm_evidence_cn": "侧重于动力系统重建（DSR），旨在从时间序列数据中推断控制方程。",
+      "llm_evidence": "侧重于动力系统重建（DSR），旨在从时间序列数据中推断控制方程。",
+      "llm_tldr_en": "Argues for a dynamical systems perspective in time series modeling to infer governing equations from data.",
+      "llm_tldr_cn": "主张在时间序列建模中引入动力系统视角，以从数据中推断控制方程。",
+      "llm_tldr": "主张在时间序列建模中引入动力系统视角，以从数据中推断控制方程。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2602.17217v1",
+      "title": "Continual learning and refinement of causal models through dynamic predicate invention",
+      "abstract": "Efficiently navigating complex environments requires agents to internalize the underlying logic of their world, yet standard world modelling methods often struggle with sample inefficiency, lack of transparency, and poor scalability. We propose a framework for constructing symbolic causal world models entirely online by integrating continuous model learning and repair into the agent's decision loop, by leveraging the power of Meta-Interpretive Learning and predicate invention to find semantically meaningful and reusable abstractions, allowing an agent to construct a hierarchy of disentangled, high-quality concepts from its observations. We demonstrate that our lifted inference approach scales to domains with complex relational dynamics, where propositional methods suffer from combinatorial explosion, while achieving sample-efficiency orders of magnitude higher than the established PPO neural-network-based baseline.",
+      "authors": [
+        "Enrique Crespo-Fernandez",
+        "Oliver Ray",
+        "Telmo de Menezes e Silva Filho",
+        "Peter Flach"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-02-19 10:08:31+00:00",
+      "link": "https://arxiv.org/pdf/2602.17217v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 7.0,
+      "llm_evidence_en": "Symbolic causal world models and predicate invention",
+      "llm_evidence_cn": "符号因果世界模型与谓词发明",
+      "llm_evidence": "符号因果世界模型与谓词发明",
+      "llm_tldr_en": "Constructs symbolic causal world models online using meta-interpretive learning and predicate invention.",
+      "llm_tldr_cn": "利用元解释学习和谓词发明在线构建符号因果世界模型。",
+      "llm_tldr": "利用元解释学习和谓词发明在线构建符号因果世界模型。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "7"
+    },
+    {
+      "id": "2602.17477v1",
+      "title": "Variational Grey-Box Dynamics Matching",
+      "abstract": "Deep generative models such as flow matching and diffusion models have shown great potential in learning complex distributions and dynamical systems, but often act as black-boxes, neglecting underlying physics. In contrast, physics-based simulation models described by ODEs/PDEs remain interpretable, but may have missing or unknown terms, unable to fully describe real-world observations. We bridge this gap with a novel grey-box method that integrates incomplete physics models directly into generative models. Our approach learns dynamics from observational trajectories alone, without ground-truth physics parameters, in a simulation-free manner that avoids scalability and stability issues of Neural ODEs. The core of our method lies in modelling a structured variational distribution within the flow matching framework, by using two latent encodings: one to model the missing stochasticity and multi-modal velocity, and a second to encode physics parameters as a latent variable with a physics-informed prior. Furthermore, we present an adaptation of the framework to handle second-order dynamics. Our experiments on representative ODE/PDE problems show that our method performs on par with or superior to fully data-driven approaches and previous grey-box baselines, while preserving the interpretability of the physics model. Our code is available at https://github.com/DMML-Geneva/VGB-DM.",
+      "authors": [
+        "Gurjeet Sangra Singh",
+        "Frantzeska Lavda",
+        "Giangiacomo Mercatali",
+        "Alexandros Kalousis"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-02-19 15:43:22+00:00",
+      "link": "https://arxiv.org/pdf/2602.17477v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Grey-box dynamics matching for physics-based systems",
+      "llm_evidence_cn": "物理系统的灰盒动力学匹配",
+      "llm_evidence": "物理系统的灰盒动力学匹配",
+      "llm_tldr_en": "Integrates incomplete physics models into generative models to learn dynamics from observational data.",
+      "llm_tldr_cn": "将不完整的物理模型集成到生成模型中，从观测数据中学习动力学。",
+      "llm_tldr": "将不完整的物理模型集成到生成模型中，从观测数据中学习动力学。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    }
+  ]
+}

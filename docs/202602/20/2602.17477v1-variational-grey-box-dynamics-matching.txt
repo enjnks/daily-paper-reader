@@ -1,0 +1,973 @@
+Title: Variational Grey-Box Dynamics Matching
+
+URL Source: https://arxiv.org/pdf/2602.17477v1
+
+Published Time: Fri, 20 Feb 2026 02:03:18 GMT
+
+Number of Pages: 21
+
+Markdown Content:
+# Variational Grey-Box Dynamics Matching 
+
+Gurjeet Sangra Singh Frantzeska Lavda Giangiacomo Mercatali Alexandros Kalousis 
+
+University of Geneva HES-SO Geneva HES-SO Geneva HES-SO Geneva HES-SO Geneva 
+
+## Abstract 
+
+Deep generative models such as flow match-ing and diffusion models have shown great potential in learning complex distributions and dynamical systems, but often act as black-boxes, neglecting underlying physics. In contrast, physics-based simulation mod-els described by ODEs/PDEs remain inter-pretable, but may have missing or unknown terms, unable to fully describe real-world observations. We bridge this gap with a novel grey-box method that integrates in-complete physics models directly into gen-erative models. Our approach learns dy-namics from observational trajectories alone, without ground-truth physics parameters, in a simulation-free manner that avoids scala-bility and stability issues of Neural ODEs. The core of our method lies in modelling a structured variational distribution within the flow matching framework, by using two latent encodings: one to model the miss-ing stochasticity and multi-modal velocity, and a second to encode physics parameters as a latent variable with a physics-informed prior. Furthermore, we present an adap-tation of the framework to handle second-order dynamics. Our experiments on rep-resentative ODE/PDE problems show that our method performs on par with or supe-rior to fully data-driven approaches and pre-vious grey-box baselines, while preserving the interpretability of the physics model. Our code is available at https://github.com/ DMML-Geneva/VGB-DM .
+
+Proceedings of the 29 th International Conference on Arti-ficial Intelligence and Statistics (AISTATS) 2026, Tangier, Morocco. PMLR: Volume 300. Copyright 2026 by the au-thor(s). 
+
+## 1 Introduction 
+
+Modelling the dynamics of physical systems is a fun-damental challenge in various scientific domains, e.g., in fluid dynamics, geophysics and others. Such sys-tems are described by physics models, often formu-lated as Ordinary or Partial Differential Equations (ODEs/PDEs). Because they are derived from phys-ical laws such as conservation of energy, momentum, or mass, these models provide interpretable param-eters and equations whose terms have clear physical meaning. However, real-world systems often exceed the complexity captured by known physics, resulting in incomplete models with unknown parameters or miss-ing terms. Deep generative models, by contrast, have shown remarkable success in learning complex data distributions. Techniques such as Neu-ral ODEs [Chen et al., 2018] or Flow Match-ing [Lipman et al., 2023a, Albergo et al., 2023, Liu et al., 2023] can model high-dimensional distri-butions effectively. Applied to dynamical systems, however, these methods act as black boxes; they learn the dynamics purely from observations without lever-aging existing physical knowledge. This can lead to physically implausible predictions, poor generalization and limited interpretability. To bridge this gap, deep grey-box modelling ap-proaches aim to integrate incomplete physics knowledge with data-driven methods. Dif-ferent simulation-based methods, which lever-age Neural ODEs [Chen et al., 2018], such as Physics-Integrated Variational Autoencoders (Phys-VAE) [Takeishi and Kalousis, 2021] and related methods [Yin et al., 2021, Mehta et al., 2020, Qian et al., 2021, Wehenkel et al., 2023, Verma et al., 2024] combine physics models with neural networks. While effective, these methods rely heavily on numerical ODE solvers during training, which can introduce scalability issues, numerical instability, and significant computational overhead. Furthermore, learning the dynamics of physical sys-
+
+> arXiv:2602.17477v1 [cs.LG] 19 Feb 2026 Variational Grey-Box Dynamics Matching
+
+tems often involves dealing with inherent stochasticity or multi-modal velocity fields. When physics is in-complete or parameters are unknown, multiple valid future trajectories might exist from the same state. Standard deterministic approaches struggle to capture this complexity. Recent advances in Variational Recti-fied Flow Matching [Guo and Schwing, 2025] highlight the importance of introducing stochasticity via latent variables to learn more expressive and accurate vec-tor fields, arguing that this is essential for capturing complex dynamics. In this work, we introduce Variational Grey-Box Dynamics Matching (VGB-DM) 1, a novel approach that integrates incomplete physics models into asimulation-free generative modelling paradigm while explicitly accounting for stochasticity and param-eter uncertainty. Our approach builds upon the simulation-free methods, adapting them to learn dy-namics directly from trajectories [Zhang et al., 2024]. We employ a variational approach inspired by [Guo and Schwing, 2025], but introduce a structural latent space tailored for grey-box modelling, one part represents random variability in the system’s dynam-ics, while another part represents physical parameters that must be inferred from data. Our contributions are summarized as follows: 1. Simulation-Free Grey-Box modelling: We propose a novel integration of incomplete physics models in a generative model inspired by gradient match-ing as used in recent Flow Matching generative models. This approach learns dynamics and infers parameters in a simulation-free manner, avoid-ing the computational bottlenecks, memory scal-ability and stability issues associated with solver-based methods like Neural ODEs, enhancing scal-ability for high-dimensional grey-box modelling. 2. Structured Variational Inference: We introduce a structured variational distribution over the ve-locity field, utilising separate latent variables for modelling stochasticity/multi-modality and infer-ring physics parameters. This allows the model to capture complex dynamics while maintaining physics interpretability. 3. Empirical Validation: We demonstrate the effec-tiveness of VGB-DM on different ODE/PDE sys-tems and weather forecasting task, showing su-perior performance and faster convergence com-pared to state-of-the-art baselines. 
+
+> 1We have open-sourced our VGB-DM model and exper-iments in our VGB-DM GitHub repository
+
+## 2 Background 
+
+2.1 Problem setting 
+
+Consider an unknown data-generating process (DGP) underlying the real-world dynamical system. We ob-serve data as a collection of trajectories D = {xi}Ni=1 .Each sample xi corresponds to a time series, xi =[xi
+
+> 0
+
+, . . . , x iT ], where xit ∈ X ⊆ Rd is the state at any discretized time t ∈ { 0, . . . , T }. These trajectories are assumed to be independent and identically distributed (i.i.d.) samples from an unknown data distribution 
+
+π(x) ∈ P (X T +1 ), where P(X T +1 ) is a set of all prob-ability measures over the trajectory space X T +1 .A central goal in learning dynamical systems with gen-erative models is to construct a conditional model that, given a current state xt and possibly an arbitrary his-tory of past observations xt−h:t with h ∈ Z+, can generate plausible future trajectories. Such a model should forecast consistently by learning the underlying system evolution, including extrapolation beyond ob-served horizons, resulting into approximating the true conditional distribution π(x | xt−h:t). 
+
+2.2 Grey-Box Modelling: Beyond Forecasting 
+
+Within the problem description given ear-lier, grey-box modelling approaches have demonstrated capabilities in generating ro-bust dynamics and physics parameter inference [Takeishi and Kalousis, 2021, Wehenkel et al., 2023]. In contrast to purely data-driven forecasting, the grey-box setting assumes the availability of an approximate but useful physics model. This in-troduces an additional goal: not only generating consistent system dynamics, but also inferring under-lying physics parameters from observed trajectories. Making them well-suited for real-world scenarios where physics knowledge is incomplete but valu-able. In this framework, the physics model typically comes in the form of ordinary or partial differential equations (ODEs/PDEs): ∂x t 
+
+> ∂t
+
+= fp(xt, θ ), where 
+
+fp : X × Θ 7 → Rd is the known (but potentially incomplete) physics model and θ ∈ Θ ⊆ Rp represents some interpretable physics parameters, often inferred. Deep grey-box models learn the time evolution of the dynamic system by leveraging some physics model by augmenting it with some Deep Neural Network (DNN): ∂x t 
+
+> ∂t
+
+= fϕ(xt) ◦ fp(xt, θ ), where fϕ : X 7 → Rd
+
+is a DNN learned from data, and the operand ◦ the function composition operator (even if the additive form, fϕ(xt) + fp(xt, θ ), is prevalent in the literature, we adopt a more general notation here). For example, in an RLC circuit, the dynamics of the grey-box can Gurjeet Sangra Singh, Frantzeska Lavda, Giangiacomo Mercatali, Alexandros Kalousis 
+
+x0
+
+θ
+
+z
+
+x 
+
+> Physics model Legend:
+> Observed
+> Latent
+> Deterministic
+> Inferred
+
+Figure 1: Probabilistic graphical model of variational grey-box models. Shaded circles are observable vari-ables. Empty dashed circles represent latent variables, and dashed arrows denote (learned) inference depen-dencies. be described by: 
+
+∂∂t 
+
+It Ut
+
+ =  It 
+
+> C
+> 1
+> L
+
+(Vt − Ut)| {z }
+
+> fp
+
++ 0 − RL It
+
+| {z }
+
+> fϕ
+
+,
+
+where fp represents the known capacitor and inductor dynamics with θ = [ L, C ], and fϕ to be learned by the DNN, which captures the missing physics and the unknown resistance term. However, a critical challenge arises from this formula-tion: in real-world systems, only state trajectories are observed, making the usage of the physics model more challenging, where physics’ parameters are not paired. Estimating these parameters constitutes a challeng-ing inverse problem due to potential ill-posedness and data limitations. To address this, generative grey-box models (e.g. [Takeishi and Kalousis, 2021, Wehenkel et al., 2023, Verma et al., 2024] solutions) embed inference mechanism, such as encoders that ground latent spaces in physical principles. This struc-ture is illustrated in the probabilistic graphical model in Figure 1. Therefore, the goal in grey-box modelling extends beyond forecasting dynamics, but it also in-cludes inference of the underlying physics parameters from observed data, while validating their meaningful usage within the model. 
+
+2.3 Flow Matching 
+
+Simulation-free generative models such as Flow Matching variant algorithms [Lipman et al., 2023b, Albergo et al., 2023, Liu et al., 2023] have achieved great success in deep generative models. Given a known source distribution π0(x0) (typically a stan-dard Gaussian) and a target data distribution π1(x1), flow matching algorithms [Lipman et al., 2023b, Albergo et al., 2023, Liu et al., 2023] learn a time-dependent vector field vϕt : [0 , 1] × Rd → Rd that defines a continuous transformation of samples from 
+
+x0 ∼ π0 to x1 ∼ π1. This transformation is governed by the continuity equation: 
+
+∂p ϕt (xt)
+
+∂t = − div( pϕt (xt)vϕt (xt)) ,
+
+where pt is the marginal density at time t ∈ [0 , 1] . In-stead of solving this equation through expensive simu-lations of forward dynamics, Conditional Flow Match-ing (CFM) learns directly vϕt by regressing it to a tar-get velocity field by constructing a path of tractable conditional probabilities pt(xt|x1) defined along a lin-ear interpolation from source samples to the data-target samples distribution, xt = (1 − t)x0 + tx 1, with (x0, x 1) ∼ π(x0, x 1) and ˙xt = ddt xt = x1 − x0. The training loss is then: 
+
+LCFM (ϕ) = Ex0∼π0,x 1∼π1
+
+> t∼U (0 ,1)
+
+
+
+vϕt (xt) − ˙xt
+
+> 2
+
+
+
+, (1) yielding a simulation-free objective. While linear inter-polation is most common, Flow Matching algorithms also admits more general deterministic or stochastic paths, which influence the bias–variance tradeoffs of the estimator [Albergo et al., 2023, Liu et al., 2023]. 
+
+## 3 Method 
+
+We now present multiple building block choices and modelling aspects of our algorithm, yielding to a gen-erative model specifically designed for solving dynam-ical systems, which integrates physics priors in the form of physics differential equations fully trained in a simulation-free manner, and physics structured latent variables modelled by a variational distribution. The latter models physics latent variables and accounts for missing stochasticity. We denote this method as Grey-Box Dynamic Matching (VGB-DM), as our goal is to learn dynamical systems by integrating physics-based components and grounding our generative model on the physics. 
+
+3.1 Variational Grey-Box Dynamics Matching Integrating Incomplete Physics. Contrary to Conditional Flow Matching, which addresses genera-tive tasks by mapping samples from noise to data sam-ples, our setting focuses on dynamical systems where data naturally comes as time-series trajectories. We exploit the structure of the trajectory to optimize a target velocity vector field by building it on consec-utive states of the trajectory, in the spirit of Trajec-tory Flow Matching (TFM) [Zhang et al., 2024], but extend it to incorporate incomplete physics fp, which encode the underlying dynamics of the system. Variational Grey-Box Dynamics Matching Training          
+
+> xk−h
+> ...
+> xkxk+1
+> Trajectory segment
+> Encoder
+> qψ(z, θ |xk−h:k)
+> zθ
+> qψ(z|x)qψ(θ|x, z )
+> Interpolant
+> xt= (1 −t)xk+tx k+1
+> Physics Model
+> fp(xt, θ )
+> Learnable Field
+> vϕt(xt|z, θ )
+
+# ◦                          
+
+> Target
+> ˙xt=xk+1 −xk
+> Loss
+> ∥vϕt◦fp−˙xt∥2
+> +KL [qψ∥p]
+> Prior p(θ, z )KL term
+> Forecast at Inference
+> xk−h
+> ...
+> xk
+> History segment
+> Encoder
+> qψ(z, θ |xk−h:k)
+> zθ
+> qψ(z|x)qψ(θ|x, z )
+> xk
+> ODE Solver
+> dx dt =vϕt(x|z, θ )◦fp(x, θ )
+> xk+1
+> ...
+> xT
+> integrate
+> Generated trajectory
+> Key: Grey-box = incomplete physics fp+ learned dynamics vϕt— Latents: z(stochasticity), θ(physics parameters)
+
+Figure 2: Overview of the Variational Grey-Box Dynamics Matching (VGB-DM) framework. More formally, let π(x) denote the data dis-tribution over trajectories xi = (xi
+
+> 0
+
+, x i
+
+> 1
+
+, . . . , x iT ), and by xk−h:k+1 ∼ π(·| x) the distribution over (xk−h, . . . , x k, x k+1 ) pairs of consecutive points in-duced by the trajectory with k ∈ U{ h, . . . , T − 1}, and 
+
+T > h ensures sufficient history. The objective op-timizes vϕt by regressing a target velocity vector field ˙xt constructed on paired consecutive points, explic-itly: where the target velocity field is constructed via linear interpolation in normalized time between cur-rent and next points: xt = (1 − t)xk + tx k+1 , thus ˙xt = ddt xt = xk+1 − xk for t ∈ [0 , 1]. Incorporating the physics model fp into the model and objective yields the following GB-DM loss: 
+
+LGB-DM (ϕ) = 
+
+E x∼π(x)
+
+> xk−h:k+1 ∼π(·| x)
+> t∼U (0 ,1)
+
+(vϕt (xt | xk−h:k) ◦ fp(xt, ·)) − ˙xt
+
+> 2
+
+,
+
+(2) where xt describes the interpolant built between data points, and ˙ xt is the associated time derivative 2. The physics model fp is combined with a learnable vector field vϕt , representing the missing dynamics fϕ, effec-tively learning to complete the physics dynamics by aligning the combined field with the target velocity constructed by the data. 
+
+Structured Variational Inference. A key chal-lenge in incorporating the physics model fp(xt, θ ) is that the physics parameters θ ∈ Θ ⊆ Rp are not pro-vided in the data. Furthermore, purely determinis-tic physics models often fail to capture stochasticity 
+
+> 2
+
+We use the generic term of interpolant, which can be linear and non-linear. An example of the latter one is later introduced for solving II order ODE/PDEs 
+
+or multimodal-behaviour that exists in many dynamic systems. This multi-modality manifests in a veloc-ity vector field as multiple plausible flow directions at a single point in state-space. This is a common phenomenon in grey box modelling where unknown physics can lead to divergent trajectories from identi-cal initial conditions. To address these, we introduce a structured latent vari-able approach. We introduce a latent variable θ to represent the physics parameters and a second latent variable z ∈ Z ⊆ Rh to capture the missing stochastic-ity and multi-modal behaviour in the velocity vector field. We model the distribution of the vector field varia-tionally by introducing a variational posterior condi-tioned on the trajectory segment qψ (z, θ | xk−h:k). A probabilistic schema of this latent variable structure is provided in Figure 1. log pϕt ( ˙ xt | xk) = log 
+
+Z
+
+pϕt ( ˙ xt, θ, z | xk) dθ dz 
+
+= log 
+
+Z
+
+qψ (z, θ | xk−h:k) pϕt ( ˙ xt, θ, z | xk)
+
+qψ (z, θ | xk−h:k) dθ dz 
+
+(3) We assume a structured factorization for the varia-tional posterior, where the latent variable that cor-responds to the physical parameters depends on the stochasticity latent variable: qψ (z, θ | xk−h:k) = qψ (θ |
+
+xk−h:k, z )qψ (z | xk−h:k). Applying Jensen’s Inequality to equation 3, we derive a variational dynamics match-ing objective similarly to [Guo and Schwing, 2025]: log pϕt ( ˙ xt | xk) ≥ Eqψ (z,θ |xk−h:k )[log pϕt ( ˙ xt | θ, z, x k)] 
+
+− Eqψ (z|xk−h:k )KL [ qψ (θ | xk−h:k, z )∥p(θ)] 
+
+− KL [ qψ (z | xk−h:k)∥p(z)] , (4) Gurjeet Sangra Singh, Frantzeska Lavda, Giangiacomo Mercatali, Alexandros Kalousis 
+
+where p(θ) is the physics informed prior and p(z) = 
+
+N (0, I). Assuming a Gaussian likelihood for the ve-locity matching (corresponding to the squared error), [Guo and Schwing, 2025], our objective becomes: 
+
+LVI VGB-DM (ϕ, ψ ) = Eπ(x),π (·| x)
+
+h
+
+− Eqψ (z,θ |xk−h:k )
+
+> t∼U (0 ,1)
+
+(vϕt (xt | θ, z ) ◦ fp(xt, θ )) − ˙xt
+
+> 2
+
+−KL [ qψ (θ, z | xk−h:k)∥p(θ, z )] 
+
+i
+
+(5) In Appendix C, we provide the derivation of the ELBO and a proof that the learned distribution preserves the marginal data distribution. Practically, we model the approximate posterior by an encoder such that 
+
+qψ (z|xk−h:k) = N  z; μψ (xk−h:k), σ ψ (xk−h:k) and 
+
+qψ (θ|xk−h:k, z ) = N  θ; μ′ 
+
+> ψ
+
+(xk−h:k, z ), σ ′ 
+
+> ψ
+
+(xk−h:k, z ),enabling analytic computation of the KL-divergence in equation 5. We illustrate a schematic view of training and inference of our model in Figure 2. 
+
+Second-Order Dynamics. Physics systems can also include second-order dynamics, described by equations in the form of ∂2xt 
+
+> ∂t 2
+
+= fp(xt, θ ), such as those governing pendulums, wave equations, and sim-ilar systems. To integrate these physics systems, we extend our objective equation 5 to this setting, by in-troducing a higher order, a target acceleration vec-tor field. Specifically, we regress both velocity and acceleration vector field by a non-linear interpolation 
+
+I(xt; xk−1, x k, x k+1 ) using three consecutive trajec-tory points, retrieving its velocity and acceleration vec-tor fields: ∂I 
+
+> dt
+
+= ˙ xt and ∂2I 
+
+> ∂t 2
+
+= ¨ xt. The learned dynam-ics are then modelled as the paired system of velocity and acceleration fields 
+
+uϕt (xt, ˙xt | θ, z ) := 
+
+ vϕt (xt | θ, z )
+
+aϕt (xt, ˙xt | θ, z ) ◦ fp(xt, θ )
+
+
+
+.
+
+We modify the vector field matching term in equation 5 to obtain the second-order objective: 
+
+E(z,θ )∼qψ (z,θ |xk−h:k )
+
+> t∼U (0 ,1)
+
+h
+
+∥vϕt (xt | θ, z ) − ˙xt∥2
+
++ α ∥aϕt (xt, ˙xt | θ, z ) ◦ fp(xt, θ ) − ¨xt∥2i
+
+, (6) where α is a hyper-parameter that balances the op-timization of the acceleration term to prevent exces-sive smoothing of the trajectory. In practice, we im-plement the non-linear interpolation using Lagrange interpolation. 3 Additionally, the velocity and accel-eration vector fields uϕt share a backbone network, 
+
+> 3Other interpolation methods, such as Fourier interpo-lation or spline-based approaches, could be explored, but they are beyond the scope of this work.
+
+with the velocity and acceleration modelled as two dis-tinct heads of the network. This architecture leverages shared parameters to ensure consistency between the learned velocity and acceleration fields. We implement this method when solving the Pendulum system as re-ported in our experiment, setting α = 0 .5. 
+
+## 4 Related works 
+
+We position our Variational Grey-Box Dynamics Matching (VGB-DM) framework within the landscape of learning dynamical systems, highlighting the distin-guished features of our algorithm compared to existing data-driven and grey-box approaches. Fully data-driven approaches such as Neural ODEs [Chen et al., 2018] and Flow Matching-based [Lipman et al., 2023a, Albergo et al., 2023, Liu et al., 2023] including adaptation for forecasting time-series as in [Zhang et al., 2024] demonstrate modelling complex distributions using data, but oper-ate as black boxes. However, these solutions can face limitation when training data are scarce, struggles when extrapolating beyond observed regimes, and offer limited interpretability. By contrast, VGB-DM incorporates incomplete physics models, enabling efficient learning even with limited data while main-taining interpretability through explicit physical parameters that can be inferred. Moreover they enable further mechanistic inspection of the physics-informed and the learnable components, as studied by [Takeishi and Kalousis, 2023, Singh et al., 2025] analysing physics regularizers. Recent grey-box modelling approaches build on Neural ODEs by combining physics-based models with data-driven neural networks, achieving strong results in parameter inference and dynamics forecast-ing [Yin et al., 2021, Takeishi and Kalousis, 2021, Mehta et al., 2020, Qian et al., 2021, Wehenkel et al., 2023, Verma et al., 2024]. However, these simulation-based methods require numerical ODE solvers during training along with physics model dynamics, presenting scaling difficulties for high-dimensional settings due to gradient computation through ODE solvers and parameters’ update, par-ticularly for long time horizons or complex dynamics leading to training difficulties and numerical stabil-ity [Chen et al., 2018, Takeishi and Kalousis, 2021, Wehenkel et al., 2023, Yin et al., 2021]. VGB-DM bypasses this paradigm by adopting a simulation-free method, avoiding these computational bottlenecks and stability issues, enabling more scalable and robust grey-box modelling for high-dimensional systems. Notably, the work on Variational Rectified Flow Matching [Guo and Schwing, 2025] identifies a key Variational Grey-Box Dynamics Matching 0 10 20 30 40 50 60                   
+
+> Time (minutes)
+> 3e-3
+> 1e-2
+> 6e-2
+> Forecast Log MSE
+> Pendulum Model Optimization Convergence
+> Phys-VAE
+> BB-NODE
+> Ours
+> VBB-DM 0246810 12
+> Time (minutes)
+> 10 1
+> 2 × 10 2
+> 3 × 10 2
+> 4 × 10 2
+> 6 × 10 2
+> Forecast Log MSE
+> RLC Model Optimization Convergence
+> Phys-VAE
+> BB-NODE
+> Ours
+> VBB-DM 246810 12
+> Time (minutes)
+> 10 2
+> 10 1
+> Forecast Log MSE
+> React. Diff. Model Optimization Convergence
+> Phys-VAE
+> BB-NODE
+> Ours
+> VBB-DM
+
+Figure 3: Optimization convergence analysis. Forecast logMSE vs. training time (minutes) for the Pendu-lum (left), RLC (center), and Reaction-Diffusion (right) tasks using the largest training dataset size. VGB-DM demonstrates significantly faster convergence and achieves lower final error compared to simulation-based meth-ods (PhysVAE, BB-NODE), while also exhibiting better stability than the black-box dynamics matching baseline (VBB-DM) limitation of deterministic flow matching methods: they struggle when modelling multi-modal velocity fields because the standard flow matching objective leads to averaging over multiple target directions of the velocity vector field. To overcome this issue, they introduce a variational posterior qψ (z|xt, t ) over latent variables, providing the necessary flexibility to model multimodal velocity distributions. However, VGB-DM introduces a structured variational posterior tailored for grey-box modelling and explicitly separates latent variables into two components: one capturing stochas-ticity and multi-modality in the dynamics, and an-other inferring interpretable physical parameters. This structured approach enhances both the expressiveness of the learned dynamics and the interpretability of the inferred parameters. Finally, to integrate second-order dynamics systems, we extend our simulation-free method using non-linear interpolants (e.g Lagrange Interpolation). This en-ables direct regression of both velocity and accelera-tion fields, addressing a broader class of physical sys-tems than existing flow matching approaches. 
+
+## 5 Experiments 
+
+We conduct experiments on both synthetic datasets derived from differential equations (PDE/ODEs) (Sec-tion 5.1) and a real-world weather modelling task (Sec-tion 5.2). All experiments are repeated with multiple random seeds to ensure consistency and evaluate the stability of the compared methods 4.
+
+5.1 Differential-Equation Datasets Experimental setup. We evaluate our method on three canonical dynamical systems governed by 
+
+> 4
+
+All our models were trained on a single RTX 3060 (12 GB), while ClimODE was trained on an RTX A5000 and required at least 25 GB. 
+
+differential equations: an RLC circuit, a reac-tion–diffusion (RD) system, a damped pendulum, and a chaotic Lorenz Attractor system. In all experi-ments, grey-box models have access only to incom-plete physics equations, while the dataset consists of state trajectories generated from the complete govern-ing equations, following the experimental protocol of [Takeishi and Kalousis, 2021, Wehenkel et al., 2023]. Details of dataset construction and model architec-tures (encoder and vector field architectures) are provided in Appendix A.1. For each experi-ment, we followed the same networks architecture design proposed in previous established benchmarks of grey-box models, also adopting additional hyper-parameters for PhysVAE and other grey-box models ( [Takeishi and Kalousis, 2021, Wehenkel et al., 2023, Yin et al., 2021]. 
+
+Baselines. For comparison, we bench-mark against four baselines: PhysVAE [Takeishi and Kalousis, 2021], a state-of-the-art grey-box method, and two widely adopted black-box approaches where physics is not included in the model nor in the objective: Neural ODE for time series [Chen et al., 2018] (BB-NODE), the Variational Rectified Flow Matching [Guo and Schwing, 2025] adapted for time series (VBB-DM) and Trajectory Flow Matching (TFM) [Zhang et al., 2024] All models are compared with equivalent network architecture complexity to ensure fair evaluation among them. 
+
+Forecasting performance. Table 1 presents mean squared error (MSE) results for time-series forecast-ing, where each model was trained on the highest number of sample size for each task. To assess ex-trapolation capabilities and generalization beyond the training regime, forecasts were tested on horizons four or three times longer than those encountered during training. Across all three datasets, our method consis-tently achieves lower errors than all baselines, demon-Gurjeet Sangra Singh, Frantzeska Lavda, Giangiacomo Mercatali, Alexandros Kalousis Ours VBB-DM TFM BB-NODE PhysVAE               
+
+> 0.0
+> 0.2
+> 0.4
+> 0.6
+> 0.8
+> 1.0
+> 1.2
+> MSE
+> ×10 2Pendulum
+> Sample Size
+> 125
+> 250
+> 1000
+> Ours VBB-DM TFM BB-NODE PhysVAE
+> 0.0
+> 0.5
+> 1.0
+> 1.5
+> 2.0
+> 2.5
+> ×10 2Reaction Diffusion
+> Sample Size
+> 10
+> 25
+> 50
+> Ours VBB-DM TFM BB-NODE PhysVAE
+> 0
+> 1
+> 2
+> 3
+> 4
+> 5
+> ×10 2RLC
+> Sample Size
+> 25
+> 50
+> 100
+
+Figure 4: Sample efficiency analysis. Forecast MSE across varying training sample sized for for Pendulum, RLC, and Reaction-Diffusion tasks. Grey-box methods (Ours and PhysVAE) consistently outperform black-box approaches, especially in low-data regimes. Our method demonstrates more robust performance compared to all baselines. strating superior predictive accuracy, and highlight-ing the advantage of the physics incomplete model in imparting a beneficial and effective inductive bias for learning the dynamics. In addition to the trajectory forecasts, Figure 9 of Appendix A.2 also reports the physics parameter estimation errors of the grey-box models, as part of our interpretability analysis. 
+
+Convergence behaviour. In Figure 3, we show the training convergence of each method on the test set across three training seeds. Our approach converges rapidly and attains lower final error than competing methods. Additionally, by leveraging a simulation-free approach, it ensures stable and consistent optimiza-tion compared to the simulation-based methods (Phys-VAE, BB-NODE), avoiding backpropagation through the solver, which can cause gradient instability. 
+
+Sample efficiency. Grey-Box approaches are of-ten credited in providing robust performance with higher sample efficiency [Wehenkel et al., 2023, Yin et al., 2021, Takeishi and Kalousis, 2021, Takeishi and Kalousis, 2023]. We test the meth-ods over 3 sample sizes, from 10 to 1000, varying on the dataset. The idea is to show robustness on sample size. In Figure 4, we assess the performance of each model across different training sample size. Our experiments outline that both grey-box models 
+
+Model Pendul. (×10 −2)RLC (×10 −1)RD (×10 −3)Lorenz (×10 −1)PhysVAE 0.417 ± 0.001 0 .29 ± 0.01 7 .4 ± 1.3 13 .12 ± 1.27 VBB-DM 1.058 ± 0.004 0 .38 ± 0.03 8 .0 ± 1.1 9 .91 ± 1.22 BB-NODE 0 .452 ± 0.001 0 .39 ± 0.04 7 .5 ± 0.5 22 .15 ± 7.84 TFM 0.348 ± 0.001 0 .26 ± 0.01 8 .5 ± 2.8 9 .85 ± 1.32 Ours 0.283 ± 0.001 0.23 ± 0.01 7.1 ± 0.9 4.68 ± 0.16 
+
+Table 1: Forecasting performance comparison (MSE). VGB-DM consistently achieves the lowers er-ror across all tasks. (ours and Phys-VAE) outperform their black-box counterparts, achieving consistently lower error rates with small variance. Notably, our method shows further stability and low variance yielding higher or comparable performance to all other approaches. In addition, We note a substantial stability aided by our method, which can be seen in lower standard deviation across multiple sample sizes, while the black-box method displays higher variance, especially on small sample sizes. 
+
+5.2 Weather modelling 
+
+Physics-based formulations can provide valuable in-ductive biases for real-world datasets. In particu-lar, large-scale weather dynamics can be modelled using the Advection equation, as demonstrated by [Verma et al., 2024]. To assess the effectiveness of our method, we conduct experiments on the ERA5 re-analysis dataset for medium-range weather forecast-ing. The dataset includes five key meteorological vari-ables: (i) geopotential, (ii) ground temperature, (iii) 
+
+atmospheric temperature, (iv) and (v) the two ground-level wind components (u10 and v10). 
+
+Experimental Setup. We adopt the prepro-cessing pipeline and train/test splits introduced in ClimODE [Verma et al., 2024], and evaluate perfor-mance at two temporal resolutions: hourly and monthly. To ensure a fair comparison, we trained our model and ClimODE under identical conditions, us-ing the same maximum number of optimization steps (2000) and a fixed time budget of six hours. Eval-uation is based on two standard metrics: latitude-weighted Root Mean Squared Error (RMSE) and the Anomaly Correlation Coefficient (ACC). Our goal is to provide a simulation-free alternative to physics-informed neural ODEs; hence, we restrict our compar-ison to ClimODE. We also include a naive persistence baseline (last observation) as a reference point to con-Variational Grey-Box Dynamics Matching 
+
+Figure 5: Residual maps for weather forecasting Visualization of absolute error maps between ground truth and predicted fields for five meteorological variables (Ours vs ClimODE) 
+
+Figure 6: Forecasting performance over 42 hours. Latitude-weighted RMSE (top, lower is better) and ACC (bottom, higher is better) for ERA5 dataset. Our method performs better or on par than ClimODE. textualize the results. Additional implementation and training details are provided in Appendix B. 
+
+Residual maps for hourly resolution. Figure 5 visualizes the absolute error maps and per-feature RMSE for a representative test sample. Across all five variables, our method yields lighter residual structures compared to ClimODE, particularly over oceanic re-gions. This indicates systematically reduced errors, which is further corroborated by consistently lower RMSE values in quantitative evaluations. 
+
+Results for hourly resolution. Figure 6 presents RMSE and ACC values over a 42-hour forecast hori-zon. Our approach performs on par or better than ClimODE, achieving higher ACC and lower RMSE across the time steps. 
+
+Results for monthly resolution. Figure 7 extends the evaluation to a 5-months forecast horizon. The advantage becomes more pronounced as the forecast horizon extends, indicating that our method retains stronger temporal stability compared to the Neural ODE–based formulations. This finding aligns with our earlier experiments on synthetic ODE datasets, where our method also demonstrated greater robust-ness over extended prediction horizons. This robust-ness at longer timescales underscores the ability of our method to mitigate compounding errors, a challenge that traditional Neural ODE models struggle to over-come. 
+
+## 6 Conclusion 
+
+We introduced Variational Grey-Box Dynamics Matching (VGB-DM), a novel framework that com-bines the interpretability of physics-based models with the efficiency of simulation-free generative learn-ing. By adopting a simulation-free training paradigm, VGB-DM bypasses computational and memory bottle-necks and stability issues inherent in traditional solver-based grey-box methods. Our structured variational approach effectively disentangles physical parameters from unknown stochasticity, enabling robust dynamics Gurjeet Sangra Singh, Frantzeska Lavda, Giangiacomo Mercatali, Alexandros Kalousis 
+
+Figure 7: Long-term forecasting performance over 5 months. Latitude-weighted RMSE for ERA5 dataset over an extended period. VGB-DM outperforms ClimODE mitigating computing errors over long horizons, where performance gap is increased at longer forecast horizons. learning and interpretable parameter inference. Em-pirical evaluations on various ODE/PDE systems and a real-world weather forecasting task demonstrate that VGB-DM achieves state-of-the-art forecasting perfor-mance and faster convergence than existing grey-box and black-box baselines, crucially, while preserving the interpretability of the underlying physics model. 
+
+Limitations and Future Work. While VGB-DM offers significant advantages, it relies on several as-sumptions. First, the framework assumes that the underlying dynamics and the physics model are dif-ferentiable and relatively smooth. The performance on highly stiff or discontinuous physical systems re-mains an area for future investigation. However, the simulation-free nature of VGB-DM avoids gradients instability issues often encountered when backpropa-gating through solvers applied to stiff systems. Beyond these considerations, an important direction for future work is transfer across related physical systems. In similar domain (e.g., from a single to a double pen-dulum), the encoder can be reused as a pre-trained feature extractor, with only the output layers adapted if physical parameters are different. In this setting, a pre-trained VGB-DM model provides a strong warm start and can be fine-tuned to capture additional latent components arising from richer dynamics, enabling ef-ficient knowledge tra2nsfer across families of systems. 
+
+Acknowledgements 
+
+We acknowledge the financial support of the Swiss Na-tional Science Foundation (SNF). G. Mercatali has been supported by SNF project IZLJZ2 214000, In-terpretable Condition Monitoring, F. Lavda has been supported by SNF 200021 207428, Learning genera-tive models for molecules, G. Sigh SNF project CR-SII5 209434, Migrate, A Multidisciplinary and Inte-GRated Approach for geoThermal Exploration. The computations were performed at the University of Geneva on ”Baobab” and ”Yggdrasil” HPC clusters. 
+
+References 
+
+[Albergo et al., 2023] Albergo, M. S., Boffi, N. M., and Vanden-Eijnden, E. (2023). Stochastic inter-polants: A unifying framework for flows and diffu-sions. [Chen et al., 2018] Chen, R. T. Q., Rubanova, Y., Bettencourt, J., and Duvenaud, D. (2018). Neural ordinary differential equations. Advances in Neural Information Processing Systems .[Guo and Schwing, 2025] Guo, P. and Schwing, A. G. (2025). Variational rectified flow matching. [Kingma and Ba, 2014] Kingma, D. P. and Ba, J. (2014). Adam: A method for stochastic optimiza-tion. CoRR , abs/1412.6980. [Lipman et al., 2023a] Lipman, Y., Chen, R. T. Q., Ben-Hamu, H., Nickel, M., and Le, M. (2023a). Flow matching for generative modeling. [Lipman et al., 2023b] Lipman, Y., Chen, R. T. Q., Ben-Hamu, H., Nickel, M., and Le, M. (2023b). Flow matching for generative modeling. [Liu et al., 2023] Liu, X., Gong, C., and qiang liu (2023). Flow straight and fast: Learning to gen-erate and transfer data with rectified flow. In The Eleventh International Conference on Learning Rep-resentations .[Loshchilov and Hutter, 2017] Loshchilov, I. and Hut-ter, F. (2017). Decoupled weight decay regulariza-tion. In International Conference on Learning Rep-resentations .[Mehta et al., 2020] Mehta, V., Char, I., Neiswanger, W., Chung, Y., Nelson, A. O., Boyer, M. D., Kole-men, E., and Schneider, J. G. (2020). Neural dy-namical systems: Balancing structure and flexibility in physical prediction. 2021 60th IEEE Conference on Decision and Control (CDC) , pages 3735–3742. Variational Grey-Box Dynamics Matching 
+
+[Qian et al., 2021] Qian, Z., Zame, W. R., Fleuren, L. M., Elbers, P., and van der Schaar, M. (2021). Integrating expert odes into neural odes: pharma-cology and disease progression. In Proceedings of the 35th International Conference on Neural Infor-mation Processing Systems , NIPS ’21, Red Hook, NY, USA. Curran Associates Inc. [Rasp et al., 2020] Rasp, S., Dueben, P. D., Scher, S., Weyn, J. A., Mouatadid, S., and Thuerey, N. (2020). Weatherbench: a benchmark data set for data-driven weather forecasting. Journal of Advances in Modeling Earth Systems , 12(11):e2020MS002203. [Singh et al., 2025] Singh, G. S., Falkiewicz, M., and Kalousis, A. (2025). Hybrid generative modeling for incomplete physics: Deep grey-box meets optimal transport. In ICLR 2025 Workshop: XAI4Science: From Understanding Model Behavior to Discovering New Scientific Knowledge .[Takeishi and Kalousis, 2021] Takeishi, N. and Kalousis, A. (2021). Physics-integrated variational autoencoders for robust and interpretable gen-erative modeling. In Ranzato, M., Beygelzimer, A., Dauphin, Y., Liang, P., and Vaughan, J. W., editors, Advances in Neural Information Processing Systems , volume 34, pages 14809–14821. Curran Associates, Inc. [Takeishi and Kalousis, 2023] Takeishi, N. and Kalousis, A. (2023). Deep grey-box modeling with adaptive data-driven models toward trustworthy estimation of theory-driven models. In Ruiz, F., Dy, J., and van de Meent, J.-W., editors, Pro-ceedings of The 26th International Conference on Artificial Intelligence and Statistics , volume 206 of 
+
+Proceedings of Machine Learning Research , pages 4089–4100. PMLR. [Verma et al., 2024] Verma, Y., Heinonen, M., and Garg, V. (2024). ClimODE: Climate and weather forecasting with physics-informed neural ODEs. In 
+
+The Twelfth International Conference on Learning Representations .[Wehenkel et al., 2023] Wehenkel, A., Behrmann, J., Hsu, H., Sapiro, G., Louppe, G., and Jacobsen, J.-H. (2023). Robust hybrid learning with expert aug-mentation. Transactions on Machine Learning Re-search .[Yin et al., 2021] Yin, Y., Guen, V. L., Dona, J., de B´ ezenac, E., Ayed, I., Thome, N., and Galli-nari, P. (2021). Augmenting physical models with deep networks for complex dynamics forecasting*. 
+
+Journal of Statistical Mechanics: Theory and Ex-periment , 2021(12):124012. [Zhang et al., 2024] Zhang, X., Pu, Y., Kawamura, Y., Loza, A., Bengio, Y., Shung, D. L., and Tong, A. (2024). Trajectory flow matching with applica-tions to clinical time series modelling. In Globerson, A., Mackey, L., Belgrave, D., Fan, A., Paquet, U., Tomczak, J., and Zhang, C., editors, Advances in Neural Information Processing Systems , volume 37, pages 107198–107224. Curran Associates, Inc. 
+
+## Checklist 
+
+1. For all models and algorithms presented, check if you include: (a) A clear description of the mathematical set-ting, assumptions, algorithm, and/or model. [Yes] See Section 2.1 and 3. (b) An analysis of the properties and complexity (time, space, sample size) of any algorithm. [Yes] See Section 3 (c) (Optional) Anonymized source code, with specification of all dependencies, including external libraries. [Yes] Will release upon ac-ceptance. 2. For any theoretical claim, check if you include: (a) Statements of the full set of assumptions of all theoretical results. [Yes] See Sections 2 and 3 (b) Complete proofs of all theoretical results. [Yes] Appendix C. (c) Clear explanations of any assumptions. [Yes] See Section 2.1 3. For all figures and tables that present empirical results, check if you include: (a) The code, data, and instructions needed to reproduce the main experimental results (ei-ther in the supplemental material or as a URL). [Yes] We report in Appendix A for ode-datasets and in Appendix B. (b) All the training details (e.g., data splits, hy-perparameters, how they were chosen). [Yes] Appendix 5.1 for ode-datasets and in Ap-pendix B. (c) A clear definition of the specific measure or statistics and error bars (e.g., with respect to the random seed after running experiments multiple times). [Yes] In Section 5 (d) A description of the computing infrastructure used. (e.g., type of GPUs, internal cluster, or cloud provider). [Yes] In Section 5. 4. If you are using existing assets (e.g., code, data, models) or curating/releasing new assets, check if you include: Gurjeet Sangra Singh, Frantzeska Lavda, Giangiacomo Mercatali, Alexandros Kalousis 
+
+(a) Citations of the creator If your work uses ex-isting assets. [Yes] (b) The license information of the assets, if ap-plicable. [Yes] (c) New assets either in the supplemental mate-rial or as a URL, if applicable. [Yes] (d) Information about consent from data providers/curators. [Not Applicable] Not used. (e) Discussion of sensible content if applicable, e.g., personally identifiable information or of-fensive content. [Not Applicable] Not used. 5. If you used crowdsourcing or conducted research with human subjects, check if you include: (a) The full text of instructions given to partici-pants and screenshots. [Not Applicable] Not used. (b) Descriptions of potential participant risks, with links to Institutional Review Board (IRB) approvals if applicable. [Not Appli-cable] Not used. (c) The estimated hourly wage paid to partic-ipants and the total amount spent on par-ticipant compensation. [Not Applicable] Not used. Supplementary Materials Training          
+
+> xk−h
+> ...
+> xkxk+1
+> Trajectory segment
+> Encoder
+> qψ(z, θ |xk−h:k)
+> zθ
+> qψ(z|x)qψ(θ|x, z )
+> Interpolant
+> xt= (1 −t)xk+tx k+1
+> Physics Model
+> fp(xt, θ )
+> Learnable Field
+> vϕt(xt|z, θ )
+
+# ◦                          
+
+> Target
+> ˙xt=xk+1 −xk
+> Loss
+> ∥vϕt◦fp−˙xt∥2
+> +KL [qψ∥p]
+> Prior p(θ, z )KL term
+> Forecast at Inference
+> xk−h
+> ...
+> xk
+> History segment
+> Encoder
+> qψ(z, θ |xk−h:k)
+> zθ
+> qψ(z|x)qψ(θ|x, z )
+> xk
+> ODE Solver
+> dx dt =vϕt(x|z, θ )◦fp(x, θ )
+> xk+1
+> ...
+> xT
+> integrate
+> Generated trajectory
+> Key: Grey-box = incomplete physics fp+ learned dynamics vϕt— Latents: z(stochasticity), θ(physics parameters)
+
+Figure 8: Overview of the Variational Grey-Box Dynamics Matching (VGB-DM) framework. 
+
+Method Overview. Figure 8 illustrates the proposed Variational Grey-Box Dynamics Matching (VGB-DM) framework. During training, the model is simulation-free : it does not require integrating the dynamics to compute gradients. Instead, the physics-based component fp is directly combined with the learn-able vector field vϕt . The training objective is optimized without numerical simulations, avoiding memory and computation bottlenecks of backpropagation through the solver and optimization instability. The model includes an encoder that maps a segment of the observed trajectory into two structured latent variables: (i) the stochastic latent variable z, and (ii) the physics-related variable θ. These latents condition both the physics model and the learnable field, allowing the system to infer underlying physical parameters and represent multimodal velocity vector fields. At inference (forecasting) time, the model predicts future trajectories by integrating the combined dynamics of the physics model and the learnt component. Multiple forecast realisations can be generated by sampling different latents from the learnt posterior. 
+
+## A Differential-Equation Benchmarks 
+
+The synthetic dataset is based on Differential Equation, where initial conditions and parameters are stochas-tic, following the work of [Takeishi and Kalousis, 2021, Wehenkel et al., 2023]. In the next subsections we report each experiment describing data generation and model architecture and hyperparameters used. For each experiment, we followed the same networks architecture design proposed by [Takeishi and Kalousis, 2021, Wehenkel et al., 2023]. We compare our method with its black-box versions using the simulation-based meth-ods (BB-NODE) and the simulation-free methods (VBB-DM), where in the latter physics is not included in the model. In addition to our grey-box model we also compared its performance with the Phys-VAE [Takeishi and Kalousis, 2021] used also by [Wehenkel et al., 2023]. We follow for each experiment all the hy-perparameters used by the models and regularisers as listed in their work. 
+
+A.1 Experiments and implementations RLC. The RLC series circuit, consisting of a resistor (R), capacitor (C), and inductor (L), models a broad class of transfer functions. The system state at time t is defined as xt = [ It, U t]⊤, where Ut denotes the capacitor Gurjeet Sangra Singh, Frantzeska Lavda, Giangiacomo Mercatali, Alexandros Kalousis 
+
+voltage and It the circuit current. The state evolution follows: 
+
+∂∂t 
+
+It Ut
+
+ =  It 
+
+> C
+> 1
+> L
+
+(Vt − Ut)| {z }
+
+> fp
+
++ 0 − RL It
+
+| {z }
+
+> missing physics
+
+. (7) The dataset is generated by sampling L and C uniformly from [1 , 3] × [0 .5, 1.5], and R ∼ U (1 , 3). The input voltage Vt is a fixed, known signal. Initial conditions are given by U0 ∼ N (0 , 1) and I0 = 0. The incomplete physics model fp in the grey-box setup includes only the first term of the full equation. Each trajectory is simulated from t0 = 0 to tmax = 20 seconds with a time resolution of ∆ t = 0 .1 s, yielding 200 time points per trajectory. The training, validation, and test sets contain 1000, 100, and 100 samples, respectively. During training, trajectories are divided into segments (history windows) of size h = 25. We also evaluate model performance under different training sample sizes, as reported in Figure 4. For this experiment, we adopt the same network architecture as in [Wehenkel et al., 2023]. Optimization is performed using AdamW [Loshchilov and Hutter, 2017, Kingma and Ba, 2014] with a learning rate of 0.001, a cosine annealing scheduler, and a weight decay of 5 × 10 −7.
+
+Reaction diffusion In this experiment, we address a high-dimensional problem, where x ∈ R2×32 ×32 ×τ ,governed by a two-dimensional reaction–diffusion PDE of the FitzHugh–Nagumo type: 
+
+du dt = ∆ u + u − u3 − v
+
+| {z }
+
+> fp
+
+−k, dv dt = b∆v + u − v
+
+| {z }
+
+> fp
+
+. (8) Here, ∆ denotes the Laplace operator, while b, and k are system parameters, and u(0) , v (0) define the initial conditions. Trajectory samples are generated by drawing both the initial conditions and parameters from uni-form distributions, following the setup of [Wehenkel et al., 2023]. The incomplete physics model fp omits the parameter k. Each simulation produces a state space representation [ u(t), v (t)] ∈ R2×32 ×32 .We trained the models on three datasets containing 50 , 25 and 10 trajectories, respectively. Each trajectory spans a time interval [ t0, t max ] = [0 .0, 1.0] and is divided into segments (history windows) of size h = 5. The test set consists of 250 trajectories with a longer time horizon of length 50 ( t0 = 0 .0, t max = 5 .0, ∆t = 0 .1), used to evaluate extrapolation and generalization performance. Our model adopts the same network architecture as in [Wehenkel et al., 2023]. Optimization is performed using AdamW with a learning rate of 0.001, a cosine annealing scheduler, and a weight decay of 5 × 10 −7.
+
+Damped Pendulum We generated the dataset by solving a non-linear damped pendulum: d2x(t)dt2 + ω2 sin x(t)
+
+| {z }
+
+> fp
+
++ ξ dx (t)
+
+dt | {z } 
+
+> missing physics
+
+= 0 , (9) where the initial pendulum angle is x(0) ∼ U (−1.57 , 1.57), the angular frequency ω ∼ U (0 .785 , 3.14), and the damping coefficient ξ ∼ U (0 .6, 1.5). The incomplete physics model fp corresponds to a frictionless pendulum. We train the model on 1000 training, 250 validation, and 100 test instances, each with trajectory length 200 (t0 = 0 .0, t max = 20 , ∆t = 0 .1), split into segment (history windows) of size h = 25. In this experiment, VG-DM regresses 2D vector fields — velocity and acceleration — constructed via Lagrange interpolation using three consecutive points from each sampled trajectory segment, as described in equation 6. The encoder architecture is identical to that of Phys-VAE. The learnt 2D vector field, [ vϕt , a ϕt ], is modelled using a shared MLP with two hidden layers of size [64, 64], followed by two distinct head networks (each with layers [64, 64]) corresponding to the velocity and acceleration components, respectively. We set the acceleration hyperparameter in equation 6 to α = 0 .5, which provides a balance between smoothness and curvature in the learnt dynamics. The model is optimized using AdamW with a learning rate of 0.001, a cosine annealing learning rate scheduler, and a weight decay of 5 × 10 −7.Variational Grey-Box Dynamics Matching 
+
+Chaotic Lorenz Attractor System We analysed the Lorenz System for varying initial conditions and pa-rameters. The system dynamics are governed by: du
+
+dt = σ(v − u), (10) dv
+
+dt = u(ρ − w)
+
+| {z }
+
+> missing physics
+
+−v, (11) dw
+
+dt = uv − βw. (12) We generate the trajectory with u(0) , v (0) , w (0) sampled from a Gaussian distribution and the parameters are also randomly sampled with σ ∼ U (9 .5, 10 .5) , ρ ∼ U (27 .0, 29 .0) , β ∼ U (2 .6, 2.8). Each trajectory spans a time interval t0 = 0 .0 to tmax = 2 .0 and time resolution ∆ t = 0 .0339. The training dataset is made of 1000 trajectories divided into segments of size h = 30. Instead, the validation and test set consists of 250 trajectories of length 60. For our grey-box model, the known physics fp(·; θ) incorporates the parameters θ = [ σ, β ]. The term u(ρ − w), representing buoyancy and non-linear advection, is treated as the unmodeled, stochastic part of the system. We remark that all latent parameters are inferred in a fully unsupervised manner in our method. We designed a multi-layer gated recurrent unit (GRU) RNN-based encoder with 64 hidden states and two linear layers to infer both the physics parameters θ and the missing stochasticity z = ρ directly from the observed trajectory. The velocity vector field vϕ is modelled using a simple conditional MLP with 4 hidden layers of 128 neurons. The model is optimized using AdamW with a learning rate of 0 .001, a cosine annealing learning rate scheduler, and a weight decay of 5 × 10 −7.
+
+A.2 Additional Results and Analyses 
+
+Figure 9: Parameter identification (inference) vs. forecasting performance across the three dynamical systems (lower RMSE is better). Figure 9 compares parameter identification (inference) and forecasting performance across the three dynamical systems. Our method achieves consistently better forecasting accuracy and comparable or slightly improved parameter inference. In particular, forecasting errors are lower across all systems, while parameter estimation remains on par with PhysVAE. Unlike PhysVAE, which requires careful regularization tuning for stable param-eter recovery, our approach achieves balanced performance without such tuning, maintaining strong forecasting capability and robust generalization. 
+
+Analysis of Loss Decomposition The complete variational objective, LVI VGB-DM (ϕ, ψ ) is composed of three distinct terms: the Flow Matching (FM) loss which focuses on forecasting the dynamics , and the Physics Parameter KL-divergence (Ph-KL), and the Latent Variable KL-divergence (Z-KL), as defined in Equation 5. Gurjeet Sangra Singh, Frantzeska Lavda, Giangiacomo Mercatali, Alexandros Kalousis 
+
+To assess the relative contribution of each term to the total loss and to identify potential optimization bottlenecks, we report their mean values and standard deviations evaluated on the test set in Table 2. This decomposition allows for a clear comparison of which component dominates the overall objective for each experimental system. 
+
+LVI VGB-DM (ϕ, ψ ) = Eπ(x),π (·| x)
+
+h
+
+Eqψ (z,θ |xk−h:k )
+
+> t∼U (0 ,1)
+
+(vϕt (xt | θ, z ) ◦ fp(xt, θ )) − ˙xt
+
+> 2
+
+| {z }
+
+> FM Loss
+
+− KL 
+
+h
+
+qψ (θ | z, xk−h:k) ∥ p(θ)
+
+i| {z }
+
+> Ph-KL
+
+(13) 
+
+− KL 
+
+h
+
+qψ (z | xk−h:k) ∥ p(z)
+
+i| {z }
+
+> Z-KL
+
+i
+
+(14) Table 2: Evaluation of the N-ELBO terms 
+
+Experiment FM Ph-KL Z-KL 
+
+Pendulum 3.9 × 10 −5 ± 1.8 × 10 −5 8.8 × 10 −4 ± 1.1 × 10 −4 2.5 ± 0.22 RLC 0.52 ± 0.03 3.4 ± 1.4 0.70 ± 0.001 RD 3 × 10 −3 ± 1 × 10 −3 2.7 ± 1.1 2 × 10 −3 ± 2 × 10 −4
+
+Lorenz 3.8 ± 1.5 2.3 ± 0.8 0.003 ± 0.001 
+
+A.2.1 Parameter Consistency Across Trajectory 
+
+To validate the consistency of parameter estimates—given that our model infers them from input segment assumed to be representative—we evaluated their variation across each full trajectory. We computed the Coefficient of Variation (CV) for the estimated parameter values across the sliding windows of each trajectory. The CV, which normalizes the standard deviation by the mean, confirms the stability regardless of the parameter’s scale. The median CV across all trajectories is 0.05 (or 5%) or less, thus Median 
+
+ σ
+
+> |μ|
+
+
+
+≤ 0.05. This demonstrates that the estimated physical parameters do not drift or fluctuate significantly during the episode, confirming the robustness of the inference method. We report their values for each experiment in Table 3. 
+
+Exp Phys. Params. CV 
+
+RLC 0.0461, 0.0391 Pendulum 0.0496 Reaction–Diffusion 0.0072, 0.0031 Lorenz 0.0012, 0.0026 Table 3: Median consistency of physics parameters across trajectory segments (test set). 
+
+## B Experimental details for Weather experiments 
+
+B.1 Dataset details 
+
+We utilize the preprocessed ERA5 dataset provided by WeatherBench [Rasp et al., 2020], a widely used bench-mark framework for evaluating data-driven weather forecasting models. The original ERA5 data at 0 .25 ◦ res-olution is regridded by WeatherBench to coarser resolutions of 5 .625 ◦, 2 .8125 ◦, and 1 .40625 ◦; in this work, we adopt the 5 .625 ◦ dataset at 6-hour intervals. Our study focuses on K = 5 key variables: 2-metre temperature (t2m), atmospheric temperature (t), geopotential (z), and the 10-metre wind vector components (u10, v10). All variables are normalized to the range [0 , 1] using min–max scaling. Among these, z and t are standard verification Variational Grey-Box Dynamics Matching 
+
+variables in medium-range Numerical Weather Prediction (NWP) models, while t2m and (u10, v10) are directly relevant to surface-level conditions that impact human activities. Following [Verma et al., 2024], the dataset spans ten years of training data (2006–2015), one year for validation (2016), and two years for testing (2017–2018). The full set of ERA5 variables employed in our experiments is summarized in Table 4. Table 4: ECMWF data variables from ERA5 used in our dataset. Static variables are time-independent, Single 
+
+represents surface-level variables, and Atmospheric represents time-varying atmospheric properties at chosen altitudes. Type Variable name Abbrev. ECMWF ID Levels Static Land-sea mask lsm 172 Single 2 metre temperature t2m 167 Single 10 metre U wind component u10 165 Single 10 metre V wind component v10 166 Atmospheric Geopotential z 129 500 Atmospheric Temperature t 130 850 
+
+B.2 Details of Climate VGB-DM 
+
+Figure 10: Example of Climate forecasting using VGB-DM over 42 hours. For the experiments of Climate modelling, Section 5.2 of the paper, our neural architecture follows the one proposed in [Verma et al., 2024], adapted to our framework and with no external emission network g of ClimODE. In addition to the model of ClimODE we introduced a lightweight temporal attention encoder over trajectory states of size h = 2. We also used AdamW with a learning rate of 5 × 10 −4.The lightweight temporal attention encoder uses multi-head temporal attention in which the current state attends to a short sequence of past states independently at each spatial location. Queries are computed from the current state, while keys and values are obtained from the history via learned convolutional projections, preserving spatial resolution. Attention is applied exclusively over the temporal dimension, and the resulting history-aware features are projected back to the original channel space and aligned with the current state. During training, the history consists of the previous two time steps, enabling the encoder to exploit true temporal context. At inference time, when only the current state is available, this state is replicated to match the required history length and used as the attention context. This encoder processes the sampled state field ut−h:t and produces a latent zt, which is concatenated with the input to the grey-box model as described in the next paragraph 5.
+
+> 5The implementation of the Climate VGB-DM model is provided in our VGB-DM GitHub repository
+
+Gurjeet Sangra Singh, Frantzeska Lavda, Giangiacomo Mercatali, Alexandros Kalousis 
+
+Although our main formulation allows for a variational posterior over the encoder latent variables, in practice we employ a deterministic temporal encoder, i.e. no KL regularization term is optimized. This choice is motivated by the fact that the underlying physics model does not involve latent physical parameters, but rather accounts for unmodelled dynamics such as velocity and source terms. Since all model evaluations are performed on forecasting performance, a deterministic encoder provides a simpler and effective alternative to a variational formulation without affecting the predictive objective. 
+
+Weather Grey-Box Dynamics. For consistency with the notation introduced in [Verma et al., 2024], we remind the reader that spatio-temporal states are indicated by ut, while x is used for spatial coordinates. We outline the grey-box model of the advection type using a partial differential equation to represent the temporal evolution of the spatial field u(x, t ): 
+
+∂u ∂t = −vϕt (ut, ∇ut, z t, ψ ) · ∇ ut − ut (∇ · vϕt (ut, ∇ut, ψ )) + sϕt (ut, ∇ut, ψ )
+
+| {z }       
+
+> Vϕt(ut|zt)= vϕt(ut|zt)◦fp(ut,v ϕt)◦sϕt(ut,∇ut,z t,ψ )
+
+, (15) where vϕt is the learnable flow’s velocity of the grey-box model and sϕt models the sources, zt describes the latent variable from the encoder, finally the spatio-temporal embeddings is denoted by ψ ∈ RC×H×W , as in [Verma et al., 2024] to keep the same notation. We also recall that ∇ = ∇x denotes spatial gradients, and ∇ · vϕt = tr( ∇vϕt ) the divergence as denoted in ClimODE [Verma et al., 2024]. 
+
+B.3 Time resolutions 
+
+We have two resolutions, hourly over 42 hours, and monthly, over 5 months. The hourly resolution results are in Figure 6 and Figure 5. The monthly resolution results are in Figure 7. 
+
+B.4 Evaluation metrics 
+
+Following [Verma et al., 2024], we assess benchmarks using latitude-weighted RMSE and Anomaly Correlation Coefficient (ACC) following the de-normalization of predictions. RMSE = 1
+
+N
+
+X
+
+> t
+
+vuut 1
+
+HW 
+
+> H
+
+X
+
+> hW
+
+X
+
+> w
+
+α(h)( ythw − uthw )2, ACC = 
+
+P 
+
+> t,h,w
+
+α(h)˜ ythw ˜uthw 
+
+qP 
+
+> t,h,w
+
+α(h)˜ y2
+
+> thw
+
+qP 
+
+> t,h,w
+
+α(h)u2
+
+> thw
+
+where α(h) = cos( h)/ 1
+
+> H
+
+PHh cos( h′) is the latitude weight and ˜ y = y − C and ˜ u = u − C are averaged against empirical mean C = 1
+
+> N
+
+P 
+
+> t
+
+ythw .
+
+B.5 Predictions visualization 
+
+In Figure 10 we show the forecast of our model on the ERA5 dataset over 42 hours horizon. In the main text we reported the error between true and predicted values to facilitate showing the difference between our model and ClimODE. 
+
+## C Proofs and Derivations 
+
+In this section we prove that the marginal of the our velocity vector field are preserved, we demonstrate it by using the existing Proposition 3.2 (Coupling Preservation) of [Zhang et al., 2024]. In addition in the sub-section C.3, we report the full ELBO derivation of our objective 5. 
+
+C.1 Proof: Coupling Preservation with learnt Latents by Marginal Preservation Setup Denote x := ( xt1 , x t2 , . . . , x tT ) as a trajectory sampled from the data distribution π(x) and: 
+
+pt(xt|x) := N (( tk+1 − t)xtk + ( t − tk)xtk+1 , σ 2(tk+1 − t)( t − tk)I), (16) 
+
+ut(xt|x) := xtk+1 − xt
+
+tk+1 − t . (17) Variational Grey-Box Dynamics Matching 
+
+where pt(xt|x) is the Gaussian interpolant between consecutive trajectory points xtk and xtk+1 and ut(xt|x) is the target velocity vector field. Consider our simulation-free method, where the conditioning variable is given by latent representations produced by an encoder network. More formally, let c = ( θ, z ) ∈ Rdc denote the concatenated latent variables obtained from an encoder Eψ : X T → Rdc that maps trajectories to latent codes. The grey-box velocity field is defined as 
+
+V ϕt (xt|c) = vϕt (xt|c) ◦ fp(xt, θ ),
+
+where V ϕt is the total velocity vector field incorporating the physics model, ut(xt|x) is the true velocity field conditioned on the full trajectory x, qψ (c|x) is the encoder posterior parameterised by ψ, and p(c) is the prior distribution over the latents. Our training objective is: 
+
+LVGB-DM (ϕ, ψ ) = Et,π (x)
+
+h
+
+Eqψ (c|x)
+
+h
+
+∥V ϕt (xt|c) − ut(xt|x)∥2i
+
++ KL( qψ (c|x)∥p(c)) 
+
+i
+
+, (18) where V ϕt is the total velocity vector field incorporating the physics model, ut(xt|x) is the true velocity field conditioned on the full trajectory x, qψ (c|x) is the encoder posterior parameterised by ψ, and p(c) is the prior distribution over the latents. 
+
+Main Result We prove that training with the learnt latent conditioning and the grey-box velocity field pre-serves the optimal coupling between trajectory distributions, ensuring the marginal vector field ut(xt|c) matches the true trajectory-conditioned ut(xt|x) vector field in expectation. Our proof schema follows as: 1. We introduce Assumption (A4) characterizing the optimal encoder. 2. We prove that (A4) ensures the marginal vector field and satisfies the conditions of Proposition 3.2 
+
+(Coupling Preservation) [Zhang et al., 2024]. 3. We recall Proposition 3.2 to conclude that Π( u)⋆ = Π ⋆(x1: T ). Throughout, we rely on the regularity conditions established in Lemma A.1 of [Zhang et al., 2024] regarding Lipschitz continuity and integrability. 
+
+Assumption (A4): Optimal Posterior Encoder The encoder learns the optimal posterior distribution, that is, there exists ψ∗ such that qψ∗ (c|x) = q∗(c|x) where 
+
+q∗(c|x) = arg min  
+
+> q(c|x)
+
+Et,x ∼π(x),c∼q(c|x),x t∼pt(xt|x)
+
+h
+
+∥V ϕt (xt|c) − ut(xt|x)∥22 + KL( q(c|x)∥p(c)) 
+
+i
+
+= 0 (19) This assumption says that the encoder captures sufficient trajectory-specific information in the latent code 
+
+c = ( θ, z ) such that conditioning on c allows perfect recovery of the trajectory-dependent vector field ut(xt|x)via the grey-box model V ϕt (i.e., the minimal MSE is zero), while the KL divergence encourages the posterior to match the prior. 
+
+Main Proposition Proposition 1 (Coupling Preservation with learnt Latents by Marginal Preservation ). Under the regularity conditions of Lemma A.1 [Zhang et al., 2024], if Assumption (A4) holds and x, π (x), p t(xt|x), and 
+
+ut(xt|x), then training with LVGB-DM (ϕ, ψ ∗) preserves the optimal coupling: 
+
+Π( u)⋆ = Π ⋆(x1: T ).Gurjeet Sangra Singh, Frantzeska Lavda, Giangiacomo Mercatali, Alexandros Kalousis 
+
+C.2 Proof of Proposition 1 Step 1: Recall Proposition 3.2. [Zhang et al., 2024] establishes that under mild regularity conditions, if 
+
+Et,x ∼π(x),c∼q(c|x),x t∼pt(xt|x)∥ut(xt|x, c) − ut(xt|c)∥22 = 0 , (20) then the push-forward flows satisfy R T 
+
+> 0
+
+ut(xt|x, c)dt = ϕ(x0, c, x) = ϕ(x0, c) = R T 
+
+> 0
+
+ut(xt|c)dt and consequently Π( u)⋆ = Π ⋆(x1: T ). We aim to confirm this condition by applying Assumption (A4) (see Steps 2-3 ), observing that the grey-box speed V ϕt serves as an approximation for ut under optimal conditions. 
+
+Step 2: Marginal Vector Field. The marginal vector field conditioned on c is critical because it determines the push-forward flow ϕ(x0, c) = R T 
+
+> 0
+
+ut(xt|c)dt that defines the coupling Π( u). Therefore, by marginalising it over trajectories, we have: 
+
+ut(xt|c) = Ex∼π(x|c)[ut(xt|x)] .
+
+By Bayes’ rule, the posterior over trajectories given the latent code is: 
+
+π(x|c) = q(c|x)π(x)
+
+R q(c|x′)π(x′)dx′ .
+
+When the encoder satisfies Assumption (A4) , we have q(c|x) = q∗(c|x), and therefore: 
+
+ut(xt|c) = Ex∼π∗(x|c)[ut(xt|x)] . (21) At optimality, V ϕt (xt|c) matches this marginal. 
+
+Step 3: Verification of Proposition 3.2 Condition. We now show that Assumption (A4) implies the condition required by Proposition 3.2. Consider: 
+
+Et,x ∼π(x),c∼q∗(c|x),x t∼pt(xt|x)∥ut(xt|x, c) − ut(xt|c)∥22
+
+= Et,x ∼π(x),c∼q∗(c|x),x t∼pt(xt|x)∥ut(xt|x) − ut(xt|c)∥22,
+
+where the equality follows since ut(xt|x, c) = ut(xt|x) (the true vector field depends only on the trajectory x). By the Tower property of conditional expectation: 
+
+Et,x ∼π(x),c∼q∗(c|x),x t∼pt(xt|x)∥ut(xt|x) − ut(xt|c)∥22
+
+= Et, c
+
+h
+
+Ex∼q∗(x|c),x t∼pt(xt|x)
+
+h
+
+∥ut(xt|x) − ut(xt|c)∥22 c
+
+ii 
+
+.
+
+For the optimal encoder q∗(c|x), by its defining property in Assumption (A4), we have: 
+
+ut(xt|c) = Ex∼q∗(x|c)[ut(xt|x)] , (22) which is the best predictor of ut(xt|x) given c in terms of L2 norm. Moreover, since Assumption (A4) specifies that the minimal value of the MSE objective is zero (with the KL term providing regularization but not affecting the zero-MSE at optimality), the conditional variance is zero: 
+
+Ex∼q∗(x|c),x t∼pt(xt|x)
+
+h
+
+∥ut(xt|x) − ut(xt|c)∥22 c
+
+i
+
+= 0 for each fixed c and t. Therefore: 
+
+Et,x ∼π(x),c∼q∗(c|x),x t∼pt(xt|x)∥ut(xt|x) − ut(xt|c)∥22 = 0 . (23) Variational Grey-Box Dynamics Matching 
+
+Step 4: Application of Proposition 3.2. Since the condition of Proposition 3.2 is satisfied under Assump-tion (A4), and all regularity conditions from Lemma A.1 hold (Lipschitz continuity of δdata and appropriate integrability conditions for exchange of integrals), we conclude that the push-forward flows satisfy: 
+
+ϕ(x0, c, x) = ϕ(x0, c) (24) for all x0. Therefore, the optimal coupling is preserved: Π( u)⋆ = Π ⋆(x1: T ). (25) 
+
+□
+
+Some Practical Considerations : Assumption (A4) can be approximately satisfied through the following training strategy: 
+
+• Joint optimization: Train both the encoder Eψ and the velocity field components ( vϕ and the physics-informed fp) to jointly minimize LVGB-DM (ϕ, ψ ). 
+
+• Adequate capacity: Make sure the latent dimension dc = dim(( θ, z )) is large enough to encapsulate information specific to the trajectory (it acts as a sufficient statistic for trajectory), encompassing the parameters of the physics model. 
+
+C.3 ELBO Derivation 
+
+log pϕt ( ˙ xt | xk) = log 
+
+Z
+
+pϕt ( ˙ xt, θ, z | xk) dθ dz (26) = log 
+
+Z
+
+qψ (z, θ | x) pϕt ( ˙ xt, θ, z | xk)
+
+qψ (z, θ | x) dθ dz (27) 
+
+≥
+
+Z
+
+qψ (z, θ | x) log pϕt ( ˙ xt, θ, z | xk)
+
+qψ (z, θ | x) dθ dz (Jensen’s inequality) (28) =
+
+Z
+
+qψ (z, θ | x) log pϕt ( ˙ xt | θ, z, x k)pϕt (θ, z | xk)
+
+qψ (z, θ | x) dθ dz (29) = Eqψ (z,θ |x)
+
+"
+
+log pϕt ( ˙ xt, θ, z | xk) − log qψ (z, θ | x)
+
+pϕt (θ, z | xk)
+
+#
+
+(30) = Eqψ (z,θ |x)[log pϕt ( ˙ xt | θ, z, x k)] − KL 
+
+h
+
+qψ (z, θ | x)∥pϕt (θ, z | xk)
+
+i
+
+(31) Assuming independent and data and time independent priors: 
+
+pϕt (θ, z | xk) = p(θ)p(z) (32) Assuming joint conditional dependency of: 
+
+qψ (z, θ | x) = qψ (θ | z, x)qψ (z | x) (33) The objective becomes: log pϕt ( ˙ xt | xk) ≥ (34) 
+
+Eqψ (z,θ |x)[log pϕt ( ˙ xt | θ, z, x k)] − Eqψ (z|x)KL [ qψ (θ | z, x)∥p(θ)] − KL [ qψ (z | x)∥p(z)] 
+
+C.4 Reduced Complexity and Optimization Stability 
+
+We provide an additional intuition for the empirical sample efficiency and optimization stability observed in our method. These improvements arise from two complementary mechanisms: a reduction in functional complexity induced by the incorporation of an incomplete physics model and a more favourable optimisation landscape enabled by a simulation-free training objective. Gurjeet Sangra Singh, Frantzeska Lavda, Giangiacomo Mercatali, Alexandros Kalousis 
+
+Reduced Functional Complexity. Compared to fully black-box models such as BB-NODE or VBB-DM, our approach benefits from a strong inductive bias introduced through the incomplete physics model fp(x, θ ). In black-box formulations, the learning algorithm must explore a large function space to recover the full system dynamics from data alone. In contrast, by explicitly integrating fp, we impose a structural constraint that encodes known physical principles. As a result, the learning problem is simplified: rather than discovering physical laws from scratch, the model focuses on inferring a low-dimensional set of unknown parameters θ and latent variables z, while learning a residual or corrective dynamics term vϕ. This reduction in hypothesis space directly contributes to improved sample efficiency. 
+
+Optimization Landscape and Simulation-Free Training. While physics-informed latent variable models such as PhysVAE also benefit from reduced functional complexity, our method exhibits faster convergence and improved empirical sample efficiency. This difference can be attributed to the choice of training objective. PhysVAE relies on a simulation-based loss that requires integrating the system dynamics through a numerical ODE solver over a time horizon T , of the form 
+
+Lsim ≈ X − ODESolve( vϕ ◦ fp, x 0, T ) 2 .
+
+The gradient ∇L sim must be computed by backpropagating through the numerical solver, resulting in a compu-tational cost of O(L), where L denotes the number of function evaluations performed by the solver. In contrast, our method optimizes a simulation-free dynamics matching objective, which directly aligns the learned vector field with a target velocity ˙ xt obtained from data interpolation: 
+
+LDM ≈ Et
+
+
+
+(vϕt ◦ fp) − ˙xt
+
+> 2
+
+
+
+.
+
+The gradient ∇L DM is computed via standard backpropagation and requires only a single forward pass through the network, yielding O(1) computational complexity per update. 
+
+Lemma 1 - Gradient Variance and Convergence. Beyond computational cost, the simulation-free formulation leads to more stable optimization dynamics. Estimating ∇L sim is known to be challenging due to the need to differentiate through a numerical ODE solver. This process can introduce high gradient variance, susceptibility to exploding or vanishing gradients—particularly for long integration horizons or stiff systems—and the accumulation of numerical errors. In contrast, ∇L DM corresponds to a supervised regression gradient, which avoids integration-induced instabilities. Formally, this suggests that the variance of the gradient estimator under the simulation-free objective is lower than that of the simulation-based objective, Var( ∇L DM ) < Var( ∇L sim ),
+
+which in turn implies faster convergence rates under stochastic optimization. This reduction in gradient variance, combined with the reduced functional complexity discussed above, explains the observed improvements in both optimization stability and sample efficiency.
