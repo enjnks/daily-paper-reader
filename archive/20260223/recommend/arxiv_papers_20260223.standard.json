@@ -1,0 +1,90 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-02-23T04:40:53.725410+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 0,
+    "deep_cap": 6,
+    "deep_selected": 0,
+    "quick_candidates": 2,
+    "quick_skim_target": 11,
+    "quick_selected": 2
+  },
+  "deep_dive": [],
+  "quick_skim": [
+    {
+      "id": "2602.18008v1",
+      "title": "NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs",
+      "abstract": "Mechanistic models encode scientific knowledge about dynamical systems and are widely used in downstream scientific and policy applications. Recent work has explored LLM-based agentic frameworks to automatically construct mechanistic models from data; however, existing problem settings substantially oversimplify real-world conditions, leaving it unclear whether LLM-generated mechanistic models are reliable in practice. To address this gap, we introduce the Neural-Integrated Mechanistic Modeling (NIMM) evaluation framework, which evaluates LLM-generated mechanistic models under realistic settings with partial observations and diversified task objectives. Our evaluation reveals fundamental challenges in current baselines, ranging from model effectiveness to code-level correctness. Motivated by these findings, we design NIMMgen, an agentic framework for neural-integrated mechanistic modeling that enhances code correctness and practical validity through iterative refinement. Experiments across three datasets from diversified scientific domains demonstrate its strong performance. We also show that the learned mechanistic models support counterfactual intervention simulation.",
+      "authors": [
+        "Zihan Guan",
+        "Rituparna Datta",
+        "Mengxuan Hu",
+        "Shunshun Liu",
+        "Aiying Zhang",
+        "Prasanna Balachandran",
+        "Sheng Li",
+        "Anil Vullikanti"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "cs.CL"
+      ],
+      "published": "2026-02-20 05:46:54+00:00",
+      "link": "https://arxiv.org/pdf/2602.18008v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "LLM-based construction of mechanistic models",
+      "llm_evidence_cn": "基于大语言模型的机械模型构建",
+      "llm_evidence": "基于大语言模型的机械模型构建",
+      "llm_tldr_en": "Evaluates LLM-generated mechanistic digital twins for dynamical systems under realistic partial observations.",
+      "llm_tldr_cn": "评估大语言模型在现实部分观测条件下生成动力系统机械数字孪生的能力。",
+      "llm_tldr": "评估大语言模型在现实部分观测条件下生成动力系统机械数字孪生的能力。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    },
+    {
+      "id": "2602.18266v1",
+      "title": "A Probabilistic Framework for LLM-Based Model Discovery",
+      "abstract": "Automated methods for discovering mechanistic simulator models from observational data offer a promising path toward accelerating scientific progress. Such methods often take the form of agentic-style iterative workflows that repeatedly propose and revise candidate models by imitating human discovery processes. However, existing LLM-based approaches typically implement such workflows via hand-crafted heuristic procedures, without an explicit probabilistic formulation. We recast model discovery as probabilistic inference, i.e., as sampling from an unknown distribution over mechanistic models capable of explaining the data. This perspective provides a unified way to reason about model proposal, refinement, and selection within a single inference framework. As a concrete instantiation of this view, we introduce ModelSMC, an algorithm based on Sequential Monte Carlo sampling. ModelSMC represents candidate models as particles which are iteratively proposed and refined by an LLM, and weighted using likelihood-based criteria. Experiments on real-world scientific systems illustrate that this formulation discovers models with interpretable mechanisms and improves posterior predictive checks. More broadly, this perspective provides a probabilistic lens for understanding and developing LLM-based approaches to model discovery.",
+      "authors": [
+        "Stefan Wahl",
+        "Raphaela Schenk",
+        "Ali Farnoud",
+        "Jakob H. Macke",
+        "Daniel Gedon"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-02-20 14:49:53+00:00",
+      "link": "https://arxiv.org/pdf/2602.18266v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Automated discovery of mechanistic models from data",
+      "llm_evidence_cn": "从数据中自动发现机制模型",
+      "llm_evidence": "从数据中自动发现机制模型",
+      "llm_tldr_en": "Recasts model discovery as probabilistic inference to automate the search for mechanistic scientific models.",
+      "llm_tldr_cn": "将模型发现重新定义为概率推理，以自动搜索科学机制模型。",
+      "llm_tldr": "将模型发现重新定义为概率推理，以自动搜索科学机制模型。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    }
+  ]
+}

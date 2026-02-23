@@ -1,5 +1,10 @@
 * [首页](/)
 * Daily Papers
+  * 2026-02-23 <!--dpr-date:20260223-->
+    * 精读区
+    * 速读区
+      * <a class="dpr-sidebar-item-link" href="#/202602/23/2602.18008v1-nimmgen-learning-neural-integrated-mechanistic-digital-twins-with-llms"><div class="dpr-sidebar-title">NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs</div><div class="dpr-sidebar-tags"><span class="dpr-sidebar-tag dpr-sidebar-tag-score"><span class="dpr-stars" title="评分：6.0/10（3.0/5）" aria-label="3.0 out of 5"><span class="dpr-stars-bg">☆☆☆☆☆</span><span class="dpr-stars-fill" style="width:60%">★★★★★</span></span></span> <span class="dpr-sidebar-tag dpr-sidebar-tag-keyword">SR</span> <span class="dpr-sidebar-tag dpr-sidebar-tag-query">SR</span></div></a>
+      * <a class="dpr-sidebar-item-link" href="#/202602/23/2602.18266v1-a-probabilistic-framework-for-llm-based-model-discovery"><div class="dpr-sidebar-title">A Probabilistic Framework for LLM-Based Model Discovery</div><div class="dpr-sidebar-tags"><span class="dpr-sidebar-tag dpr-sidebar-tag-score"><span class="dpr-stars" title="评分：6.0/10（3.0/5）" aria-label="3.0 out of 5"><span class="dpr-stars-bg">☆☆☆☆☆</span><span class="dpr-stars-fill" style="width:60%">★★★★★</span></span></span> <span class="dpr-sidebar-tag dpr-sidebar-tag-keyword">SR</span> <span class="dpr-sidebar-tag dpr-sidebar-tag-query">SR</span></div></a>
   * 2026-02-20 <!--dpr-date:20260220-->
     * 精读区
       * <a class="dpr-sidebar-item-link" href="#/202602/20/2602.17082v1-order-of-magnitude-analysis-and-data-based-physics-informed-symbolic-regression-for-turbulent-pipe-flow"><div class="dpr-sidebar-title">Order of Magnitude Analysis and Data-Based Physics-Informed Symbolic Regression for Turbulent Pipe Flow</div><div class="dpr-sidebar-tags"><span class="dpr-sidebar-tag dpr-sidebar-tag-score"><span class="dpr-stars" title="评分：10.0/10（5.0/5）" aria-label="5.0 out of 5"><span class="dpr-stars-bg">☆☆☆☆☆</span><span class="dpr-stars-fill" style="width:100%">★★★★★</span></span></span> <span class="dpr-sidebar-tag dpr-sidebar-tag-keyword">SR</span> <span class="dpr-sidebar-tag dpr-sidebar-tag-query">SR</span></div></a>

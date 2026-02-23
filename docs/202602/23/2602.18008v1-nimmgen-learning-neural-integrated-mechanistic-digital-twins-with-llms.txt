@@ -1,0 +1,936 @@
+Title: NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs
+
+URL Source: https://arxiv.org/pdf/2602.18008v1
+
+Published Time: Mon, 23 Feb 2026 01:21:31 GMT
+
+Number of Pages: 19
+
+Markdown Content:
+# NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs 
+
+Zihan Guan * 1 Rituparna Datta * 1 Mengxuan Hu 1 Shunshun Liu 1 Aiying Zhang 1 Prasanna Balachandran 1
+
+Sheng Li 1 Anil Vullikanti 1
+
+Abstract 
+
+Mechanistic models encode scientific knowledge about dynamical systems and are widely used in downstream scientific and policy applications. Re-cent work has explored LLM-based agentic frame-works to automatically construct mechanistic models from data; however, existing problem set-tings substantially oversimplify real-world condi-tions, leaving it unclear whether LLM-generated mechanistic models are reliable in practice. To ad-dress this gap, we introduce the Neural-Integrated Mechanistic Modeling (NIMM) evaluation frame-work, which evaluates LLM-generated mechanis-tic models under realistic settings with partial ob-servations and diversified task objectives. Our evaluation reveals fundamental challenges in cur-rent baselines, ranging from model effectiveness to code-level correctness. Motivated by these find-ings, we design NIMMgen, an agentic framework for neural-integrated mechanistic modeling that enhances code correctness and practical validity through iterative refinement. Experiments across three datasets from diversified scientific domains demonstrate its strong performance. We also show that the learned mechanistic models support coun-terfactual intervention simulation. 
+
+1. Introduction 
+
+Purely data-driven methods are inadequate for many funda-mental problems associated with such complex systems, and integration with knowledge-guided or model-based meth-ods is necessary, e.g., (Karpatne et al., 2022; Karniadakis et al., 2021). Digital Twins (DTs), which are data-driven computational and mechanistic models constructed based on domain knowledge from physical, biological or chemi-cal processes, and are often tightly coupled with real-world dynamic systems, provide a very powerful framework for representing such systems, e.g., (National Academies of   
+
+> *Equal contribution 1University of Virginia. Correspondence to: Anil Vullikanti <vsakumar@virginia.edu >.
+> Preprint. February 23, 2026.
+
+Sciences, Engineering, and Medicine, 2023; Niederer et al., 2021; Holt et al., 2024). They are popular in various scien-tific domains, such as medicine (Marchal, 2025; Katsoulakis et al., 2024), power distribution (Meyur et al., 2022; Thorve et al., 2023), and computational epidemiology (Adiga et al., 2018; Marathe & Vullikanti, 2013; Cui et al., 2025; Chopra et al., 2022), and have been used for monitoring, simulation, and prediction of such systems. Hybrid models, which inte-grate neural networks and digital twins, have been shown to achieve better performance in many applications, e.g., (Cui et al., 2025; Holt et al., 2024). Despite their practical value, constructing accurate mecha-nistic models is challenging. Motivated by recent advances in large language models (LLMs) for code generation and agentic optimization (Novikov et al., 2025; Tang et al., 2024; White et al., 2023), a growing line of work, such as HDTwin-Gen (Holt et al., 2024), has begun to explore LLM-driven frameworks that learn and refine mechanistic models di-rectly from data. However, to deploy these LLM-driven frameworks for real-world usage, a fundamental challenge remains underexplored: Are current LLM-based systems truly ready to generate mechanistic models for real-world scientific applications ? The existing evaluation environ-ment in HDTwinGen relies on simplified assumptions of the real-world scenarios. Specifically, ❶ HDTwinGen setup considers full observation of the system states, whereas real-world scientific datasets are often only partially observed. Besides, ❷ their evaluation only focuses on the modeling task of the digital twin models, while ignoring other diver-sified tasks. Finally, ❸ the generated hybrid digital twin models are confined to the form of an additive combination of the neural network and the mechanistic component. More discussions are provided in § 3.1. To address these limitations, we introduce the Neural-Integrated Mechanistic Modeling (NIMM) evaluation frame-work, which introduces a new problem setting for evalu-ating LLM-driven mechanistic model construction in sci-entific domains. Specifically, for point ❶, each dataset in NIMM provides only partial observations of the underlying system states; for example, in epidemiological datasets, only reported infection counts are observed, while latent compart-ments such as susceptible or exposed populations remain unobserved. For point ❷, the task objective in NIMM ex-1
+
+> arXiv:2602.18008v1 [cs.LG] 20 Feb 2026 NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs
+
+tends beyond fitting observed trajectories and encompasses datasets from three different domains with diverse tasks, including public health, clinical health, and materials sci-ence. Finally, for point ❸, NIMM adopts a more general neural-integrated formulation inspired by recent advances in mechanistic modeling, with the hybrid digital twin model used in prior work as a special case. We evaluate the base-lines across black-box neural networks, existing mechanistic models in the prior work, and the LLM-driven approaches over the NIMM evaluation framework. The evaluation re-sults suggest that (1) existing baselines continue to struggle under the more challenging settings introduced by NIMM; (2) LLM-based approaches frequently have code-level errors when generating the complex neural-integrated mechanis-tic models; and (3) LLMs may produce models that are mathematically valid yet semantically incorrect. Guided by these findings, we propose NIMMGen, an agen-tic framework for neural-integrated mechanistic modeling. The NIMMGen introduces a self-evolving optimization loop composed of a modeling agent and a reflection agent, which iteratively refines model specifications. To reduce code error rates, NIMMGen incorporates an error-correction module that augments the agent’s memory with historical error mes-sages to reduce repeated failures. To filter out the models that are semantically incorrect, NIMMGen also incorpo-rates a verification agent that evaluates the physical and semantic consistency of generated models. Across the three domains in the NIMM evaluation framework, our approach achieves strong empirical performance. Beyond effective-ness, we demonstrate that the learned mechanistic mod-els can support counterfactual intervention simulation (e.g., social distancing), highlighting their utility for decision-relevant analyses. Our further analysis on the optimization process of the NIMmGen also suggests that NIMMGen pro-gressively introduces substantive model changes that enable better adaptation to the environment. In summary, this paper makes three contributions: 
+
+1. Novel Problem setting. We introduce NIMM, an evalua-tion framework that formalizes a realistic problem setting 
+
+for LLM-based neural-integrated mechanistic modeling un-der partial observation and forecasting objectives, which are largely underexplored in prior work. 
+
+2. Effective Agentic Method. We propose NIMMGen, an agentic framework that learns effective neural-integrated models by explicitly targeting code-level correctness and semantical correctness during iterative model generation. 
+
+3. Empirical Evidence of Scientific Utility. We show that NIMMGen produces mechanistic models that achieve strong performance across three domains and enable counterfactual intervention simulation, demonstrating practical value. 
+
+2. Background 
+
+Let S := ( X , U, Φ) denote a dynamical system, which consists of dX -dimensional states from its state space X ⊆ 
+
+RdX , the (optional) dU -dimensional action space U ⊆ RdU ,and a dynamical model Φ (following notation from (Holt et al., 2024)). At a given time t ∈ T ⊆ R+, the state of the system is denoted as x(t) ∈ X , while the action of the system is u(t) ∈ U . In continuous time, the evolution of the system S is given by 
+
+dx t
+
+dt
+
+= Φ( x(t), u (t), t ) (1) with Φ : X × U × T → X .For example, in an epidemic dynamic system, the state of the system x(t) may represent the number of susceptible, infected, and recovered individuals. 
+
+Digital twins and Mechanistic Models. A digital twin of the dynamical system seeks to approximate Φ using a computational model fθ ∈ F informed by data, where 
+
+θ ∈ Θ denotes the parameters of the model. Here, the sets 
+
+F, Ω( θ) denote the space of candidate model classes and parameter space, respectively. The parameters θ are usually calibrated manually (Kemp et al., 2021; Davids et al., 2020) or informed from data using statistical methods (Anderson, 2001; Yang et al., 2015). In scientific domains, the system dynamics is not purely statistical but constructed grounded with domain knowl-edge derived from known physical, biological, or chemical processes (Marchal, 2025; Katsoulakis et al., 2024; Meyur et al., 2022; Cui et al., 2025). This structure requires each component in f to have a clear interpretation and supports reasoning about interventions and counterfactuals. 
+
+Neural-integrated Mechanistic Models. Recent work (Chopra et al., 2022; N ´u ˜nez et al., 2023; Ning et al., 2023; Guan et al., 2025; Cui et al., 2025; Datta et al., 2025; Liu et al., 2022) has shown that black-box neural networks can be effective for calibrating mechanistic models. Specifically, let f N N β : D → Ω( θ) be a neural network parameterized by β that maps the input data domain D to the mechanistic model parameters space. The resulting mechanistic model is then written as f mech θ ,where the parameter vector θ is directly provided by the 
+
+f N N β , i.e., 
+
+θ = f N N β (D), D ∈ D . (2) This yields a compositional model f in which the neural network predicts the parameters for the mechanistic compo-nent: 
+
+f (D) = f mech ◦ f N N (D) = f mech (f N N β (D)) . (3) In this paper, we mainly consider D as a spatial-temporal 2NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs …       
+
+> …
+> COVI D
+> MRSA
+> Facility 1 Facility 2 Facility 3
+> State 1 State 2 State 3
+> Medellín Bogota
+> …
+> Influenza
+> State 1 State 2 State 3
+
+Figure 1. The datasets of the NIMM Evaluation Framework are from multiple sources and multiple levels. 
+
+dataset, where Dl,t denotes the signals for the location 
+
+l ∈ { 1, ..., L } at timestamp t. The predicted parameters 
+
+θ are also spatially- and time-varying , where θl,t denotes the predicted mechanistic parameter for the location l at the timestamp t. This fine-grained formulation enables the mechanistic model better adapt to heterogeneous dynamics across both space and time. 
+
+3. The NIMM Evaluation Framework. 
+
+3.1. Motivation 
+
+Despite preliminary efforts to apply LLMs to mechanistic modeling in simplified settings (Holt et al., 2024), we argue that such problem settings remain substantially detached from real-world scenarios. As a result, it remains unclear whether LLM-based systems are truly ready to generate mechanistic models for practical scientific applications. 
+
+Limitations of Prior Problem Setting. ❶ Unlike the prob-lem setting introduced in HDTwinGen (Holt et al., 2024), where mechanistic models are used under full observation 
+
+(i.e., all dX -dimensional states are observable in the data), a more realistic setting is partial observation . In this case, the LLM must construct effective mechanistic models from partially observed real-world data, where only a subset of the dX state variables (and in some cases, only a single dimension) is available. ❷ In many scientific applications, the goal is not merely to learn mechanistic models, but also to apply these models for diversified tasks. A desired prob-lem setting should therefore evaluate models in diversified scenarios, rather than focusing on modeling in isolation. ❸
+
+The problem setting in HDTwinGen further assumes that the target model f takes the form of an additive combi-nation of a neural network and a mechanistic component, which substantially restricts the space of admissible model structures. In contrast, our neural-integrated mechanistic formulation provides a more general modeling framework, with HDTwinGen being a special case. This generality better reflects practical modeling settings. ❹ Moreover, con-structing neural-integrated mechanistic models in practice remains highly challenging, requiring substantial domain knowledge and engineering effort, and thus provides a real-istic and demanding testbed for evaluating LLMs’ coding capabilities. These considerations motivate the need for a dedicated eval-uation framework that formalizes the new problem setting and systematically evaluates an LLM’s ability to perform neural-integrated mechanistic modeling. 
+
+3.2. NIMM Evaluation Framework Datasets. Neural-integrated mechanistic modeling has been widely applied to a variety of tasks, including epidemic forecasting (Chopra et al., 2022; Guan et al., 2025; Datta et al., 2025), infection modeling (Cui et al., 2025), and alloy yield-strength prediction (Liu et al., 2022). For the 
+
+Public Health domain, we use four popular datasets from prior work: Influenza data in the United States (Influenza-USA), methicillin-resistant Staphylococcus aureus data from Virginia (MRSA-Virginia), and COVID-19 data from two South American cities—Bogota (COVID-Bogota) and Medellin (COVID-Medellin). Figure 1 visualizes the col-lected datasets. Each dataset is spatiotemporal, e.g., MRSA-Virginia is a weekly dataset collected from 644 healthcare facilities in Virginia from 2016-01-03 to 2021-01-24. Fig-ure 1 visualizes the geolocations and time series of each dataset. We also note that the signals Dl,t ∈ Rd might be multi-variate, containing a subset of dX -dimensional states (e.g., Infection Counts) along with other contextual hetero-geneous features ( Point ❶). We also use datasets from other domains, including Clinical Health and Materials Science ,which are described in detail in § 5.1. In this section, we present the descriptions for the Public Health subset. 
+
+Task Description. For public health, we adopt spatial-temporal forecasting as the main task for evaluating the effectiveness of the generated mechanistic models, which is one of the most popular tasks in epidemics ( Point ❷). For-mally, the problem goal is to use data till time T , namely 
+
+{D:,t }Tt=1 , to predict {ˆy:,t }T +Ht=T +1 , e.g., the number of in-fections and deaths during the time period [T + 1 , T + H],where H is the forecast horizon. More specifically, the historical data {D:,t }Tt=1 is used to train the composi-tional model f as in Equation 5. In the inference stage, given the historical data, the neural network component 
+
+f N N first generates spatially- and time-varying parameters 
+
+θl,t , l ∈ { 1, ..., L }, t ∈ { 1, ..., T + H}. Then the mecha-nistic component f mech is run T + H steps under these predicted parameters, where the last H simulation steps 3NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs 
+
+serve as our forecasts. 
+
+Setups. In a typical neural-integrated mechanistic modeling pipeline, both a neural component f NN and a mechanis-tic component f mech are required ( Point ❸). To evaluate the LLM’s capabilities across different practical settings, we define the following scenarios: (1) Mechanistic Mode :completing a mechanistic model when the neural network component is already provided in the environment; (2) Hy-brid Mode : jointly completing both the mechanistic model and the neural network model. The hybrid mode is intu-itively more challenging than the mechanistic mode, as it involves a substantially larger search space. 
+
+Metrics. We aim to evaluate the effectiveness and correct-ness of the generated model ( Point ❹). For effectiveness, we employ popular metrics such as root mean square error (RMSE) for the forecasting task. Formally, the RMSE is defined as 
+
+q 1
+
+> L·H
+
+Pt=T +Hl,t =T +1 ∥ˆyl,t − yl,t ∥2. Following the prior work (Chopra et al., 2022), we adopt a more practi-cal but challenging real-time evaluation setup, where the training and testing period shifts over time, to avoid the cherry-picking fallacy. More details about the setup can be found in the Appendix A.4. For correctness evaluations, we use the bug count as the metric. If the generated code produces a runtime error, it is counted as buggy. To assess the NIMMGen’s capability for self-diagnosis and error cor-rection, we report Bug Counts@20, which measures the number of buggy codes in the last 20 iterations. 
+
+Baselines. The LLM-based baselines include zero-shot prompting and HDTwinGen (Holt et al., 2024). In ad-dition, we consider purely black-box models such as Transformers (Vaswani et al., 2017) and LSTMs (Hochre-iter & Schmidhuber, 1997). We also include prior neu-ral–integrated mechanistic models for comparison, includ-ing Grad-Metapopulation (Guan et al., 2025). The baselines for the other two domains are described later. 
+
+Remark 3.1 (Dual Role of the NIMM Evaluation Frame-work) . The NIMM benchmark not only introduced a new setting to evaluate LLMs’ ability to generate code under practical scenarios, but also serves as a probe of LLM’s potential performance in scientific domains. 
+
+3.3. Evaluation Results 
+
+Table 1 reports the results of the baseline methods on the NIMM evaluation framework. We run each method three times and report the average RMSE values together with the bug counts. The experimental setup is provided in the Appendix A.4. Our results reveal several key observations. 
+
+Observation 1. Neural-integrated modeling remains a major challenge to the existing baseline methods. Due to the challenging setup in our evaluation framework, all the baseline methods yield relatively high RMSE values. 
+
+Observation 2. Existing LLM-based approaches frequently generate mechanistic models that fail due to run-time errors. For example, for both zero-shot prompting and HDTwinGen, the bug counts can reach as high as 12 out of 20 generations. Despite the inherent difficulty of generating correct code for neural-integrated mechanistic models (due to their com-plex structure), this stark result indicates that only a limited fraction of the iterations actually generate usable models. 
+
+Observation 3. LLMs might generate mathematically valid but semantically incorrect models. In these baselines, the primary objective is to generate mech-anistic models that fit the observed data and perform fore-casting through simulation. However, optimizing solely for this objective can lead LLMs to produce mechanistic models that are mathematically valid yet semantically wrong. These models yield no run-time errors, but the specifica-tions can hardly be interpreted by the human evaluators. In Appendix G.1, we present qualitative examples of such generated semantically wrong models. 
+
+4. Methodology 
+
+4.1. Overview 
+
+This section proposes NIMMGen, an agentic framework with a static workflow (Yu et al., 2025), to address the three observations above. Specifically, we introduce (i) a self-evolving loop consisting of a modeling agent and a reflec-tion agent, which progressively refines model specifications through iterative optimization, addressing the challenges in Observation 1; (ii) an error-handling module that aug-ments the agent’s memory with historical error messages to reduce repeated failures, addressing Observation 2; and (iii) a verification agent that evaluates the physical and semantic consistency of generated models, addressing Observation 3. An overview of the NIMMGen is provided in Figure 2. Given the system prompt C, the NIMMgen performs G ∈
+
+N+ iterations of optimizations, where each optimization loop follows a pre-defined workflow: for generation step at g, the modeling agent proposes a new candidate model based on the historical memory M g (containing a population of top-k best models P g , error messages Err g , and the most recently generated reflection Rg−1) and the external information Eg . After the verification agent verifies the correctness of the generated model, the model will interact with the environment by optimizing the parameters of the neural-integrated mechanistic models. The feedback from the environment is then reflected and used to update the memory. After completing the G iterations, the model that yields the best performance is selected as the final model. 4NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs Class MetapopulationModel (nn .Module ): 
+
+def __init__ (self , populations ,
+
+theta ): 
+
+self .populations = populations 
+
+self .theta = theta 
+
+def step (T, params , seed ): 
+
+for t in range( T): 
+
+params [:, t, :] 
+
+Heterogenous Data 
+
+Environment 
+
+Insights Task Description Skeleton Codes 
+
+Modeling Agent 
+
+Verification Agent 
+
+Reflection Agent 
+
+Case 1: Error Messages 
+
+Case 2: Evaluation Result 
+
+Propose Improvements 
+
+Code to Differential Equations • Numerical accuracy :                                      
+
+> Improve integration accuracy by using e.g. Heun's
+> method or asemi -implicit update (still "one step
+> per day," but more accurate).
+> •Propose New Designs:
+> Consider leveraging acombination of `torch.relu `
+> with aregularizing mechanism to maintain some
+> form of non -linearity without limiting dynamic
+> responses too excessively.
+
+Main Loop 
+
+'!
+
+'"
+
+= ) ⋅ +, 
+
+- − / ⋅ 0
+
+Judge if the equations hold 
+
+> Workflow in the Loop
+
+Setup 
+
+Government Data 
+
+Third -Party Data 
+
+Training Task Inference Task  
+
+> Modeling Forecasting
+
+Sandbox Environments 
+
+Python 
+
+Env 
+
+Environmental Setups  
+
+> Loss Function
+> Optimizer
+
+Hardware 
+
+Env 
+
+Calling 
+
+Feedback 
+
+Error 
+
+Messages 
+
+Results 
+
+> System
+> Prompt
+
+Data Agent 
+
+Environment Engine 
+
+Optimize parameters of 
+
+Neural -integrated 
+
+Mechanistic Models 
+
+argmi n!ℒ(+! 
+
+> ""
+
++#$%& ,'()*+ , .)
+
+> Memory
+
+Top -k
+
+Mechanistic 
+
+Models & 
+
+Results 
+
+Error 
+
+Messages 
+
+Update 
+
+Augment 
+
+Tools 
+
+Code RAG 
+
+Database 
+
+Query 
+
+Extract 
+
+!
+
+" # $
+
+%!
+
+&!
+
+01 10
+
+20
+
+30
+
+!
+
+Figure 2. Overview of the proposed NIMMGen framework. 
+
+Table 1. Comparison of the effectiveness and robustness in the NIMM Evaluation Framework.                                                                                                          
+
+> Dataset ↓Mode LSTM Transformer Grad-Metapopulation Zero-shot HDTwinGen Ours RMSE ↓Bug Counts@20 ↓RMSE ↓Bug Counts@20 ↓RMSE ↓Bug Counts@20 ↓RMSE ↓Bug Counts@20 a↓RMSE ↓Bug Counts@20 ↓RMSE ↓Bug Counts@20 ↓
+> COVID-Bogota Mechanistic 633 .88 ±158 .06 /901 .96 ±284 .58 /1362 .89 ±165 .26 /1102 .62 ±476 .82 4339 .13 ±86 .53 6.27 ±3.56 333.91 ±155 .06 2.67 ±3.05
+> Hybrid 1358 .24 ±266 .25 12 765 ±64 .58 8.67 ±2.56 430.42 ±73 .25 3.33 ±2.51
+> COVID-Medellin Mechanistic 586 .88 ±16 .96 /552 .39 ±46 .89 /743 .25 ±25 .79 /908 .19 ±357 .17 4652 .72 ±102 .79 7.65 ±1.92 524.3 ±10 .82 1.67 ±2.88
+> Hybrid 1026 .25 ±262 .64 5675 .82 ±190 .89 3.90 ±2.56 562 .81 ±70 .89 2.50 ±0.92
+> Influenza-USA Mechanistic 86 .69 ±1.73 /30 .72 ±0.27 /117 .90 ±10 .93 /20 .92 ±5.38 48.78 ±1.49 2.06 ±2.25 4.81 ±1.50 1.33 ±2.31
+> Hybrid 783 .49 ±1240 .58 6163 .69 ±40 .75 7.92 ±1.59 21.82 ±8.34 5.33 ±4.93
+> MRSA-Virginia Mechanistic 167 .08 ±8.52 /127 .53 ±45 .59 /134 .05 ±16 .29 /516 .36 ±646 .61 693 .23 ±5.19 4.76 ±0.89 39.83 ±2.47 4.33 ±3.51
+> Hybrid 809 .99 ±302 .54 7132 .67 ±42 .82 8.74 ±1.26 69.22 ±14 .62 4.67 ±5.50
+
+a The metric is intentionally modified. We report the Bug Counts obtained by running the zero-shot method 20 times. 
+
+4.2. System Prompt and Context System Prompt. The system prompt C is composed of three parts: (1) I: insights extracted from the data; (2) T :task description in natural languages, describing the input and output variables, and the modeling targets; (3) S: skele-ton codes that describe the template of the neural-integrated mechanistic model. Here, I is obtained by employing an additional data agent to actively perceive environmental signals by enriching its context with raw data, system infor-mation, and library versions. The raw data allows the agent to directly extract insights and propose targeted designs for simulation. Including system and library version informa-tion helps the agent anticipate compatibility issues, avoid version-related errors, and understand which tools and data structures are available in advance. S is designed to provide necessary information, such as function signatures, which can guide the synthesis of executable code in a predeter-mined format. For illustration, we present the examples of the skeleton codes in Appendix F. 
+
+Memory Mechanism. At each generation step g, the mem-ory contains (1) a population of top-k best models P g across all historical runs, along with their evaluation results (2) the historical error messages Err g from all previously failed models, and (3) the most recently generated reflection Rg−1
+
+in the last iteration. These provide rich contextual informa-tion for the modeling agent to reason and evolve over the successive iterations. 
+
+Code RAG Database. To further enrich the agent’s context, we introduce an external code RAG database Dcode that allows it to proactively retrieve useful code snippets. Dcode 
+
+contains the code snippets collected from the relevant litera-ture in the past five years. Formally, the code snippets are extracted by Eg = h(Dcode , R g−1), where the reflection at the last step Rg−1 is used as the query prompt, and the code snippets Eg ⊂ Dcode will be returned. Detailed setups are provided in Appendix D.1. 
+
+4.3. Modeling Agent 
+
+At each generation step g, the modeling agent aims to pro-pose novel neural-integrated mechanistic models based on 5NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs 
+
+the system prompt C, memory M g , and the external in-formation Eg . Formally, the process can be represented as f = f mech (f N N β ) ∼ LLM m(C, M g , E g ). For example, in the mechanistic mode, the modeling agent constructs a set of dynamic equations that describe how different state variables evolve over time. This process involves (i) defin-ing the compartments (i.e., state variables), (ii) specifying the flows between them using differential equations (e.g.,  
+
+> dE dt
+
+= ηSI N − κE in a traditional SEIRM epidemic model), and (iii) parameterizing and coupling the equations using predicted parameters from the neural component f N N β (e.g., 
+
+η and κ in this example), thereby forming a consistent mech-anistic model. 
+
+4.4. Verification Agent 
+
+To address the challenge in Observation 3, we employ a ver-ification agent to judge and filter out the semantically wrong models. Specifically, the generated model f mech (f N N β )
+
+is first translated into corresponding differential equations; Then the verification agent judges whether these equations are mathematically valid and consistent with established domain knowledge. By designing criteria for prompting (see Appendix F), we empirically observe that many seman-tically wrong mechanistic codes can be filtered out. The process can be represented as LLM v (f mech (f N N β )) .
+
+4.5. Environment Engine Model Optimizations. If the model f mech (f N N β ) is veri-fied, the agent the agent interacts with the NIMM environ-ment using this model. Specifically, the model is trained by Equation 5 with an AdamW optimizer. Simply put, the goal is to fit the neural-integrated model to the training data till time T , namely {D:,t }Tt=1 , to obtain the optimized β∗. The choice of the learning hyperparameters can be various, and we follow the prior works (Holt et al., 2024) with details provided in Appendix A.4. 
+
+Model Evaluations. For each model, we quantitatively evaluate its forecasting performance. The objective is to use training data up to time T , denoted by {D:,t }Tt=1 , to-gether with the trained model f mech (f N N β ), to predict the future trajectory {D:,t }T +Ht=T +1 ; that is, the number of infec-tions and deaths over the interval [T + 1 , T + H], where 
+
+H is the forecast horizon. Importantly, the model only has access to data prior to the forecasting period. Fol-lowing prior work (Chopra et al., 2022), we adopt a real-time evaluation setup (see Appendix A.4). After eval-uation, the RMSE of the forecasting period (i.e., v ←q 1
+
+> L·H
+
+Pt=T +Hl,t =T +1 ∥ˆyl,t − yl,t ∥2) will be returned. Then the model will update the top-k population by P g ←
+
+top-k(P g−1∥(f mech (f N N β∗ ), v )) .
+
+4.6. Reflection Agent Case 1: Error-Handling. Based on the Observation 2 in the above section, we found the codes generated by SOTA LLMs are not the oracle ones - they greatly suffer from indentation errors, function calling errors, and more. We therefore design a module that enables the reflection agent to learn from past failed models and avoid repeating the same errors incurred in the past (see Appendix F for more details). Specifically, if the runtime error occurs, the agent locates the key lines of code that lead to the errors and proposes potential solutions to the errors. For the current error Err ,the process is Err g ← Err g−1∥Err . We found that this simple module empirically reduces the code-level errors in the generated models (see Experiments § 5.3). 
+
+Case 2: Self-reflection. If no run-time occurs, then the agent reflects on the current top-k models P g from mul-tiple dimensions, including both model specification and implementation. These reflections are produced in natural language and are then added back into the context. The pro-cess can be described as Rg ← LLM r (P g , v ). Importantly, the reflection agent is not a trivial component that merely praises the modeling agent’s code. Instead, we empirically observe that it frequently proposes meaningful revisions that lead to substantial changes and measurable performance gains (see Appendix G.3). 
+
+5. Evaluation 
+
+5.1. Effectiveness Evaluations Experimental Setup. To demonstrate the effectiveness of the NIMMGen, we evaluate its performance on three do-mains: (1) Public Health, (2) the Cancer dataset developed by (Holt et al., 2024) (Clinical Health), and (3) the Materials dataset from (Liu et al., 2022) (Materials Science). The Can-cer benchmark is derived from a state-of-the-art biomedical pharmacokinetic–pharmacodynamic (PKPD) model of lung cancer tumor growth, which simulates the combined effects of chemotherapy and radiotherapy. Following (Holt et al., 2024), we consider three scenarios: no treatment (Lung Cancer), chemotherapy only (Lung Cancer (Chemo.)), and chemotherapy combined with radiotherapy (Lung Cancer (Chemo. & Radio.)). The Cancer dataset provides full observation of all dX -dimensional states (rather than par-tial observation in the public health subset) and is used to evaluate whether LLM-generated mechanistic models can generalize to unseen trajectories, rather than to a specific forecasting task as in the public health subset. Because the Cancer dataset was not originally designed for neural-integrated pipelines, we made several manual adjustments to ensure compatibility with the NIMMGen. The specific experimental hyperparameter choices follow those in (Holt et al., 2024), which can be found in the Appendix B. The Ma-6NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs 
+
+Table 2. Comparison of NIMMGen with the baselines on the Cancer dataset.            
+
+> Zero Shot HDTwinGen Ours Lung Cancer 73 .25 ±45 .11.69 ±2.05 1.41 ±1.58
+> Lung Cancer (w/ Chemo.) 53 .52 ±16 .22 1.23 ±0.04 0.08 ±0.04
+> Lung Cancer (w/ Chemo. & Radio.) 109 .25 ±25 .64 0.78 ±0.46 0.06 ±0.02
+
+terials dataset follows the setup of (Liu et al., 2022), where the task is to predict alloy yield strength using a neural-integrated mechanistic model. NIMMGen is employed to optimize the mechanistic components of the model. The specific experimental setups for the Materials dataset can be found in the Appendix C. 
+
+Effectiveness on Public Health Table 1 reports the perfor-mance comparison between the NIMMGen and the base-lines. Overall, the NIMMGen achieves substantially lower RMSE across all datasets. Compared with purely black-box deep learning approaches such as LSTM and Transformer, the NIMMGen not only yields better forecasting accuracy but is also inherently more interpretable to policymakers. As we show in § 5.2, the generated mechanistic models can be readily adapted to new scenarios through simple natural-language interaction and interpretable parameter modifications. Compared with the manually designed Grad-metapopulation models, the mechanistic models produced by the NIMMGen are more robust under real-time settings and exhibit stronger forecasting performance. Finally, rela-tive to LLM-based baselines such as zero-shot prompting and HDTwinGen, the NIMMGen provides clear advantages in both forecasting accuracy and the likelihood that the gen-erated models run successfully. Moreover, we also observe that the hybrid mode gener-ally shows a slightly worse performance than the mecha-nistic mode. Although this may appear counterintuitive, it aligns with our expectations: In the hybrid mode, the LLM is expected tune both the mechanistic part and the neural network part, which might be harder to synchronize. The challenge also comes from that fact that the searching space of the hybrid space is considerably larger compared to the mechanistic mode. Therefore, given the same budget, the hybrid mode shows a slightly worse performance. 
+
+Effectiveness on Clinical Health. Table 2 compares the three LLM-based approaches on the cancer dataset. As shown, our pipeline consistently achieves lower RMSE er-rors than the two baselines, by over 16.56% in the Lung Cancer dataset, and 92.31% in the Lung Cancer (w/ Chemo. & Radio) dataset in average, demonstrating the advantages brought by the neural-integrated design. 
+
+Effectiveness on Materials Science. As shown in Table 5, the resulting neural-integrated model achieves significantly better performance than the purely neural network baseline. These experimental results demonstrate the comprehensive 0 50 100 150 200 250 300 
+
+> Time Step
+> 0
+> 1000
+> 2000
+> 3000
+> 4000
+> 5000
+> 6000
+> Number of Cases
+> Ground-Truth
+> = 0
+> = 0.02
+> = 0.04
+> = 0.06
+> = 0.08
+
+Figure 3. Observed and simulated epidemic trajectories under simulated social distancing policies. 
+
+ability in handling the three domains across different sci-entific domains, further suggesting its broad potential in building effective mechanistic models. 
+
+5.2. Counterfactual Intervention Simulations 
+
+In this section, we show the potential validity of the models generated by NIMMGen with a counterfactual intervention. Counterfactual intervention simulation is a widely used ap-plication of mechanistic models, aiming to quantify how hypothetical policies (e.g., social distancing) alter epidemic trajectories relative to the observed baseline (Ge et al., 2021; R ˇadulescu et al., 2020; Ventura et al., 2022). In particular, social distancing policies primarily affect disease transmis-sion by reducing effective contact rates. We therefore simu-late social distancing by adjusting the transmission-related component of the model after a given time T ′. Let θl,t, ¯γ
+
+denote the effective transmission rates ¯γ produced by the neural component f N N β at time t for location l. We define 
+
+θl,t, ¯γ =
+
+(
+
+θl,t, ¯γ , t < T ′
+
+(1 − ∆) · θl,t, ¯γ , t ≥ T ′ , ∀1 < l ≤ L (4) where ∆ denotes the strength of social distancing interven-tion and ∆ a larger ∆ corresponds to stronger reductions in population contact. Figure 3 shows the intervention experiments on the COVID-Bogota dataset ( L = 1) with T ′ = 270 . The neural-integrated mechanistic model is chosen as the best one generated by the NIMMGen. As expected, increasing the strength of the simulated social distancing intervention re-sults in systematic reductions in epidemic peak magnitude and cumulative case counts. Notably, this experiment does not aim to assess the real-world effectiveness of specific poli-cies, as counterfactual ground truth is inherently unavailable. Instead, the objective is to evaluate whether the generated mechanistic models respond to intervention parameters in a manner consistent with epidemiological principles. 
+
+5.3. Further Analysis What has been changed during the Optimization? Fig-7NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs 5 10 15 20 25 30 35 40                    
+
+> 0
+> 10
+> 20
+> 30
+> 40
+> Iteration
+> RMSE
+> Influenza
+> Mean Loss
+> Top Loss
+> 510 15 20 25 30 35 40
+> 40
+> 60
+> 1000
+> 2000
+> Iteration
+> RMSE
+> MRSA
+> Mean Loss
+> Top Loss
+> 510 15 20 25 30
+> 0
+> 500
+> 1000
+> 1500
+> 2000
+> Iteration
+> RMSE
+> Bogota
+> Mean Loss
+> Top Loss
+> 510 15 20 25 30 35 40
+> 700
+> 800
+> 900
+> 1000
+> 1100
+> 1200
+> Iteration
+> RMSE
+> Medellin
+> Mean Loss
+> Top Loss
+
+Figure 4. Loss curve along with the iterations. 
+
+Table 3. Performance Comparison under Different LLM Models.               
+
+> Model Type Model Name Influenza-USA MRSA-Virginia Proprietary LLM
+> GPT-4.1 4.81 ±1.50 39 .83 ±2.47
+> GPT-4o 8.17 ±2.54 44 .36 ±7.94
+> GPT-5-mini 38 .41 ±20 .37 82 .41 ±26 .57
+> Open-source LLM Qwen2.5-32B-Coder 25 .35 ±3.67 96 .75 ±42 .67
+> Qwen3-30B-Coder 19 .15 ±8.76 81 .52 ±34 .53
+
+ure 4 visualizes the loss curve over the course of optimiza-tion. We plot both the average RMSE validation loss of all historically generated mechanistic models and the best (low-est) RMSE validation loss achieved so far. As shown, the mean loss exhibits a decreasing trend, suggesting that mod-els generated at later iterations progressively improve the population through guided optimization rather than purely stochastic trial-and-error. The best loss also steadily de-creases with iterations, demonstrating that the NIMMGen can continuously refine the model during the search pro-cess. To further understand what changes in the mechanistic code contribute to these improvements, we qualitatively ana-lyze the mechanistic programs throughout optimization and summarize the key modifications in Table 9. 
+
+Sensitivity of the Hyper-parameters. In Table 3, we compare the performance of the NIMMGen with differ-ent base LLMs, including proprietary models such as 
+
+GPT-4.1 , GPT-5 , and GPT-5.2 , and two frontier open-source coding models, including Qwen2.5-32B-Coder 
+
+and Qwen3-30B-Coder . The detailed setups are pro-vided in Appendix D.2. In Table 6, we compare the perfor-mance of the NIMMGen under different iteration numbers, ranging from 10 to 80. 
+
+Ablation Studies. Table 7 compares the average bug counts in the first and last 20 iterations, before and after applying the error-correction module. The experiments are conducted on the Influenza-USA dataset, with hyperparameters set to default values. As shown, the error-correction module significantly reduces the number of bugs, especially in the last 20 iterations, suggesting that our agentic framework enables the model to adaptively learn how to debug and avoid errors during the optimization process. Table 8 also compares the performance with and without the verification agent. The analysis are detailed in Appendix E.1. 
+
+6. Related Works 
+
+LLMs for Mechanistic Modeling. Large language mod-els (LLMs) have been extensively used for scientific cod-ing tasks (Tang et al., 2024; White et al., 2023; Zhang et al., 2025; Kwok et al., 2024). However, most exist-ing approaches focus on one-shot code generation, rather than iterative optimization of model structures. AlphaE-volve (Novikov et al., 2025) proposed an evolutionary cod-ing framework that automatically generates, evaluates, and refines computer programs for scientific and algorithmic discovery. Nevertheless, it is designed as a general-purpose system, whereas our work focuses specifically on mecha-nistic modeling, a subfield of scientific coding that places stronger emphasis on validity and knowledge grounding. The most closely related work to ours is HDTwinGen (Holt et al., 2024). However, as discussed in the previous sections, their experimental setup substantially oversimplifies real-world scenarios, and their modeling assumption—namely, a simple additive combination of neural and mechanistic components-is often impractical in realistic applications. 
+
+Sequential Deep Neural Networks. Sequential Deep Neu-ral Networks (DNNs) can be adapted to the mechanistic modeling task. Specifically, rather than directly learning a single function f mech , the sequential DNNs aim to learn a black-box function f that aims to directly predict the system state at the next time step based on a window of historical states. Typical architectures such as RNNs (Elman, 1990), LSTMs (Hochreiter & Schmidhuber, 1997), and Transform-ers (Vaswani et al., 2017) have been widely applied in this setting. Although sequential DNNs show promising perfor-mance in capturing complex dynamics in the data, they are heavily relying on training data for generalization and lack substantive interpretability. 
+
+7. Conclusion 
+
+We first propose NIMM, an evaluation framework with the novel neural-integrated mechanistic modeling problem set-ting. Based on the evaluation results on the baselines, we identify some key challenges in the current baseline meth-ods. Motivated by these findings, we design an improved agentic framework, NIMMGen, that explicitly improves code correctness and practical validity during iterative re-finement. Experiments across three domains demonstrate the effectiveness of the NIMMGen. Despite the promising performance, several questions are still interesting: (1) Can we design a more reliable and efficient method for model verification apart from using LLMs? and (2) Would infor-mation from other modalities be useful for generating more 8NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs 
+
+effective mechanistic models? 
+
+Impact Statement 
+
+This paper proposed an evaluation framework for evaluating the LLM’s capability in generating neural-integrated mech-anistic models, and an agentic framework for enabling the LLMs to optimize the neural-integrated mechanistic models. Our main aim is to explore potentially effective methods for generating the neural-integrated mechanistic models. 
+
+References 
+
+Adhikari, B., Xu, X., Ramakrishnan, N., and Prakash, B. A. Epideep: Exploiting embeddings for epidemic forecast-ing. In Proceedings of the 25th ACM SIGKDD interna-tional conference on knowledge discovery & data mining ,pp. 577–586, 2019. Adiga, A., Kuhlman, C. J., Marathe, M. V., Mortveit, H. S., Ravi, S. S., and Vullikanti, A. Graphical dynamical sys-tems and their applications to bio-social systems. In In-ternational Journal of Advances in Engineering Sciences and Applied Mathematics , pp. 1–19. Springer, 2018. On-line version appeared in Dec. 2018. Anderson, J. L. An ensemble adjustment kalman filter for data assimilation. Monthly weather review , 129(12):2884– 2903, 2001. Borg, C. K., Frey, C., Moh, J., Pollock, T. M., Gorsse, S., Miracle, D. B., Senkov, O. N., Meredig, B., and Saal, J. E. Expanded dataset of mechanical properties and observed phases of multi-principal element alloys. Scientific Data ,7(1):430, 2020. Chopra, A., Rodr ´ıguez, A., Subramanian, J., Quera-Bofarull, A., Krishnamurthy, B., Prakash, B. A., and Raskar, R. Differentiable agent-based epidemiology. arXiv preprint arXiv:2207.09714 , 2022. Cramer, E. Y., Ray, E. L., Lopez, V. K., Bracher, J., Brennen, A., Castro Rivadeneira, A. J., Gerding, A., Gneiting, T., House, K. H., Huang, Y., et al. Evaluation of individual and ensemble probabilistic forecasts of covid-19 mortality in the united states. Proceedings of the National Academy of Sciences , 119(15):e2113561119, 2022. Cui, J., Heavey, J., Klein, E., Madden, G. R., Sifri, C. D., Vullikanti, A., and Prakash, B. A. Identifying and fore-casting importation and asymptomatic spreaders of multi-drug resistant organisms in hospital settings. NPJ Digital Medicine , 8(1):147, 2025. Datta, R., Cui, J., Madden, G. R., and Vullikanti, A. Calypso: Forecasting and analyzing mrsa infection patterns with community and healthcare transmission dynamics. arXiv preprint arXiv:2508.13548 , 2025. Davids, A., Rand, G. d., Georg, C.-P., Koziol, T., and Schas-foort, J. Sabcom: A spatial agent-based covid-19 model. 
+
+MedRxiv , pp. 2020–07, 2020. Elman, J. L. Finding structure in time. Cognitive science ,14(2):179–211, 1990. Ge, Y., Chen, Z., Handel, A., Martinez, L., Xiao, Q., Li, C., Chen, E., Pan, J., Li, Y., Ling, F., et al. The impact of social distancing, contact tracing, and case isolation inter-ventions to suppress the covid-19 epidemic: A modeling study. Epidemics , 36:100483, 2021. Guan, Z., Zhao, Z., Tian, F., Nguyen, D., Bhattacharjee, P., Tandon, R., Prakash, B. A., and Vullikanti, A. Aframework for multi-source privacy preserving epidemic analysis. arXiv preprint arXiv:2506.22342 , 2025. Hochreiter, S. and Schmidhuber, J. Long short-term memory. 
+
+Neural computation , 9(8):1735–1780, 1997. Holt, S., Liu, T., and van der Schaar, M. Automatically learning hybrid digital twins of dynamical systems. Ad-vances in Neural Information Processing Systems , 37: 72170–72218, 2024. Kamarthi, H., Rodr ´ıguez, A., and Prakash, B. A. Back2future: Leveraging backfill dynamics for improv-ing real-time predictions in future. arXiv preprint arXiv:2106.04420 , 2021. Kamarthi, H., Kong, L., Rodr ´ıguez, A., Zhang, C., and Prakash, B. A. Camul: calibrated and accurate multi-view time-series forecasting. In Proceedings of the ACM Web Conference 2022 , pp. 3174–3185, 2022. Karniadakis, G. E., Kevrekidis, I. G., Lu, L., Perdikaris, P., Wang, S., and Yang, L. Physics-informed machine learning. Nature Reviews Physics , 3(6):422–440, 2021. Karpatne, A., Kannan, R., and Kumar, V. Knowledge guided machine learning: Accelerating discovery using scientific knowledge and data . CRC Press, 2022. Katsoulakis, E., Wang, Q., Wu, H., Shahriyari, L., Fletcher, R., Liu, J., Achenie, L., Liu, H., Jackson, P., Xiao, Y., et al. Digital twins for health: a scoping review. NPJ digital medicine , 7(1):77, 2024. Kemp, F., Proverbio, D., Aalto, A., Mombaerts, L., d’H ´erou ¨el, A. F., Husch, A., Ley, C., Gon c¸ alves, J., Skupin, A., and Magni, S. Modelling covid-19 dynamics and potential for herd immunity by vaccination in austria, luxembourg and sweden. Journal of Theoretical Biology ,530:110874, 2021. 9NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs 
+
+Kwok, K. O., Huynh, T., Wei, W. I., Wong, S. Y., Riley, S., and Tang, A. Utilizing large language models in in-fectious disease transmission modelling for public health preparedness. Computational and Structural Biotechnol-ogy Journal , 23:3254–3257, 2024. Kwon, W., Li, Z., Zhuang, S., Sheng, Y., Zheng, L., Yu, C. H., Gonzalez, J., Zhang, H., and Stoica, I. Efficient memory management for large language model serving with pagedattention. In Proceedings of the 29th sym-posium on operating systems principles , pp. 611–626, 2023. Liu, S., Lee, K., and Balachandran, P. V. Integrating ma-chine learning with mechanistic models for predicting the yield strength of high entropy alloys. Journal of Applied Physics , 132(10):105105, 2022. Marathe, M. and Vullikanti, A. Computational epidemiol-ogy. Communications of the ACM , 56(7):88–96, 2013. Marchal, I. Applications of digital twins in medicine. nature biotechnology , 43(10):1606–1612, 2025. Maresca, F. and Curtin, W. A. Mechanistic origin of high strength in refractory bcc high entropy alloys up to 1900k. 
+
+Acta Materialia , 182:235–249, 2020. Meyur, R., Vullikanti, A., Swarup, S., Mortveit, H. S., Cen-teno, V., Phadke, A., Poor, H. V., and Marathe, M. V. Ensembles of realistic power distribution networks. Pro-ceedings of the National Academy of Sciences , 119(42): e2205772119, 2022. National Academies of Sciences, Engineering, and Medicine. Foundational research gaps and future direc-tions for digital twins. 2023. Niederer, S. A., Sacks, M. S., Girolami, M., and Willcox, K. Scaling digital twins from the artisanal to the industrial. 
+
+Nature Computational Science , 1(5):313–320, 2021. Ning, X., Jia, L., Wei, Y., Li, X.-A., and Chen, F. Epi-dnns: Epidemiological priors informed deep neural networks for modeling covid-19 dynamics. Computers in biology and medicine , 158:106693, 2023. Novikov, A., V ˜u, N., Eisenberger, M., Dupont, E., Huang, P.-S., Wagner, A. Z., Shirobokov, S., Kozlovskii, B., Ruiz, F. J., Mehrabian, A., et al. Alphaevolve: A coding agent for scientific and algorithmic discovery. arXiv preprint arXiv:2506.13131 , 2025. N ´u ˜nez, M., Barreiro, N. L., Barrio, R. A., and Rackauckas, C. Forecasting virus outbreaks with social media data via neural ordinary differential equations. Scientific Reports ,13(1):10870, 2023. R ˇadulescu, A., Williams, C., and Cavanagh, K. Manage-ment strategies in a seir-type model of covid 19 commu-nity spread. Scientific reports , 10(1):21256, 2020. Shaman, J., Karspeck, A., Yang, W., Tamerius, J., and Lip-sitch, M. Real-time influenza forecasts during the 2012– 2013 season. Nature communications , 4(1):2837, 2013. Tang, X., Qian, B., Gao, R., Chen, J., Chen, X., and Gerstein, M. B. Biocoder: a benchmark for bioinformatics code generation with large language models. Bioinformatics ,40(Supplement 1):i266–i276, 2024. Thorve, S., Baek, Y. Y., Swarup, S., Mortveit, H., Marathe, A., Vullikanti, A., and Marathe, M. High resolution synthetic residential energy use profiles for the united states. Scientific Data , 10(1):76, 2023. Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, Ł., and Polosukhin, I. At-tention is all you need. Advances in neural information processing systems , 30, 2017. Venkatramanan, S., Chen, J., Fadikar, A., Gupta, S., Higdon, D., Lewis, B., Marathe, M., Mortveit, H., and Vullikanti, A. Optimizing spatial allocation of seasonal influenza vaccine under temporal constraints. PLoS computational biology , 15(9):e1007111, 2019. Ventura, P. C., Aleta, A., Rodrigues, F. A., and Moreno, Y. Modeling the effects of social distancing on the large-scale spreading of diseases. Epidemics , 38:100544, 2022. Ward, L., Agrawal, A., Choudhary, A., and Wolverton, C. A general-purpose machine learning framework for predict-ing properties of inorganic materials. npj Computational Materials , 2(1):16028, 2016. White, A. D., Hocky, G. M., Gandhi, H. A., Ansari, M., Cox, S., Wellawatte, G. P., Sasmal, S., Yang, Z., Liu, K., Singh, Y., et al. Assessment of chemistry knowledge in large language models that generate code. Digital Discovery ,2(2):368–376, 2023. Yang, W., Lipsitch, M., and Shaman, J. Inference of sea-sonal and pandemic influenza transmission dynamics. 
+
+Proceedings of the National Academy of Sciences , 112 (9):2723–2728, 2015. Yin, B. and Curtin, W. A. First-principles-based prediction of yield strength in the rhirpdptnicu high-entropy alloy. 
+
+npj Computational Materials , 5(1):14, 2019. Yu, C., Cheng, Z., Cui, H., Gao, Y., Luo, Z., Wang, Y., Zheng, H., and Zhao, Y. A survey on agent workflow– status and future. In 2025 8th International Conference on Artificial Intelligence and Big Data (ICAIBD) , pp. 770–781. IEEE, 2025. 10 NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs 
+
+Zhang, Y., Han, Y., Chen, S., Yu, R., Zhao, X., Liu, X., Zeng, K., Yu, M., Tian, J., Zhu, F., et al. Large language models to accelerate organic chemistry synthesis. Nature Machine Intelligence , pp. 1–13, 2025. 
+
+A. NIMM Evaluation Framework (Public Health) 
+
+A.1. Overview 
+
+The NIMM evaluation framework consists of four epidemio-logical datasets (Cui et al., 2025; Guan et al., 2025; Chopra et al., 2022; Datta et al., 2025) spanning multiple diseases, spatial resolutions, and temporal granularities. It is designed to reflect realistic challenges encountered in public health surveillance, including spatial heterogeneity and varying ob-servation frequencies. Table 4 summarizes the datasets used to construct the NIMM evaluation framework, and Figure 1 visualizes the geolocations and aggregated time series for each dataset. 
+
+A.2. Dataset 
+
+The evaluation framework covers three infectious diseases, i.e., COVID, Influenza, and Methicillin-resistant Staphylo-coccus aureus (MRSA), and includes data from both macro-level surveillance systems and facility-level administrative records. The shape of each dataset can be described using three dimensions: (# Locations, # Timestamps, # Features). 
+
+COVID-Bogota & COVID-Medellin These are City-level COVID-19 datasets collected from the Colombia NIH 2.The dataset contains daily observations of 343 days. Fol-lowing (Guan et al., 2025), we adopt 11 features collected from heterogenous sources, including: • Mobility signals . These signals originate from records of visits to points of interest (POIs) across different re-gions. According to Google Mobility 3, daily changes in visits to various POI categories are collected and reported relative to the baseline period from January 3 to February 6, 2020. We extract six time-series features capturing mobility changes under different scenarios, including retail and recreation and 
+
+grocery and pharmacy .• Google Trends signals . Google provides search trend statistics for user-specified keywords 4. We collect search 
+
+> 2https://www.ins.gov.co/Noticias/Paginas/ coronavirus-casos.aspx
+> 3https://www.gstatic.com/covid19/ mobility/Global_Mobility_Report.csv
+> 4https://trends.google.com/trends/ explore?date=today
+
+trends for four COVID-19–related keywords, such as “covid-19 en Colombia,” “covid-19 hoy,” and “covid-19 Bogot´ a,” resulting in three time-series features. • Infection-related context . The Colombian National In-stitute of Health (NIH) reports daily COVID-19 infection and mortality counts, serving as the official data source in Colombia. From this source, we derive two time-series features. COVID-Bogota and COVID-Medellin are both collected on the city-level. Therefore, the final shape of the two datasets is (1, 343, 11). 
+
+Influenza-USA State-level influenza datasets. Follow-ing (Chopra et al., 2022), we adopt 14 signals. • Symptoms . This contains 13 different time series symptoms features collected from the Google symptoms dataset 5, including Fever, Cough, and Sore throat. • influenza-like-illness (ILI) . This is collected by the CDC and records the influenza-like-illness across different timestamps. Influenza-USA is collected from 51 states in the USA. Therefore, the final shape of the Influenza-USA dataset is (51, 191, 14). 
+
+MRSA-Virginia Facility-level MRSA datasets are col-lected from the Virginia All Payers Insurance Claims dataset (APCD). Built of top of (Datta et al., 2025), we adopt four signals: • Demographical signals . This includes number of MRSA cases for each age groups. (We have 15 ages groups and therefore we have 15 features) • Prescriptions . Number of Prescription claims listed in the insurance data along with the timestamps. • MRSA Infections . The number of infection counts corre-sponding to the MRSA. MRSA-Virginia is collected from 644 healthcare facilities in the Virginia state. Therefore, the final shape of the MRSA-Virginia dataset is (644, 244, 20). 
+
+A.3. Code Generation Modes 
+
+We consider two types of code generations modes: mech-anistic model and hybrid mode . In the mechanistic mode, 
+
+> 5https://github.com/GoogleCloudPlatform/ covid-19-open-data/blob/main/docs/ table-search-trends.md
+
+11 NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs 
+
+Table 4. Statistical Description of the datasets used in the NIMM Evaluation Framework (Public Health). 
+
+Dataset Name Data Source Observation Period Spatial Granularity # Locations Temporal Granularity # Timestamps Disease # Features Target COVID-Bogota Colombia NIH 2020-04-12 - 2021-01-30 City-level 1 Daily 343 (d) COVID 11 Infection Counts COVID-Medellin Colombia NIH 2020-04-12 - 2021-01-30 City-level 1 Daily 343 (d) COVID 11 Infection Counts Influenza-USA CDC 2017-W34 - 2021-W15 1 State-level 51 Weekly 191 (w) Influenza 15 Infection Counts MRSA-Virginia Virginia APCD 2016-W01 - 2021-W04 Facility-level 644 Weekly 244 (w) MRSA 20 Infection Counts Prediction                       
+
+> {"#}
+> {%#}
+> Epi -Parameter NN
+> Heterogenous Features
+> …
+> Mobility Data
+> Infection Data GHT
+> …
+> Other Sources
+> Ground -truth
+> Case Data
+> ℒ(),)
+> 1×322 ×11
+> Mechanistic Model
+> LLM Agent
+> Environment Environment Agent Generation
+> Backward and Update Model
+> Prediction
+> {"#}
+> {%#}
+> Epi -Parameter NN
+> Heterogenous Features
+> …
+> Mobility Data
+> Infection Data GHT
+> …
+> Other Sources
+> Ground -truth
+> Case Data
+> ℒ(),)
+> 1×322 ×11
+> Mechanistic Model
+> LLM Agent
+> Environment Environment Agent Generation
+> Backward and Update Model
+> (a) Mechanistic Mode
+> (b) Hybrid Mode
+> Generate
+> Generate
+
+Figure 5. Experimental setup. (a) Mechanistic mode. (b) Hybrid Mode. 
+
+the agent is responsible for generating the codes for f mech 
+
+only, while the f neural is predefined in the environment. In particular, in the mechanistic mode, we use the CalibNN designed by (Chopra et al., 2022), which has been demon-strated to be effective in extracting the information from heterogeneous data sources across multiple datasets. In the full model mode, the agent is responsible for generating the full model f mech (f N N (·)) .
+
+A.4. Task & Evaluation Task Description In the NIMM evaluation framework, we mainly focus on forecasting, which is one of the most popular tasks in epidemics. Formally, the goal in the fore-casting problem is to use data till time T , namely {xt}Tt=1 ,and predict {xt}T +HT +1 i.e., the number of infections and deaths during the time period [T + 1 , T + H], where H is the forecast horizon. 
+
+Training and Inference During training, we aim to cal-ibrate the composite model f (·) = f mech (f N N β (·)) from the training data {D:,t }Tt=1 . Specifically, the neural network 
+
+θ = f N N β ({D:,t }Tt=1 ) takes the entire training sequence as input and predicts the parameters of the mechanistic model. These predicted parameters θ are then used to instantiate the mechanistic model f mech , which is executed for T time steps to generate simulations for the target state (e.g., in-fection counts), i.e., {ˆy:,t }Tt=1 . The training objective is to minimize the root mean squared error (RMSE) between the simulated target values {ˆy:,t }Tt=1 and the ground-truth target Time +2 weeks   
+
+> Training
+> Testing
+> +3 weeks +1 week
+> !"
+
+Figure 6. Real-time evaluation Setup. 
+
+observations {y:,t }Tt=1 :
+
+β∗ = arg min 
+
+β RMSE ({ˆy:,t }Tt=1 , {y:,t }Tt=1 ),
+
+where {ˆy:,t }Tt=1 = f mech (f N N β ({D:,t }Tt=1 )) .
+
+(5) At inference time, we perform forecasting by running the calibrated composite model for T + H steps. The first T
+
+steps reproduce the observed period, while the additional 
+
+H steps generate predictions for the future horizon [T +1, . . . , T + H].
+
+Real-time Evaluation Following the popular real-time evaluation pipelines in the epidemics (Chopra et al., 2022; Adhikari et al., 2019; Kamarthi et al., 2022; Shaman et al., 2013), we mainly evaluate the performance of the con-structed models using the real-time forecasting setup. We simulate real-time forecasting by forcing the models to train only using data available until each of the prediction dates and make predictions for 4 weeks ahead in the future. Data revisions in public health data are large and may affect eval-uation and conclusions (Cramer et al., 2022; Kamarthi et al., 2021), therefore, we utilize fully revised data following previous papers on methodological advances. Specifically, we shift the training time window to 1, 2, and 3 weeks ahead to simulate the real-time setting. Figure 6 visualizes the real-time evaluation setups. 
+
+Environment Setup The learning rate of the training is set as 5e−4 with AdamW as the optimizer. The training iteration is set to 1000 to ensure convergence. The H is set to be 8 (weeks) for Influenza-USA and MRSA-Virginia datasets, and 28 (days) for the COVID-Bogota and COVID-Medellin datasets. The T is chosen depending on different datasets. For the COVID-Bogota and COVID-Medellin, the default T is 294 days (42 weeks); For the Influenza-USA, the default T is 191 (weeks); For the MRSA-Virginia, the default T is 244 (weeks). To use the COVID-Bogota and COVID-Bogota dataset for real-time evaluation, the training period will shift from 12 NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs 
+
+[1,...,294] to [21,...,315], and the testing period will accord-ingly shift from [295,...,322] to [316,...,343]. To use the Influenza-USA dataset for real-time evalu-ation, the training period will shift from [1,...,179] to [4,...,182], and the testing period will accordingly shift from [180,...,188] to [183,...,191]. To use the MRSA-Virginia dataset for real-time evalu-ation, the training period will shift from [1,...,232] to [4,...,235], and the testing period will accordingly shift from [233,...,241] to [236,...,244]. 
+
+Experimental Setup The default iteration number for the NIMMGen pipeline is set to 40. All experiments are conducted on two A100 GPUs. We use GPT-4.1 as the default backbone LLM. 
+
+A.5. Baselines 
+
+As stated in the main text, we opt to use the following three types of baselines. A.5.1. N EURAL SEQUENCE MODELS 
+
+LSTM Model We adopt a simple LSTM model consisting of one LSTM layer with hidden size 32, followed by a dense layer with hidden size 16, a rectified linear unit (ReLU) ac-tivation function, and a dropout layer with a dropout rate of 0.2. The output layer is a dense layer with linear acti-vation and L2 kernel regularization with a penalty factor of 0.01. The input dataset {Dt}Tt=1 is first segmented into overlapping five-timestamp windows, where the first four timestamps (Dt−4, . . . , D t−1) are used as input features and the last timestamp Dt is used as the prediction target. Formally, the model learns a mapping 
+
+ˆDt = f LSTM (Dt−4, D t−3, D t−2, D t−1).
+
+In the inference stage, we generate H-step-ahead forecasts in an auto-regressive manner. Starting from the last observed window (DT −3, D T −2, D T −1, D T ), the model predicts 
+
+ˆDT +1 = f LSTM (DT −3, D T −2, D T −1, D T ).
+
+This prediction is then fed back into the input window to generate subsequent forecasts: 
+
+ˆDT +h = f LSTM ( ˆDT +h−4, ˆDT +h−3, ˆDT +h−2, ˆDT +h−1),h = 2 , . . . , H, 
+
+(6) where observed values are used when available and pre-dicted values are used once the forecasting horizon extends beyond the training data. This iterative process yields the final H-step forecast { ˆDT +1 , . . . , ˆDT +H }.
+
+Transformer Model We first encode input dimension of the observations into an embedding vector dimension of size 64 through a linear network, followed by the addition of a standard positional encoder. Then, this is fed into the Transformer encoder layers, which had a head size of 4 and contains three layers of Transformer blocks. The final output is mapped back to the input dimension by using an additional linear layer. The training and the inference strategies are similar to those in the LSTM model. A.5.2. EXISITING NEURAL -INTEGRATED MECHANISTIC 
+
+MODELS 
+
+Grad Meta-population Model A meta-population model requires two key inputs: a contact matrix C ∈ Rm×m and a population vector N ∈ Rm, where m = |G| is the number of groups. Each entry Ci,j ∈ C represents the contact proba-bility between the populations in groups i and j, while each entry N j ∈ N records the population of group j. Follow-ing (Venkatramanan et al., 2019), the effective number of infected individuals and the effective population of group j
+
+after daily movement are defined as: 
+
+IEFF  
+
+> j
+
+= X
+
+> i
+
+Ci,j Ii, N EFF  
+
+> j
+
+= X
+
+> i
+
+Ci,j Ni (7) where ” EFF ” (effective) refers to infections accounted includ-ing infected individuals between different subpopulations due to transmissibility and mobility. The conditional force of infection for group j is then given by: 
+
+βEFF  
+
+> j
+
+= β IEFF 
+
+> j
+
+N EFF 
+
+> j
+
+. (8) For each group i ∈ [1 , ..., m ], the epidemic evolution Zi =[Si, E i, I i, R i, M i] from day t to day t + 1 is formulated as: 
+
+Zi(t + 1) = Zi(t) + ∆ Zi(t), where 
+
+∆Si(t) = −
+
+> m
+
+X
+
+> j=1
+
+Ci,j βEFF  
+
+> j
+
+Si(t) + δ(t)Ri(t),
+
+∆Ei(t) = 
+
+> m
+
+X
+
+> j=1
+
+Ci,j βEFF  
+
+> j
+
+Si(t) − α(t)Ei,
+
+∆Ii(t) = α(t)Ei(t) − (γ(t) + η(t)) Ii(t),
+
+∆Ri(t) = γ(t)Ii(t) + (1 − δ(t)) Ri(t),
+
+∆Mi(t) = η(t)Ii(t).
+
+(9) where our forecasting objective ∆Ii(t) represents the num-ber of newly infected individuals in age group i at time 
+
+t. Running the meta-population model for T time steps, it outputs the aggregated new cases over all the age groups for the entire training period: 
+
+ˆyt := 
+
+> m
+
+X
+
+> i=1
+
+∆Ii(t), ∀1 ≤ t ≤ T. (10) 13 NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs 
+
+Following (Guan et al., 2025), we calibrate the model with a CalibNN. We follow the same implementations as outlined in GitHub 6.A.5.3. LLM-BASED GENERATIONS 
+
+Zero-shot For zero-shot generation, we prompt the LLM model with the exact task description and the skeleton codes as our pipeline. However, it only generates the code once and incorporates no criticism from the reflection agent. 
+
+HDTwinGen (Holt et al., 2024) We adopt the same im-plementation as described in the official GitHub 7.
+
+B. NIMM (Clinical Health) Setup 
+
+In the original HDTwinGen setup of the Cancer dataset, the mechanistic model is designed to learn a transition from the current state xt ∈ RdX to the next state xt+1 . To adapt this dataset to our neural-integrated framework, we introduce a neural network f N N that takes the current state xt as input and outputs the parameters of the cancer mechanistic model. The mechanistic model then uses these parameters, together with the current state xt, to produce the state at the next time step. 
+
+C. NIMM (Materials Science) Setup 
+
+The considered task is to predict the temperature-dependent yield strength of single-phase Face-Centered Cubic (FCC) / Body-Centered Cubic (BCC) high-entropy alloys (HEAs) by integrating a neural network with a physics-based mecha-nistic model (Yin & Curtin, 2019; Maresca & Curtin, 2020). Similar to the setup in NIMM, the neural network compo-nent is used to predict key mechanistic parameters from alloy composition data D. Then these predicted parame-ters are used to propagate through a mechanistic model, yielding the final yield strength prediction. For FCC al-loys, the dataset D contains 29 HEAs and room tempera-ture yield strength, where each input feature characterizes composition-based descriptors derived from elemental prop-erties (Ward et al., 2016; Liu et al., 2022) (e.g., valence electrons, atomic volume). For BCC alloys, the dataset 
+
+D contains 130 HEAs with temperature-dependent yield strength data, where each input feature also characterizes composition-based descriptors derived from elemental prop-erties (Borg et al., 2020) (e.g., valence electrons, atomic volume). 
+
+> 6https://github.com/GuanZihan/ GradMetapopulation.git
+> 7https://github.com/samholt/HDTwinGen
+
+D. Detailed Setups 
+
+D.1. RAG Tool 
+
+We construct the RAG database using 
+
+Qwen/Qwen3-Embedding-0.6B as the embed-ding model. During the inference stage of the RAG module, the top-3 most similar code chunks are retrieved and appended to the task prompt as contextual augmentation. The code repository is built by collecting epidemic models proposed in papers published over the past five years and incorporating their released implementations, when available, to construct the RAG database. 
+
+D.2. Open-source Models Setup 
+
+To improve the reproducibility of the NIMMGen, we set the temperature to 0 for all experiments using open-source models. The max tokens parameter is set to 2048. We use vLLM (Kwon et al., 2023) to deploy the open-source models and adopt the OpenAI API schema to communicate with them. All experiments are con-ducted on two A100 GPUs. The two open-source mod-els are Qwen/Qwen3-Coder-30B-A3B-Instruct 8
+
+and Qwen/Qwen2.5-Coder-32B-Instruct 9 respec-tively.  
+
+> Table 5. RMSE comparison between the NIMMGen and the pure black-box neural networks on the yield strength prediction task.
+
+Neural Network Ours FCC 213 .13 ±58 .51 139.19 ±29 .25 
+
+BCC 235 .10 ±15 .55 180.13 ±68 .99 
+
+E. More Results         
+
+> Table 6. Performance Comparison under Different Iterations.
+> 10 20 40 80 Influenza-USA 18 .92 ±2.76 14 .26 ±2.79 4.81 ±1.50 4.40 ±0.95
+
+E.1. More Results on the Ablation Studies 
+
+Table 8 reports the performance with and without the Ver-ification Agent on the Influenza-USA dataset. The results indicate that the Verification Agent alone does not exert a monotonic effect on the final performance. 
+
+> 8https://huggingface.co/Qwen/ Qwen3-Coder-30B-A3B-Instruct
+> 9https://huggingface.co/Qwen/Qwen2. 5-Coder-32B-Instruct
+
+14 NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs 
+
+Table 7. Comparison of Bug Rates w/ and w/o Error Correction Module.      
+
+> w/ Error Correction w/o Error Correction Bug Counts @ First 20 Iterations 3.51 4.73 Bug Counts @ Last 20 Iterations 2.67 3.92
+
+Table 8. Performance with and without the Verification Agent on the Influenza-USA dataset.        
+
+> Mode w/ Verification w/o Verification Influenza-USA Mechanistic 4.81 ±1.50 8.46 ±1.82
+> Hybrid 21 .82 ±8.34 19 .25 ±6.27
+
+F. Prompts 
+
+F.1. Insights Extraction Prompt 
+
+Insights Extraction Prompt 
+
+I am trying to build a mechanistic epidemic model that can simulate transmission dynamics and gener-ate forecasting predictions for daily infection counts. Please read and analyze the dataset I provide, iden-tify important structural patterns, temporal behav-iors, and feature relationships, and then generate actionable modeling tips specific to how a model should be designed, parameterized, or modified to fit this dataset well. Your tips may include suggestions on compartments, calibration strategies, seasonality, delays, under-reporting adjustment, spatial effects, or any dataset-specific phenomena you observe. ##Data 
+
+{string data }
+
+Please generate your tips after the ###TIPs: E.g., ###TIPs Observation 1. [Your Observation 1 Here] Tip 1. [Your Tip 1 Here] Observation 2. [Your Observation 2 Here] Tip 2. [Your Tip 2 Here] ... 
+
+F.2. Verification Prompt 
+
+Verification Prompt 
+
+Convert the following code into differential equa-tions and assess whether the equations are physically grounded (e.g., non-negative compartments, con-servation where appropriate, realistic rates). Keep reasoning concise. Description: 
+
+{code description }
+
+Code: “‘python 
+
+{state code }
+
+“‘ Checks: 1) ODE correctness: - Derive explicit equa-tions for each state and parameter. 2) Physical validity: - Non-negative compartments. - Conservation holds when appropriate. - Rates have valid signs and plausible roles. - No undefined dynamics (e.g., division by zero). 3) Semantic consistency: - States match the described compartments. - Flow directions align with meaning (e.g., recovery 
+
+I → R). - No missing or extra mechanisms relative to the description. - Parameters are used in their intended roles (e.g., β infection, γ recovery). - Observed vs latent states are not conflated. - Neural outputs (if any) are constrained and used consistently. 
+
+15 NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs 
+
+F.3. Reflection Prompt 
+
+Reflection Prompt 
+
+You generated the following code comple-tions (ParamNN feeds a simulator; only ParamNN is trainable). Analyze them rigor-ously to drive the validation loss (RMSE) below 
+
+{self.config.run.target loss }.Records of the program after each iteration:“‘ 
+
+{history best completions str } “‘ Current top programs (lowest validation loss last):“‘ 
+
+{completions } “‘ 
+
+{error section }
+
+Reflect step-by-step: 1. Diagnose weaknesses: For each program, explain why its validation loss (RMSE) isn’t yet {self.config.run.target loss } (look at structural choices, stability issues, etc.). If it is closed to the target, you should also identify which features have contributed to the success. 2. Propose new designs: propose possible strate-gies that might drive the model to achieve lower validation loss. 3. Repair plan: Propose specific code-level changes that address those root causes, including adjust-ments to ParamNN outputs, simulator couplings, or optimization targets. The plan must be actionable (e.g., “replace the quadratic interaction in line X with . . . so the chemo input matches the observed decay”). 4. Error handling (if present): For each failure listed above, pinpoint the bug and outline how to rewrite the affected section so it runs successfully next iter-ation. - Do not write full code; give concise, prescrip-tive instructions tied to the observed data. This reflection will guide generation {iteration } of 
+
+{self.config.run.generations }.
+
+F.4. Error Correction Prompt 
+
+Error Correction Prompt 
+
+Summarize code execution failures into concise bul-lets with key code fragments, error messages, and actionable fixes. Condense the repeated failures below. For each, keep a short code excerpt, the core error message, and a specific fix. {errors text }
+
+The following section record generations that failed to run in the history. Reflect on the error messages also and describe how to fix the corresponding code so it executes correctly: ############ 
+
+{joined errors }
+
+############ 
+
+F.5. Skeleton Codes Prompt 
+
+The skeleton codes are very similar across different datasets. Here we use Influenza-USA as an example.                                                                                                    
+
+> class StateDifferential: def __init__(self, population, theta): #This section provides prefilled code that enables the model to incorporate meta-population dynamics. #Initialize the parameters self.device =’cuda:0’ #migration matrix defines amatrix describing the contact probability among Nlocations. Its size is (N, N) self.migration_matrix =theta #num_agents defines avector describing the population of each location. Its size is (N) self.num_agents =population #self.num_patches is N. self.num_patches =self. migration_matrix.shape[0] def step(self, params, T): #TODO: Fill in the code here #You can use any number of parameters from [’beta’, ’kappa ’, ’symprob’, ’epsilon’, ’alpha ’, ’gamma’, ’delta’, ’mor’] to construct the mechanistic model .#The shape of ‘params‘: (self. num_patches, T, 8) #Note that ’beta_t’, ’kappa_t’, ’ symprob_t’, ’epsilon_t’, ’alpha_t’, ’gamma_t’, ’delta_t’, and ’mor_t’ are all of shape (
+
+16 NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs 
+
+self.num_patches) # **You MUST NOT using any sub loops exceept inside this loop ** for t in range(T): (beta_t, alpha_t, gamma_t, delta_t, kappa_t, epsilon_t, symprob_t, mor_t, ) = params[:, t, :].unbind(dim =-1) S_t = S[-1] E_t = E[-1] I_t = I[-1] R_t = R[-1] M_t = M[-1] # TODO: Fill in the code here # - Remember this is adeterministic ODE Simulator # - Return ‘I‘ as tensors, where ‘I‘ denotes the simulated infected counts along different time stamps ; ‘I‘ should be the shape of (‘T‘+1, self.num_patches ); params have a grad_fn, so make sure that ‘I‘ also remains in the computation graph. return I
+
+Note that the ‘population’ and the ‘theta’ are two constant vectors passed by the environment. We used the ones col-lected from a popular source 10 .
+
+G. Qualitative Analysis on the Generated Mechanistic Codes 
+
+G.1. Semantically Wrong Codes 
+
+The model allows exposed individuals to transition to the removed state through two independent pathways: 
+
+E αt
+
+−→ R, E κt(1 −symprob t)
+
+−−−−−−−−−→ R, 
+
+while only a fraction κtsymprob t of exposed individuals become infectious. This makes the compartment E a non-identifiable reservoir whose outflow is governed by multiple unrelated rates. 
+
+def step(self, params, seed_status, T): 
+
+> 10
+
+https://github.com/NSSAC/patchflow-data/ tree/main kappa0 = params[:, 0, 4].clamp(0.01, 1.0) symprob0 = params[:, 0, 6].clamp(0.01, 1.0) I0 = (kappa0 * symprob0 * seed_status). clamp(min=0.0) E0 = (seed_status - I0).clamp(min=0.0) S0 = (self.num_agents - E0 - I0).clamp( min=0.0) R0 = torch.zeros_like(seed_status) M0 = torch.zeros_like(seed_status) S = [S0]; E = [E0]; I = [I0]; R = [R0]; M = [M0] for t in range(T): (beta_t, alpha_t, gamma_t, delta_t, kappa_t, epsilon_t, symprob_t, mor_t) = params[:, t, :]. unbind(dim=-1) new_inf = (lambda_t * S_t).clamp( min=0.0) imp_inf = epsilon_t dS = -new_inf dE = new_inf - kappa_t * E_t +imp_inf dI = kappa_t * symprob_t * E_t - ( gamma_t + delta_t + mor_t) *I_t dR = gamma_t * I_t + alpha_t * E_t + kappa_t * (1 - symprob_t) *E_t dM = mor_t * I_t 
+
+Here is the second semantically incorrect mechanistic model. The error mainly comes from the fact that Mnext variable is not updated consistently in the system. 
+
+S_next = S_t + dS E_next = E_t + dE I_next = I_t + dI R_next = R_t + dR M_next = M_t + dM S_next = torch.clamp(S_next, min=0) E_next = torch.clamp(E_next, min=0) I_next = torch.clamp(I_next, min=0) R_next = torch.clamp(R_next, min=0) M_next = torch.clamp(M_next, min=0) alive_sum = S_next + E_next + I_next +R_next total = alive_sum + M_next excess = torch.clamp(total - self. num_agents, min=0) if torch.any(excess > 0): nonM = alive_sum + 1e-8 fracS = S_next / nonM fracE = E_next / nonM fracI = I_next / nonM fracR = R_next / nonM 
+
+17 NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs 
+
+S_next = S_next - fracS * excess E_next = E_next - fracE * excess I_next = I_next - fracI * excess R_next = R_next - fracR * excess # M_next (cumulative deaths) is left untouched 
+
+Here is the third semantically incorrect mechanistic model. A parameter delta t intended to represent a rate is injected as an absolute flow, creating a unit mismatch and breaking mechanistic interpretability 
+
+dS = -new_exposed + alpha_t * R_t dE = new_exposed - kappa_t * E_t + delta_t dI = kappa_t * E_t - gamma_t * I_t - mor_t * I_t dR = gamma_t * I_t - alpha_t * R_t dM = mor_t * I_t 
+
+G.2. Run-time Error Codes 
+
+The following snippets present examples of generated code that yield runtime errors. 
+
+Indentation Error The code line dS=-lambda t * S t has a wrong indentation, leading to the indentation error. 
+
+Error: Error running function: File "<string>", line 74 dE = lambda_t * S_t - kappa_t *E_t ˆIndentationError: unexpected indent ‘‘‘python ... dS = -lambda_t * S_t dE = lambda_t * S_t - kappa_t * E_t dI = kappa_t * E_t - (gamma_t +delta_t + mor_t) * I_t ... return I‘‘‘ 
+
+Function Error When calling the function clamp() ,wrong parameter types are provided. 
+
+Error: Error running function: TypeError: clamp() received an invalid combination of arguments -got (Tensor, max=Tensor, min=float) , but expected one of: * (Tensor input, Tensor min = None, Tensor max = None, *, Tensor out = None) * (Tensor input, Number min = None, Number max = None, *, Tensor out = None) ‘‘‘python import torch class StateDifferential: def step(self, params, seed_status, T): ... # Clamp for biological plausibility S_next = torch.clamp(S_t + dS, min =0.0, max=self.num_agents) E_next = torch.clamp(E_t + dE, min =0.0, max=self.num_agents) I_next = torch.clamp(I_t + dI, min =0.0, max=self.num_agents) R_next = torch.clamp(R_t + dR, min =0.0, max=self.num_agents) M_next = torch.clamp(M_t + dM, min =0.0, max=self.num_agents) ... return I
+
+G.3. Evolving Code Examples 
+
+The table 9 shows a summariziation about what changes have been made to the generated model across different iterations in a typical run. 18 NIMMGen: Learning Neural-Integrated Mechanistic Digital Twins with LLMs  
+
+> Table 9. Evolution of Mechanistic Model Design and Validation Loss for the Influenza-USA dataset
+
+Phase / Iteration Range Structural Change Val. Loss Loss Change ( ∆) Main Contribution Iteration 0 (Baseline) Basic SEIRM, Euler update, no clamping, prevalence out-put 
+
+∼28.1 – Numerically unstable, mismatch with reported flu data, uncon-strained parameters Iteration 1 Explicit dt , state clamping, death compartment, improved 
+
+κ usage 
+
+∼24.8 −3.3 Stabilized dynamics and trans-mission scaling Early–Mid (Iter ∼10– 20) Mass conservation, partial switch to incidence output 
+
+∼15.36 −9.4 Prevented population drift; inci-dence aligns better with surveil-lance data Mid–Late (Iter ∼20– 28) Inconsistent designs, partial smoothing/reporting logic 
+
+∼15–20 ≈ 0 to +5 Over-complication sometimes hurt generalization Iteration 31 Learnable init split, report-ing rate, background/import, smoothing kernel 
+
+∼17.19 – First explicit observation model Iteration 32 (Break-through) Constrained params (soft-plus/sigmoid), nonlinear FOI, learnable smoothing, reported incidence output 
+
+∼5.86 −9 to −11 Matched data type, noise struc-ture, and stabilized optimization 19

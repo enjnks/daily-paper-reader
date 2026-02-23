@@ -1,0 +1,977 @@
+Title: A Probabilistic Framework for LLM-Based Model Discovery
+
+URL Source: https://arxiv.org/pdf/2602.18266v1
+
+Published Time: Mon, 23 Feb 2026 01:43:18 GMT
+
+Number of Pages: 26
+
+Markdown Content:
+# A Probabilistic Framework for LLM-Based Model Discovery 
+
+Stefan Wahl 1 2 Raphaela Schenk 3 Ali Farnoud 3 Jakob H. Macke 1 2 4 Daniel Gedon 1 2 
+
+# Abstract 
+
+Automated methods for discovering mechanistic simulator models from observational data offer a promising path toward accelerating scientific progress. Such methods often take the form of agentic-style iterative workflows that repeatedly propose and revise candidate models by imitat-ing human discovery processes. However, ex-isting LLM-based approaches typically imple-ment such workflows via hand-crafted heuristic procedures, without an explicit probabilistic for-mulation. We recast model discovery as proba-bilistic inference, i.e., as sampling from an un-known distribution over mechanistic models ca-pable of explaining the data. This perspective provides a unified way to reason about model proposal, refinement, and selection within a sin-gle inference framework. As a concrete instanti-ation of this view, we introduce ModelSMC, an algorithm based on Sequential Monte Carlo sam-pling. ModelSMC represents candidate models as particles which are iteratively proposed and re-fined by an LLM, and weighted using likelihood-based criteria. Experiments on real-world sci-entific systems illustrate that this formulation discovers models with interpretable mechanisms and improves posterior predictive checks. More broadly, this perspective provides a probabilis-tic lens for understanding and developing LLM-based approaches to model discovery. 
+
+# 1. Introduction 
+
+Scientific discoveries—from the expanding universe (Hub-ble, 1929) to gravitational waves (Abbott et al., 2016) and neuronal excitability (Hodgkin & Huxley, 1952)—often rely on formal models that integrate theory with data to en-
+
+> 1
+
+Machine Learning in Science, University of T¨ ubingen, T¨ ubingen, Germany 2T¨ ubingen AI Center, T¨ ubingen, Germany 
+
+> 3
+
+Boehringer Ingelheim, Biberach, Germany 4Department Empirical Inference, Max Planck Institute for Intelli-gent Systems, T¨ ubingen, Germany. Correspondence to: 
+
+<{firstname.lastname }@uni-tuebingen.de >.
+
+Preprint. February 23, 2026. 
+
+able interpretation and prediction. As scientific problems grow in experimental and conceptual complexity, computa-tional simulators that encode explicit mechanistic hypothe-ses have become central tools for discovery (Frigg & Reiss, 2009; Winsberg, 2019; Lavin et al., 2022). Simulators are only approximations of reality, and their fi-delity depends on how accurately they capture the struc-ture of the underlying system (Box & Draper, 1987). Con-structing scientific simulators that are simultaneously in-terpretable, tractable, and realistic can be challenging. This modeling process requires substantial domain expertise and iterative manual refinement, rendering it labor-intensive and difficult to scale. A range of methods have been proposed to partially au-tomate model discovery, but existing approaches typi-cally trade off expressive model classes against mechanis-tic interpretability or require substantial manual specifica-tion (Udrescu & Tegmark, 2020; Donnelly et al., 2024; Schr¨ oder & Macke, 2024). LLMs offer a qualitatively dif-ferent point in this design space: trained on extensive cor-pora of scientific text and source code, they can generate and revise executable simulator implementations directly from textual problem formulations and feedback (Austin et al., 2021; Chen, 2021). However, most LLM-based discovery systems are defined operationally, i.e., via prompts, agent roles, and interac-tion protocols, rather than as inference procedures for an explicit target distribution. As a result, these approaches (i) do not explicitly state the underlying inference problem, which hinders interpretability, obscures failure modes, and prevents principled extensions or connections to existing theory; (ii) do not naturally admit theoretical analysis or convergence properties; and (iii) rely on loosely specified agent roles and interactions, making it difficult to reason formally about the necessity or sufficiency of components. Here, we formulate automated model discovery as a proba-bilistic inference problem. Given observational data xo, the goal is to sample from the unknown distribution p(m|xo)
+
+over mechanistically interpretable models m capable of explaining the data xo. Building on this formulation, we introduce ModelSMC, an approach based on Sequen-tial Monte Carlo (SMC) methods, which approximate la-tent distributions using collections of weighted particles 1 
+
+> arXiv:2602.18266v1 [cs.LG] 20 Feb 2026 ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery iter 0 iter 1 iter 2 iter 3 START END
+
+## a bc d        
+
+> Figure 1. Overview of ModelSMC for automated LLM-based model discovery. (a) Given a textual problem formulation and context data, we infer a simulator model implemented in code. (b) ModelSMC iteratively refines an initial model to sample high-density regions of the model posterior p(m|xo), approaching the unknown data-generating process (red star) in high-density regions. (c) ModelSMC is inspired by SMC, which approximates evolving distributions via weighted particles by iterative resampling, propagation, and weighting.
+> (d) In ModelSMC, models are propagated by LLM sampling and weighted by likelihood evaluation.
+
+(Johansen, 2009). In ModelSMC, candidate simulator models are represented as particles whose code is itera-tively proposed and modified by an LLM, evaluated us-ing likelihood-based criteria, and resampled to focus on promising (i.e., high-marginal likelihood) regions of the model space (Fig. 1). Formulating model discovery as probabilistic inference within an SMC framework closely mirrors the iterative workflows employed by human experts, yielding concep-tual and practical advantages: First, it provides an explicit mathematical formulation of the refinement process, clari-fying assumptions and failure modes. Second, under stan-dard SMC conditions, it enables principled guarantees on stability and convergence. Third, it allows formal reason-ing about the role and necessity of individual system com-ponents, facilitating systematic ablations and extensions. Our main contributions can be summarized as follows: • We cast automated LLM-based discovery of models as probabilistic inference over executable programs. • We propose ModelSMC, an SMC-style population method with LLM-based proposals of programs. • We demonstrate competitive performance on syn-thetic tasks and show that ModelSMC discovers accu-rate and mechanistically interpretable models on real-world neuroscience and pharmacology datasets. • We show how existing SMC theory can be used to an-alyze automated model discovery with LLMs. 
+
+# 2. Related Work 
+
+Classic mechanistic model discovery. Automated dis-covery of mechanistic models has traditionally focused on symbolic regression, equation discovery, and program syn-thesis, including genetic programming (Schmidt & Lipson, 2009; Udrescu & Tegmark, 2020; Kamienny et al., 2022) and sparse regression over predefined libraries of candidate terms (Brunton et al., 2016; Rudy et al., 2017), as well as grammar- or DSL-based program synthesis (Gulwani et al., 2017; Parisotto et al., 2017; Ellis et al., 2021). Other approaches combine mechanistic structure with statistical learning or physics-informed models (Raissi et al., 2019; Rackauckas et al., 2020; Karniadakis et al., 2021; Donnelly et al., 2024). These methods rely on carefully engineered search spaces and have so far focused on low-complexity models. In contrast, ModelSMC explores complex simula-tor programs spanning hundreds of lines of code in an open search space without hand-crafted restrictions. 
+
+LLM-based methods. More recently, several works have used LLMs for open-ended automated model discovery. One class of approaches combines LLMs with symbolic regression or optimization loops, where the LLM proposes candidate equations or programs and iterative evaluation or gradient-based refinement is used to improve fit to data (Ma et al., 2024; Li et al., 2024; Shojaee et al., 2025; Holt et al., 2025). Another line builds on evolutionary or population-based search, exemplified by FunSearch (Romera-Paredes et al., 2024; Castro et al., 2025) or the closed-source Al-phaEvolve (Novikov et al., 2025). Several works have applied these frameworks to domain-specific problems in 2ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+cognitive science (Rmus et al., 2025; Jha et al., 2025), lan-guage modeling (Cheng et al., 2025), pharmaceutical ap-plications (Holt et al., 2024), neuroscience (Tilbury et al., 2025), or combinatorial optimization (Liu et al., 2024). Model proposal, refinement, and selection are typically de-fined through heuristic system designs, such as fixed agent roles, optimization loops, or evolutionary operators, rather than derived from an explicit mathematical objective. Closest to our work are methods combining LLMs with Bayesian reasoning in scientific and probabilistic settings, such as Large Language Bayes (Domke, 2025) and Au-toDiscovery (Agarwal et al., 2025). Large Language Bayes generates probabilistic programs from informal descrip-tions and performs approximate Bayesian inference via likelihood-weighted model averaging. AutoDiscovery ex-plores nested hypotheses using Bayesian surprise within a Monte Carlo tree search, without explicitly defining a pos-terior over mechanistic models or maintaining a population of executable models. In contrast, we frame mechanistic model discovery as inference over models p(m|xo).
+
+Probabilistic model inference. Probabilistic approaches to model discovery and comparison are traditionally grounded in Bayesian model selection and averaging, where candidate models are evaluated via marginal like-lihoods or Bayes factors (Kass & Raftery, 1995; Morey et al., 2016), as well as Bayesian program induction (Lake et al., 2015). With simulators as tools for scientific in-quiry, this has motivated simulation-based and likelihood-free inference methods, including synthetic likelihoods and neural density estimation (Cranmer et al., 2020; Deistler et al., 2025). It also includes SMC samplers for static or trans-dimensional targets, where explicit likelihood tem-pering bridges from prior to posterior to mitigate weight degeneracy (Del Moral et al., 2006; Neal, 2001). Recent work, such as simulation-based model inference (Schr¨ oder & Macke, 2024), extends this view to simultaneous model and parameter inference over graph-structured components using amortized inference, but assumes a fixed composi-tional prior without iterative refinement. In contrast, Mod-elSMC treats full model programs as latent variables and uses LLMs as proposals for open-ended model spaces, pro-gressively concentrating on high-likelihood regions with-out an explicit tempering schedule. 
+
+# 3. Method 
+
+3.1. Background: Sequential Monte Carlo 
+
+SMC methods (Johansen, 2009; Naesseth et al., 2019) ap-proximate a sequence of target probability distributions us-ing a set of weighted samples. Consider a state space model with latent states x1: T and observations y1: T , with joint density p(x1: T , y 1: T ). The inference task is to approxi-mate the filtering or target distribution p(xt|y1: t). At each time step t, SMC represents the distribution using a finite set of N particles {xit}Ni=1 and associated weights {wit}Ni=1 
+
+that together define an empirical measure 
+
+p(xt|y1: t) ≈
+
+> N
+
+X
+
+> i=1
+
+wit δxit , (1) providing a discrete approximation of the target distribu-tion. In practice N is of the order 10 2–10 5. Convergence results guarantee that, under mild conditions, the parti-cle approximation converges to the true target distribution as N → ∞ (Del Moral, 2004; Johansen, 2009). As a specific instantiation of SMC, we consider the boot-strap particle filter. Given particles at time t − 1, the update at time t consists of the following steps: 1. Resample. Sample ancestor indices ait ∼C({wjt−1}Nj=1 ), where C denotes the categorical dis-tribution. 2. Propagate. Sample new particles from the transition model, xit ∼ p(xt|xait
+
+> t−1
+
+).3. Weight. Assign unnormalized weights using the like-lihood, ˜wit = p(yt|xit) and normalize wit = ˜wit 
+
+> PNj=1 ˜wjt
+
+.Repeating these steps sequentially for t = 1 , . . . , T yields a particle-based approximation of the target distributions. SMC can also be used when the target distribution is static, i.e., p(xt) ≡ p(x) for all t, by defining an artificial se-quence of intermediate target distributions that progres-sively transform a simple initial distribution into the de-sired target (e.g., via likelihood tempering) (Neal, 2001; Del Moral et al., 2006). 
+
+3.2. Problem Formulation 
+
+Scientific model discovery aims to infer a model m that reproduces the observable behavior of a system of inter-est m∗. Information about m∗ is available only through an observed set xo = {(xjo, c jo)}Mj=1 , where each observa-tion xjo is generated by m∗ under context cjo. The context may include, e.g., initial conditions or experimental param-eters. We assume the observed data pairs are iid. A model m is an algorithm written in code that probabilis-tically maps context c ∈ C and model parameters θ ∈ Θ
+
+to data x ∈ X. The model parameters θ are not assumed to be known but fall within a prior distribution p(θ). For notational simplicity, we abbreviate m(c, θ ) ≡ m.From a probabilistic perspective, model discovery corre-sponds to inference over models conditioned on the ob-served data. The inference target is a distribution over 3ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+models p(m|xo) that assigns higher probability to models whose simulated behavior matches the observed behavior of m∗ across contexts. This distribution is defined implic-itly via a likelihood and a prior: the likelihood p(xo|m)
+
+is induced by executing the simulator model defined by m
+
+with latent parameters θ ∼ p(θ). The prior p(m) corre-sponds to the marginal distribution over model implemen-tations induced by an LLM-based generative process. The distribution p(m|xo) is generally intractable due to model space size and the absence of an explicit likelihood. 
+
+3.3. SMC-Based Model Discovery with ModelSMC 
+
+ModelSMC approximates the posterior p(m|xo) using a population of candidate models that is iteratively refined using SMC (see Sec. 3.1). Since the underlying system 
+
+m∗ is fixed, the SMC time index corresponds to iterative refinement rather than temporal evolution. Unlike classi-cal SMC, each particle corresponds to a candidate model rather than a dynamical state. Each particle represents a candidate model and is associ-ated with a weight reflecting its posterior relevance. In ad-dition to the model implementation, particles store auxil-iary context such as evaluation feedback. A particle con-sists of the tuple of model, weight and context (mi, w i, c i)
+
+for i = 1 , . . . , N particles. ModelSMC proceeds for K iterations. In each iteration k,particles are resampled according to their weight, propa-gated to generate new candidate models, and weighted ac-cording to their likelihood under the observed data. Each iteration consists of three steps: (i) resampling, (ii) prop-agation, and (iii) weighting. Algorithm 1 summarizes the complete procedure. 
+
+Resampling. N particles are resampled according to their normalized weights. Each new particle is associated with an ancestor index a, determining the particles used in the propagation step (Eq. 2). 
+
+Propagation. Each resampled particle is propagated via a mixture kernel (Eq. 3). With probability α, the particle is cloned unchanged, and with probability 1 − α, the LLM samples a model implementation conditioned on (i) the models along its ancestry, (ii) their associated contextual feedback, and (iii) a fixed task-specific prompt ctask encod-ing domain knowledge, implementation constraints, and evaluation criteria. The context cak−1 summarizes the recent ancestry of the particle and its performance and is generated via an aux-iliary LLM call based on the particle’s weight. To con-trol computational cost and prompt length, only a limited number of the most recent ancestry elements are included. The probability α controls the trade-off between explo-ration and exploitation: cloned particles require no new 
+
+Algorithm 1 ModelSMC (for i = 1 , . . . , N )                                                                                   
+
+> Input: Number of particles N, number of iterations K, cloning probability α∈[0 ,1] , observed data xo={(xjo, c jo)}Mj=1 ,task prompt ctask , initial particle and weight (m0, w 0= 1) .1: for k= 1 , . . . , K do
+> 2: ▷1. Resample
+> 3: Sample ancestor indices
+> aik∼Cat ({wjk−1}Nj=1 ),i= 1 , . . . , N. (2) 4: ▷2. Propagate
+> 5: Propagate each particle mikfor i= 1 , . . . , N by first sam-pling z∼ U [0 ,1] , then
+> mik∼
+> 
+> δmaikk−1
+> ,if z < α, pLLM (m|maik
+> k−1, c aik
+> k−1, c task ),else .
+> (3) 6: ▷3. Weight
+> 7: Get surrogate likelihood pϕ(x|mik, θ, c ).8: Compute marginal likelihood for each (xjo, c jo)∈xo
+> p(xjo|mik) =
+> Z
+> p(θ)pϕ(xjo|mik, θ, c jo)dθ. (4) 9: Update weights ˜wikand normalize to obtain wik
+> ˜wik=
+> MY
+> j=1
+> p(xjo|mik)
+> 1/M
+> .(5) 10: Generate feedback cik= LLM( mik, w ik).11: end for Output: Particles and weights {miK, w iK}Ni=1 .
+
+simulations or likelihood evaluations, preserving compu-tational resources, while newly proposed particles explore the model space. Selection among clones is handled im-plicitly by resampling based on likelihood weights. This iterative adaptation of the proposal plays a role anal-ogous to likelihood tempering in classical SMC samplers (Del Moral et al., 2006): early iterations explore the model space broadly, while later iterations concentrate propos-als around high-likelihood candidates as ancestry and feed-back accumulate. Unlike explicit tempering, this annealing occurs in the proposal distribution rather than the target, and without formal variance-control guarantees. 
+
+Weighting. Each generated model mi is assigned a weight proportional to the likelihood of the observed data, 
+
+˜wik = p(xo | mik). (6) Assuming iid observed data, the likelihood factorizes across samples. For improved numerical stability, we use a normalized geometric mean (Eq. 5). Weighting models by likelihood is consistent with the posterior p(m|xo) as target (under idealized assumptions; derivation in Sec. B). 4ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+The likelihood p(xo|mi) induced by a model is generally intractable. To obtain an estimate of the likelihood, we can sample from the likelihood by evaluating the model at different values of (θ, c ). Specifically, we sample a syn-thetic dataset θ ∼ p(θ), c ∼ p(c), x ∼ p(x|mi(θ, c )) and train a conditional density estimator pϕ(x|mi, θ, c ). This approach is also known as Neural Likelihood Estimation (Papamakarios et al., 2019, NLE). Given a trained likeli-hood surrogate, the marginal likelihood for each observed data instance is obtained by integrating out θ via Monte Carlo approximation (Eq. 4). We note that the trained like-lihood estimation is an approximation of the true likelihood (details in Sec. D.2). For NLE, we adapt a likelihood-estimation variant derived from NPE-PFN (Vetter et al., 2025). This approach uses the pretrained tabular foundation model TabPFN as a den-sity estimator, enabling training-free likelihood estimation (Hollmann et al., 2025). Crucially, this eliminates the need for a separate likelihood estimation training loop at each iteration of ModelSMC, which is especially beneficial in model discovery where repeated likelihood evaluations are required. The foundation model is particularly efficient with small simulation budgets. Our likelihood estimation approach allows ModelSMC to generate non-differentiable models without any explicit parameter optimization. 
+
+Implementation Remarks. Simulating and evaluating new models is computationally expensive; cloned parti-cles avoid this cost entirely, which motivates the mixture kernel in Eq. 3. In the current implementation, the two branches use slightly different resampling: cloned particles are selected without replacement from the weighted pool to maintain diversity among retained models, while ances-tor indices for LLM propagation are sampled with replace-ment , allowing multiple proposals to originate from the highest-weight model. This deviation from the idealized algorithm, chosen for computational convenience, does not affect the weighting step or the theoretical properties of the algorithm. ModelSMC differs from prior model discovery methods in two key aspects. First, the weighting step is derived from the model posterior p(m|xo), providing a principled proba-bilistic objective rather than relying on alternative discrep-ancy measures such as MMD, MSE, or Wasserstein dis-tance (Gretton et al., 2012; Arjovsky et al., 2017). Second, ModelSMC marginalizes over model parameters θ during discovery instead of optimizing point estimates, thereby reducing sensitivity to parameter uncertainty. For down-stream use of discovered models, we perform parameter inference using neural posterior estimation (NPE) (Lueck-mann et al., 2017; Papamakarios & Murray, 2016) and NPE-PFN (Vetter et al., 2025) (details in Sec. D.1). 
+
+3.4. Theoretical Insights 
+
+Since our framework is based on SMC, we connect Mod-elSMC to classical SMC theory and show that, under mild assumptions on the LLM-based propagation mechanism, ModelSMC provides a consistent Monte Carlo approxi-mation of the model posterior p(m|xo) (Chopin, 2004; Del Moral, 2004). This establishes a formal connec-tion framing LLM-driven automated model discovery as asymptotically consistent Bayesian inference over models. 
+
+Theorem 3.1 (Consistency of ModelSMC) . Let π(m) ∝
+
+p(xo|m)p(m) be a fixed target distribution over models, and let q(m′|m) denote an idealized proposal kernel in-duced by the propagation step. Assume (i) support cov-erage , i.e., any m with π(m) > 0 can be generated with non-zero probability; (ii) uniformly bounded importance weights; (iii) conditional independence of propagated par-ticles given resampling; and (iv) exact likelihood evalua-tion , i.e., the importance weights are computed using the true marginal likelihood p(xo|m). Let {(mi, w i)}Ni=1 be the particle population at a fixed iteration. Then, for any bounded test function φ,
+
+> N
+
+X
+
+> i=1
+
+wiφ(mi) P
+
+−→ Eπ [φ(m)] as N → ∞ , (7) 
+
+with asymptotic variance O(1 /N ). The result holds in the presence of resampling. 
+
+The proof is provided in Sec. C. Theorem 3.1 implies that, under idealized assumptions, ModelSMC is statistically consistent: the algorithm is asymptotically unbiased and its particles approximate p(m|xo). This provides a principled foundation for LLM-based automated model discovery. 
+
+# 4. Experiments 
+
+4.1. Validation of ModelSMC for Model Discovery 
+
+We first validate the core probabilistic inference mecha-nism underlying ModelSMC in a controlled setting where the ground-truth model is known, and the model proposal is not affected by the LLM. We consider an LLM-free variant of ModelSMC on a finite model space with 20 candidates. Each candidate is a 10-dimensional Gaussian mixture mod-els with varying numbers of components and dense covari-ances (details in Sec. F.1). In this setting, the propagation step reduces to copying resampled particles, and no text-based feedback is used. Observational data are drawn from one of the 20 models. Across all runs, the particle population rapidly concentrates on the ground-truth model, despite weighting particles us-ing an approximate likelihood estimate pϕ(xo|m). Specifi-cally, after a small number of iterations, resampling selects the true model with probability approaching one (Fig. 2). 5ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 0 2 4 6 8    
+
+> iteration
+> 0.5
+> 1.0
+> Correct-model
+> sampling frequency
+> average
+> [min, max]
+> Figure 2. Relative sampling frequency of the target model for LLM-free ModelSMC. Sampling frequencies averaged over ten different target models and ten experiments each. Shaded region: The highest and the lowest sampling frequency observed at each time step over all runs.
+> Table 1. Performance evaluation. We evaluate the median met-rics for the best particles over ten discovery runs. Results includ-ing confidence intervals are reported in Appendix Table G-1.
+
+− 1 
+
+> M
+
+log p(xo|m)( ↓)
+
+ModelSMC FunSearch+ ModelSMC N =1 SIR -503.37 -500.00 -464.17 Kidney 43.58 N/A 46.29 HH 25.18 28.96 25.95 
+
+− 1 
+
+> M
+
+log p(xo|ˆθ, m )( ↓)
+
+SIR -492.67 -492.05 -455.13 Kidney 55.05 N/A 58.63 HH 15.47 12.05 15.64 This behavior is consistent across ground-truth choices and random seeds. This experiment isolates the inference component of Mod-elSMC and shows that, in a finite model space, the al-gorithm concentrates posterior mass on the true data-generating process, behaving as a consistent posterior sam-pler over models. Thus, once the ground-truth model is proposed by the LLM, ModelSMC reliably identifies it. These results verify the inference procedure of ModelSMC. 
+
+4.2. Quantitative Results 
+
+We perform a quantitative evaluation of ModelSMC across three model discovery tasks: a synthetic epidemiological system with known ground-truth dynamics (SIR; Sec. F.2), a pharmacological simulator of kidney aldosterone regu-lation implemented in R (Sec. 4.3), and a neuroscience Hodgkin-Huxley (HH) neuron simulator (Sec. 4.4). Mod-elSMC targets model discovery as mechanistic equations for complex simulator models. We therefore compare against two baselines matching this scope: (i) a modified FunSearch (Romera-Paredes et al., 2024) that optimizes free model parameters and uses likelihood-based weights (Castro et al., 2025), and (ii) ModelSMC with a single par-ticle ( N =1), which removes the population-based inference of the full algorithm. FunSearch+ is Python-specific, which prevents direct application to the R-based kidney simula-tor. We do not compare with classical symbolic regression because it is typically limited to low-complexity functions (Schmidt & Lipson, 2009), and black-box predictive mod-els, such as transformers, because they lack mechanistic interpretability. Across all tasks, ModelSMC achieves strong quantitative performance (Table 1). On both synthetic and real-world tasks, it attains high marginal and conditional likelihoods, matching at least the baseline performance at comparable computational budgets (Appendix Fig. G-1). Unlike Fun-Search+, ModelSMC handles any coding language. These results indicate that framing model discovery as an inference problem does not compromise quantitative performance. Instead, ModelSMC discovers competitive mechanistic models while providing the probabilistic foun-dation that enables additional interpretability and analysis. 
+
+4.3. Pharmacological Kidney Model 
+
+We evaluate ModelSMC on a real-world quantitative sys-tems pharmacology (QSP) problem. Specifically, we adapt a simulator model of plasma potassium regulation in the kidney mediated by aldosterone, a key steroid hormone (Maddah & Hallow, 2022). The original model is imple-mented in R using RxODE2 (Wang et al., 2016; R Core Team, 2025) and is derived from first principles of phar-macokinetics and pharmacodynamics, capturing renal ex-cretion, tubular reabsorption, and hormonal feedback. In the model, the aldosterone mechanism is empirically fit-ted rather than biophysically derived (Maddah & Hallow, 2022). In this experiment, we intentionally replace the aldosterone mechanism with a constant term (Fig. 3(a), left), thereby introducing a targeted structural misspecification. Mod-elSMC is tasked with inferring the missing regulatory dy-namics from the data. The inference problem is particularly challenging due to extremely limited data: four patient in-take scenarios (high/low K × high/low Na), with a single measurement of plasma potassium and aldosterone at five time points per scenario (Dluhy et al., 1972). Experimental details are provided in Sec. F.3. Across all seeds, ModelSMC assigns high posterior weight to a narrow family of aldosterone feedback mechanisms whose functional form closely matches the originally pro-posed model (Fig. 3(a), right, for one model). Although individual particles differ in structural details, models en-coding qualitatively different regulatory hypotheses receive negligible posterior weight. Posterior predictive simula-tions from high-probability models closely track observed 6ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery a b    
+
+> Figure 3. Systems pharmacology kidney model with experimental data. (a) Original code snippet in R for the aldosterone mechanism (left) and one instance of the inferred model code (right). (b) Posterior predictive for the code instance in (a) with real-world data points.
+
+plasma potassium and aldosterone measurements, despite the limited data (Fig. 3(b)). From an inference perspective, this experiment illustrates strong posterior concentration over a mechanistically co-herent class rather than the selection of a single best-fitting model. The absence of competing high-weight alternatives indicates that the available data are sufficient to rule out broad classes of hypotheses, indicating that the data suf-fice to diagnose structural inadequacy rather than param-eter uncertainty. Compared to methods producing a sin-gle point estimate, ModelSMC yields a posterior over low-complexity mechanisms that both generalize in posterior predictive checks and quantify uncertainty over plausible mechanisms. 
+
+4.4. Hodgkin-Huxley Model 
+
+Finally, we evaluate ModelSMC on a neuroscience simula-tor model of neuronal membrane dynamics. Specifically, we consider the single-compartment Hodgkin-Huxley (HH) model of action potential generation (Hodgkin & Huxley, 1952; Pospischil et al., 2008), which describes membrane voltage dynamics via nonlinear ion-channel conductances and gating variables. As a baseline, we con-sider the same simulator from Gonc ¸alves et al. (2020), consisting of eight biophysical parameters and explicit ion channels for sodium, potassium, and leak current. While this model provides a strong description of neuronal dy-namics, it can exhibit systematic discrepancies when fitted to real recordings (Gao et al., 2023; Bernaerts et al., 2025). Observations consist of membrane voltage traces sum-marized by seven standard summary statistics (Gonc ¸alves et al., 2020). We consider 10 real voltage recordings from the Allen Cell Types Database (Allen Institute for Brain Science, 2015). In contrast to prior work focusing exclusively on parame-ter inference (Gonc ¸alves et al., 2020; Vetter et al., 2025), we treat the HH model as a structural inference problem. Taking the baseline HH model, ModelSMC is tasked with inferring additional ion-channel mechanisms that improve model specification and reduce systematic mismatch to data. This setting is particularly challenging due to the lim-ited number of real-world observations, the already high fidelity of the baseline model, and the need to detect subtle but consequential structural deficiencies rather than gross misspecification. For experimental conditions, see Sec. F.4. ModelSMC shows rapid posterior concentration while con-tinuing to explore multiple high-likelihood structural vari-ants over successive iterations (Fig. 4(a)). For a represen-tative run, particle ancestry reveals a diverse sampling of the model space with distinct ion-channel extensions of the baseline HH model (Fig. 4(a) opaque). Across runs, high posterior weight is consistently assigned to models intro-ducing additional slow potassium or persistent sodium cur-rents, including M-type, A-type, and Na P channels. Within these families, refinements such as voltage-dependent ac-tivation time constants receive increased posterior weight and improve posterior predictive agreement with recorded voltage traces, particularly for spike-frequency adaptation (Fig. 4 b,c). Rather than identifying a single revised HH model, Mod-elSMC yields a posterior over mechanistically interpretable extensions, with comparable explanatory power. The pos-terior exposes residual non-identifiability in ion-channel composition while isolating robust conclusions, i.e., the ex-tension with additional slow currents. Thus, posterior mass serves as a diagnostic: low-weight regions indicate gen-uine structural mismatch, while clusters of high-probability models reveal symmetries and ambiguities that are invisi-ble to single-model discovery. 
+
+# 5. Discussion 
+
+We formulated automated discovery of mechanistic mod-els as Bayesian inference over programs. We introduced ModelSMC, an SMC-based algorithm that uses LLMs as proposal distributions. Unlike prior agentic systems, Mod-elSMC directly approximates the posterior p(m|xo) by 7ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery Real observations 
+
+> Discovered predictives
+> Baseline predictives
+
+## ba c        
+
+> Figure 4. Hodgkin–Huxley model with Allen cell types database data. Results are shown for one representative random seed from the 10 runs, used consistently across panels. (a) ModelSMC convergence across runs, showing the mean (solid line) and 95% percentiles (shaded). With lower opacity, we overlay the full model ancestry of the selected run. (b) For the selected run, highlighting of inferred ion-channel mechanisms at successive improvement stages. (c) Posterior predictive voltage simulations for real observations from the Allen database, comparing the baseline HH model to the best model identified in the selected run.
+
+marginalizing over parameters. This approach produces a weighted population of models, revealing which hypothe-ses concentrate posterior mass, which remain uncertain, and which are non-identifiable. Across synthetic and real-world systems, this enables diagnosing which mechanistic hypotheses are strongly supported, ruled out, or remain as plausible alternatives under limited data. A natural question is whether automated discovery systems generate genuinely novel scientific insights or primarily re-discover known mechanisms. We emphasize that our pri-mary contribution is methodological: we introduce a gen-eral inference framework in which such questions can be meaningfully posed. Whether novel mechanisms emerge depends on the application, data, and modeling assump-tions, and is orthogonal to the validity of the inference framework itself. Practically, ModelSMC applies to set-tings where candidate models can be executed and admit reliable likelihood approximation. In such domains, proba-bilistic reasoning over models is well-defined and informa-tive. 
+
+Limitations. We introduce an inference framework for model discovery, instantiated by ModelSMC. Limitations arise at algorithmic and framework levels: First, Mod-elSMC is computationally expensive due to repeated simu-lation and likelihood estimation for each candidate model. This could be alleviated by multi-fidelity simulation, adap-tive particle budgets, or early-rejection strategies from SMC literature. Second, posterior weights rely on surro-gate likelihoods, which may introduce bias under misspec-ification. Incorporating uncertainty-aware or robust likeli-hood estimation is an important direction. Third, the dis-covery process is bottlenecked by the LLM’s ability to pro-pose relevant model structures. Improvements in foun-dation models, domain-specific pretraining, or retrieval-augmented generation will directly enhance discovery per-formance (Lewis et al., 2020). Finally, while posterior weights provide a principled clustering and ranking, mod-els remain high-dimensional programs without an explicit geometry. Developing notions of similarity or clustering over model space would enable richer posterior analysis and enhance inference with semantic structure over pro-gram spaces. 
+
+Conclusion. By reframing LLM-driven model discovery as probabilistic inference, we provide a framework that unifies proposal, refinement, and selection under a single probabilistic objective. ModelSMC provides one concrete instantiation of this view, combining LLM-based propos-als with likelihood-based weighting to approximate a pos-terior over mechanistic models. Crucially, this connection enables direct use of established Monte Carlo methodol-ogy, including particle rejuvenation moves (Gordon et al., 1993), SMC samplers for static targets (Del Moral et al., 2006), adaptive resampling schemes (Doucet et al., 2001; Johansen, 2009; Del Moral et al., 2012), and annealed or tempered objectives (Neal, 2001). More broadly, this perspective situates recent LLM-based discovery systems within a well-studied inference framework, providing a common language for comparison, analysis, and system-atic development of future methods. 
+
+# Acknowledgements 
+
+We thank Manuel Gloeckler for feedback on the manuscript, members of the Mackelab for discussions, and Julian Schwab for domain expertise on the QSP experi-ment. This work was funded by the German Research Foundation (DFG) under Germany’s Excellence Strategy – EXC number 2064/1 – 390727645 and SFB 1233 ‘Robust 8ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+Vision’ (276693517), and the Boehringer Ingelheim AI & Data Science Fellowship Program. SW is a member of the International Max Planck Research School for Intelligent Systems (IMPRS-IS). 
+
+# Impact Statement 
+
+This paper presents work whose goal is to advance the field of Machine Learning. There are many potential societal consequences of our work, none of which we feel must be specifically highlighted here. 
+
+# References 
+
+Abbott, B. P., Abbott, R., Abbott, T. D., Abernathy, M. R., Acernese, F., Ackley, K., Adams, C., Adams, T., Ad-desso, P., Adhikari, R. X., et al. Observation of gravita-tional waves from a binary black hole merger. Physical review letters , 116(6):061102, 2016. Agarwal, D., Majumder, B. P., Adamson, R., Chakra-vorty, M., Gavireddy, S. R., Parashar, A., Surana, H., Mishra, B. D., McCallum, A., Sabharwal, A., and Clark, P. AutoDiscovery: Open-ended scientific discovery via Bayesian surprise. In The Thirty-ninth Annual Confer-ence on Neural Information Processing Systems , 2025. Allen Institute for Brain Science. Allen cell types database. 
+
+https://celltypes.brain-map.org , 2015. Arjovsky, M., Chintala, S., and Bottou, L. Wasserstein gen-erative adversarial networks. In International conference on machine learning , pp. 214–223, 2017. Austin, J., Odena, A., Nye, M., Bosma, M., Michalewski, H., Dohan, D., Jiang, E., Cai, C., Terry, M., Le, Q., et al. Program synthesis with large language models. arXiv preprint arXiv:2108.07732 , 2021. Bernaerts, Y., Deistler, M., Gonc ¸alves, P. J., Beck, J., Stim-berg, M., Scala, F., Tolias, A. S., Macke, J. H., Kobak, D., and Berens, P. Combined statistical-biophysical modeling links ion channel genes to physiology of corti-cal neuron types. Patterns , 6(10), 2025. Boelts, J., Deistler, M., Gloeckler, M., ´Alvaro Tejero-Cantero, Lueckmann, J.-M., Moss, G., Steinbach, P., Moreau, T., Muratore, F., Linhart, J., Durkan, C., Vetter, J., Miller, B. K., Herold, M., Ziaeemehr, A., Pals, M., Gruner, T., Bischoff, S., Krouglova, N., Gao, R., Lap-palainen, J. K., Mucs´ anyi, B., Pei, F., Schulz, A., Ste-fanidi, Z., Rodrigues, P., Schr¨ oder, C., Zaid, F. A., Beck, J., Kapoor, J., Greenberg, D. S., Gonc ¸alves, P. J., and Macke, J. H. sbi reloaded: a toolkit for simulation-based inference workflows. Journal of Open Source Software ,10(108):7754, 2025. Box, G. E. and Draper, N. R. Empirical model-building and response surfaces. John Wiley & Sons, 1987. Brunton, S. L., Proctor, J. L., and Kutz, J. N. Discovering governing equations from data by sparse identification of nonlinear dynamical systems. Proceedings of the Na-tional Academy of Sciences , 113(15):3932–3937, 2016. Castro, P. S., Tomasev, N., Anand, A., Sharma, N., Mo-hanta, R., Dev, A., Perlin, K., Jain, S., Levin, K., Elteto, N., Dabney, W., Novikov, A., Turner, G. C., Eckstein, M. K., Daw, N. D., Miller, K. J., and Stachenfeld, K. Discovering symbolic cognitive models from human and animal behavior. In Forty-second International Confer-ence on Machine Learning , 2025. Chen, M. Evaluating large language models trained on code. arXiv preprint arXiv:2107.03374 , 2021. Cheng, J., Clark, P., and Richardson, K. Language mod-eling by language models. In The Thirty-ninth Annual Conference on Neural Information Processing Systems ,2025. Chopin, N. Central limit theorem for sequential Monte Carlo methods and its application to Bayesian inference. 2004. Cranmer, K., Brehmer, J., and Louppe, G. The frontier of simulation-based inference. Proceedings of the National Academy of Sciences , 117(48):30055–30062, 2020. Deistler, M., Boelts, J., Steinbach, P., Moss, G., Moreau, T., Gloeckler, M., Rodrigues, P. L., Linhart, J., Lappalainen, J. K., Miller, B. K., et al. Simulation-based inference: A practical guide. arXiv preprint arXiv:2508.12939 , 2025. Del Moral, P. Feynman-Kac formulae: genealogical and interacting particle systems with applications . Springer, 2004. Del Moral, P., Doucet, A., and Jasra, A. Sequential monte carlo samplers. Journal of the Royal Statistical Society Series B: Statistical Methodology , 68(3):411–436, 2006. Del Moral, P., Doucet, A., and Jasra, A. An adaptive se-quential Monte Carlo method for approximate Bayesian computation. Statistics and computing , 22(5):1009– 1020, 2012. Dluhy, R. G., Axelrod, L., Underwood, R. H., Williams, G. H., et al. Studies of the control of plasma aldosterone concentration in normal man: II. effect of dietary potas-sium and acute potassium infusion. The Journal of clin-ical investigation , 51(8):1950–1957, 1972. Domke, J. Large Language Bayes. In The Thirty-ninth An-nual Conference on Neural Information Processing Sys-tems , 2025. 9ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+Donnelly, J., Daneshkhah, A., and Abolfathi, S. Physics-informed neural networks as surrogate models of hydro-dynamic simulators. Science of The Total Environment ,912:168814, 2024. Doucet, A., De Freitas, N., Gordon, N. J., et al. Sequential Monte Carlo methods in practice , volume 1. 2001. Ellis, K., Wong, C., Nye, M., Sabl´ e-Meyer, M., Morales, L., Hewitt, L., Cary, L., Solar-Lezama, A., and Tenen-baum, J. B. Dreamcoder: Bootstrapping inductive pro-gram synthesis with wake-sleep library learning. In Pro-ceedings of the 42nd acm sigplan international confer-ence on programming language design and implementa-tion , pp. 835–850, 2021. Frigg, R. and Reiss, J. The philosophy of simulation: hot new issues or same old stew? Synthese , 169(3):593–613, 2009. Gao, R., Deistler, M., and Macke, J. H. Generalized Bayesian inference for scientific simulators via amor-tized cost estimation. Advances in Neural Information Processing Systems , 36:80191–80219, 2023. Gonc ¸alves, P. J., Lueckmann, J.-M., Deistler, M., Nonnen-macher, M., ¨ Ocal, K., Bassetto, G., Chintaluri, C., Pod-laski, W. F., Haddad, S. A., Vogels, T. P., et al. Train-ing deep neural density estimators to identify mechanis-tic models of neural dynamics. Elife , 9:e56261, 2020. Gordon, N. J., Salmond, D. J., and Smith, A. F. Novel approach to nonlinear/non-Gaussian Bayesian state esti-mation. In IEE proceedings F (radar and signal process-ing) , volume 140, pp. 107–113, 1993. Gretton, A., Borgwardt, K. M., Rasch, M. J., Sch¨ olkopf, B., and Smola, A. A kernel two-sample test. The journal of machine learning research , 13(1):723–773, 2012. Gulwani, S., Polozov, O., and Singh, R. Program synthesis. 
+
+Foundations and trends in programming languages , 4(1-2):1–119, 2017. Harris, C. R., Millman, K. J., van der Walt, S. J., Gommers, R., Virtanen, P., Cournapeau, D., Wieser, E., Taylor, J., Berg, S., Smith, N. J., Kern, R., Picus, M., Hoyer, S., van Kerkwijk, M. H., Brett, M., Haldane, A., del R´ ıo, J. F., Wiebe, M., Peterson, P., G´ erard-Marchant, P., Sheppard, K., Reddy, T., Weckesser, W., Abbasi, H., Gohlke, C., and Oliphant, T. E. Array programming with NumPy. 
+
+Nature , 585(7825):357–362, 2020. Hodgkin, A. L. and Huxley, A. F. A quantitative descrip-tion of membrane current and its application to conduc-tion and excitation in nerve. J Physiol , 117(4):500–544, 1952. Hollmann, N., M¨ uller, S., Purucker, L., Krishnakumar, A., K¨ orfer, M., Hoo, S. B., Schirrmeister, R. T., and Hut-ter, F. Accurate predictions on small data with a tabular foundation model. Nature , 01 2025. Holt, S., Qian, Z., Liu, T., Weatherall, J., and van der Schaar, M. Data-driven discovery of dynamical systems in pharmacology using large language models. Advances in Neural Information Processing Systems , 37:96325– 96366, 2024. Holt, S., Luyten, M. R., Berthon, A., and van der Schaar, M. G-Sim: Generative simulations with large language models and gradient-free calibration. In Forty-second International Conference on Machine Learning , 2025. Hubble, E. A relation between distance and radial velocity among extra-galactic nebulae. Proceedings of the na-tional academy of sciences , 15(3):168–173, 1929. Hunter, J. D. Matplotlib: A 2d graphics environment. Com-puting in Science & Engineering , 9(3):90–95, 2007. Jha, K., Huang, A. Y., Ye, E., Jaques, N., and Kleiman-Weiner, M. Modeling others’ minds as code. arXiv preprint arXiv:2510.01272 , 2025. Johansen, A. A tutorial on particle filtering and smoothing: Fifteen years later. 2009. Kamienny, P.-A., d’Ascoli, S., Lample, G., and Charton, F. End-to-end symbolic regression with transformers. 
+
+Advances in Neural Information Processing Systems , 35: 10269–10281, 2022. Karniadakis, G. E., Kevrekidis, I. G., Lu, L., Perdikaris, P., Wang, S., and Yang, L. Physics-informed machine learning. Nature Reviews Physics , 3(6):422–440, 2021. Kass, R. E. and Raftery, A. E. Bayes factors. Journal of the american statistical association , 90(430):773–795, 1995. Kermack, W. O. and McKendrick, A. G. A contribution to the mathematical theory of epidemics. Proceedings of the royal society of london. Series A, Containing papers of a mathematical and physical character , 115(772): 700–721, 1927. Khattab, O., Santhanam, K., Li, X. L., Hall, D., Liang, P., Potts, C., and Zaharia, M. Demonstrate-search-predict: Composing retrieval and language mod-els for knowledge-intensive NLP. arXiv preprint arXiv:2212.14024 , 2022. Khattab, O., Singhvi, A., Maheshwari, P., Zhang, Z., San-thanam, K., Vardhamanan, S., Haq, S., Sharma, A., Joshi, T. T., Moazam, H., Miller, H., Zaharia, M., and 10 ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+Potts, C. DSPy: Compiling declarative language model calls into self-improving pipelines. 2024. Lake, B. M., Salakhutdinov, R., and Tenenbaum, J. B. Human-level concept learning through probabilistic pro-gram induction. Science , 350(6266):1332–1338, 2015. Lavin, A., Krakauer, D., Zenil, H., Gottschlich, J., Mattson, T., Brehmer, J., Anandkumar, A., Choudry, S., Rocki, K., Baydin, A. G., Prunkl, C., Paige, B., Isayev, O., Peterson, E., McMahon, P. L., Macke, J., Cranmer, K., Zhang, J., Wainwright, H., Hanuka, A., Veloso, M., As-sefa, S., Zheng, S., and Pfeffer, A. Simulation intelli-gence: Towards a new generation of scientific methods. 
+
+arXiv preprint arXiv:2112.03235 , 2022. Lewis, P., Perez, E., Piktus, A., Petroni, F., Karpukhin, V., Goyal, N., K¨ uttler, H., Lewis, M., Yih, W.-t., Rockt¨ aschel, T., et al. Retrieval-augmented generation for knowledge-intensive nlp tasks. Advances in neural information processing systems , 33:9459–9474, 2020. Li, M. Y., Fox, E., and Goodman, N. Automated statistical model discovery with language models. In Proceedings of the 41st International Conference on Machine Learn-ing , volume 235, pp. 27791–27807, 2024. Liu, F., Xialiang, T., Yuan, M., Lin, X., Luo, F., Wang, Z., Lu, Z., and Zhang, Q. Evolution of heuristics: To-wards efficient automatic algorithm design using large language model. In Forty-first International Conference on Machine Learning , 2024. Lueckmann, J.-M., Gonc ¸alves, P. J., Bassetto, G., ¨ Ocal, K., Nonnenmacher, M., and Macke, J. H. Flexible statisti-cal inference for mechanistic models of neural dynamics. In Advances in Neural Information Processing Systems ,volume 30, 2017. Ma, P., Wang, T.-H., Guo, M., Sun, Z., Tenenbaum, J. B., Rus, D., Gan, C., and Matusik, W. LLM and simula-tion as bilevel optimizers: A new paradigm to advance physical scientific discovery. In Proceedings of the 41st International Conference on Machine Learning , volume 235, pp. 33940–33962, 2024. Maddah, E. and Hallow, K. M. A quantitative systems phar-macology model of plasma potassium regulation by the kidney and aldosterone. Journal of Pharmacokinetics and Pharmacodynamics , 49(4), 2022. Morey, R. D., Romeijn, J.-W., and Rouder, J. N. The phi-losophy of Bayes factors and the quantification of statis-tical evidence. Journal of Mathematical Psychology , 72: 6–18, 2016. Moritz, P., Nishihara, R., Wang, S., Tumanov, A., Liaw, R., Liang, E., Elibol, M., Yang, Z., Paul, W., Jordan, M. I., et al. Ray: A distributed framework for emerging AI applications. In 13th USENIX symposium on operating systems design and implementation (OSDI 18) , pp. 561– 577, 2018. M¨ uller, S., Hollmann, N., Arango, S. P., Grabocka, J., and Hutter, F. Transformers can do Bayesian inference. In 
+
+International Conference on Learning Representations ,2022. Naesseth, C. A., Lindsten, F., Sch¨ on, T. B., et al. Elements of sequential monte carlo. Foundations and Trends® in Machine Learning , 12(3):307–392, 2019. Neal, R. M. Annealed importance sampling. Statistics and computing , 11(2):125–139, 2001. Novikov, A., V˜ u, N., Eisenberger, M., Dupont, E., Huang, P.-S., Wagner, A. Z., Shirobokov, S., Kozlovskii, B., Ruiz, F. J. R., Mehrabian, A., Kumar, M. P., See, A., Chaudhuri, S., Holland, G., Davies, A., Nowozin, S., Kohli, P., and Balog, M. AlphaEvolve: A coding agent for scientific and algorithmic discovery, 2025. OpenAI. Introducing GPT-5, 2025. https: //openai.com/index/introducing-gpt-5/ 
+
+[Accessed: 2026-01-23]. pandas development team, T. pandas-dev/pandas: Pan-das, 2020. URL https://doi.org/10.5281/ zenodo.3509134 .Papamakarios, G. and Murray, I. Fast ε-free inference of simulation models with bayesian conditional density es-timation. Advances in neural information processing systems , 29, 2016. Papamakarios, G., Sterratt, D., and Murray, I. Sequential neural likelihood: Fast likelihood-free inference with au-toregressive flows. In The 22nd international confer-ence on artificial intelligence and statistics , pp. 837– 848, 2019. Parisotto, E., rahman Mohamed, A., Singh, R., Li, L., Zhou, D., and Kohli, P. Neuro-symbolic program syn-thesis. In International Conference on Learning Repre-sentations , 2017. Paszke, A., Gross, S., Massa, F., Lerer, A., Bradbury, J., Chanan, G., Killeen, T., Lin, Z., Gimelshein, N., Antiga, L., Desmaison, A., Kopf, A., Yang, E., DeVito, Z., Rai-son, M., Tejani, A., Chilamkurthy, S., Steiner, B., Fang, L., Bai, J., and Chintala, S. PyTorch: An imperative style, high-performance deep learning library. In Ad-vances in Neural Information Processing Systems , vol-ume 32, 2019. 11 ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+Pospischil, M., Toledo-Rodriguez, M., Monier, C., Pi-wkowska, Z., Bal, T., Fr´ egnac, Y., Markram, H., and Destexhe, A. Minimal Hodgkin–Huxley type models for different classes of cortical and thalamic neurons. Bio-logical cybernetics , 99:427–441, 2008. R Core Team. R: A Language and Environment for Sta-tistical Computing . R Foundation for Statistical Com-puting, Vienna, Austria, 2025. URL https://www. R-project.org/ .Rackauckas, C., Ma, Y., Martensen, J., Warner, C., Zubov, K., Supekar, R., Skinner, D., and Ramadhan, A. Univer-sal differential equations for scientific machine learning. 
+
+arXiv preprint arXiv:2001.04385 , 2020. Raissi, M., Perdikaris, P., and Karniadakis, G. E. Physics-informed neural networks: A deep learning framework for solving forward and inverse problems involving non-linear partial differential equations. Journal of Compu-tational physics , 378:686–707, 2019. Rmus, M., Jagadish, A. K., Mathony, M., Ludwig, T., and Schulz, E. Generating computational cognitive models using large language models. In The Thirty-ninth Annual Conference on Neural Information Processing Systems ,2025. Robert, C. P., Casella, G., and Casella, G. Monte Carlo statistical methods , volume 2. Springer, 1999. Romera-Paredes, B., Barekatain, M., Novikov, A., Balog, M., Kumar, M. P., Dupont, E., Ruiz, F. J., Ellenberg, J. S., Wang, P., Fawzi, O., et al. Mathematical discov-eries from program search with large language models. 
+
+Nature , 625(7995):468–475, 2024. Rudy, S. H., Brunton, S. L., Proctor, J. L., and Kutz, J. N. Data-driven discovery of partial differential equations. 
+
+Science advances , 3(4):e1602614, 2017. Schmidt, M. and Lipson, H. Distilling free-form natural laws from experimental data. Science , 324(5923):81–85, 2009. Schr¨ oder, C. and Macke, J. H. Simultaneous identifica-tion of models and parameters of scientific simulators. In 
+
+Proceedings of the 41st International Conference on Ma-chine Learning , volume 235, pp. 43895–43927, 2024. Shojaee, P., Meidani, K., Gupta, S., Farimani, A. B., and Reddy, C. K. LLM-SR: Scientific equation discovery via programming with large language models. In The Thirteenth International Conference on Learning Repre-sentations , 2025. Tilbury, R., Kwon, D., Haydaro˘ glu, A., Ratliff, J., Schmutz, V., Carandini, M., Miller, K., Stachenfeld, K., and Har-ris, K. D. AI-discovered tuning laws explain neuronal population code geometry. 2025. Udrescu, S.-M. and Tegmark, M. AI Feynman: A physics-inspired method for symbolic regression. Science ad-vances , 6(16):eaay2631, 2020. Vetter, J., Gloeckler, M., Gedon, D., and Macke, J. H. Effortless, simulation-efficient bayesian inference using tabular foundation models. In The Thirty-ninth Annual Conference on Neural Information Processing Systems ,2025. Wang, W., Hallow, K., and James, D. A tutorial on RxODE: simulating differential equation pharmacometric models in r. CPT: pharmacometrics & systems pharmacology , 5 (1):3–10, 2016. Winsberg, E. Science in the age of computer simulation .University of Chicago Press, 2019. Zhang, R. Funsearch, 2024. URL https://github. com/RayZhhh/funsearch . GitHub repository [Ac-cessed: 2026-01-26]. 12 ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+# A. Software and Computational Resources 
+
+All methods are implemented in Python. For general computations, NumPy (Harris et al., 2020) and PyTorch (Paszke et al., 2019) are used. Plotting is performed using Matplotlib (Hunter, 2007). To store and handle experimental results, we employ pandas (pandas development team, 2020). NLE and NPE are performed using SBI’s (Boelts et al., 2025) implementation of the corresponding methods. In the kidney experiment (Sec. 4.3), the models are implemented in R (R Core Team, 2025). To parallelize the evaluation of multiple particles in ModelSMC, we use Ray (Moritz et al., 2018). LLMs are accessed via DSPy (Khattab et al., 2022; 2024), which automatically assembles prompts and returns structured outputs with named fields. Unless stated otherwise, we use GPT-5-mini (OpenAI, 2025) as the underlying language model for both model propagation and feedback generation (Sec. D.3). Code is available at https://github.com/ mackelab/ModelSMC .NPE-PFN (Sec. D.1) and NLE-PFN (Sec. D.2) are run on an A100 GPU with 40GB of memory with associated CPUs. NLE and NPE are run on the CPUs only. The particle propagation and evaluation in ModelSMC can be parallelized. In our experiments, we run up to five particles in parallel. In contrast, the baseline method ModelSMC N =1 and FunSearch+ are run sequentially. 
+
+# B. Derivation of ModelSMC Weights from a Static Bayesian Target 
+
+This section derives the weighting rule used in ModelSMC from a Bayesian posterior over model programs. The derivation makes explicit how likelihood-based weights arise from an SMC construction, with an underlying static inference problem. 
+
+Inference target. As defined in Sec. 3.2, given observed data xo = {(xjo, c jo)}Mj=1 , the target posterior over models is 
+
+p(m | xo) ∝ p(xo | m) p(m), (B-1) with marginal likelihood 
+
+p(xo | m) = 
+
+> M
+
+Y
+
+> j=1
+
+p(xjo | m), p(xjo | m) = 
+
+Z
+
+p(θ) p(xjo | m, θ, c jo) dθ. (B-2) The prior p(m) is implicit and corresponds to the marginal distribution over models induced by the LLM-based generative process in the absence of conditioning on observed data. For notational simplicity, we drop the explicit conditioning on the observed context cjo, including particle-specific feed-back variables, for the remainder of the derivation. This corresponds to an idealized setting in which the model proposal distribution depends only on the previously generated model. In practice, the proposal is conditioned on additional contex-tual information, which leads to approximate rather than exact importance weights (see Remarks below at the end of this section). 
+
+Artificial SMC target distribution. To apply SMC, we introduce an artificial sequence of latent variables 
+
+(m1, . . . , m K ), where each mk represents a candidate model. We define the unnormalized target distribution on the extended space as 
+
+˜π(m1: K ) := p(m1: K , xo) = 
+
+> K
+
+Y
+
+> k=1
+
+p(mk | m1: k−1) p(xo | mk). (B-3) The corresponding normalized target is 
+
+π(m1: K ) = ˜π(m1: K )
+
+Z , Z = p(xo)K . (B-4) Marginalizing π(m1: K ) over m1: k−1 yields the posterior over models under the LLM-induced prior, pLLM (mk | xo) for every k.Thus, the sequence is purely algorithmic and does not represent a temporal evolution of the system. 13 ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+Proposal distribution. At iteration k, ModelSMC generates a new model using the same LLM-based generative mecha-nism. In practice, this proposal is conditioned on the previous model, particle-specific feedback, and task context, yielding 
+
+qk(mk | m1: k−1) := pLLM (mk | m1: k−1, c 1: k−1, c task ). (B-5) For the purpose of the derivation, we absorb all contextual variables into the conditioning and consider an idealized proposal that depends only on m1: k−1.
+
+Incremental importance weights. The standard SMC incremental weight is 
+
+˜wk = ˜π(m1: k)˜π(m1: k−1) qk(mk | m1: k−1) . (B-6) Using Eq. B-3, we obtain 
+
+˜wk =
+
+Qkt=1 p(mt | m1: t−1) p(xo | mt)
+
+ Qk−1 
+
+> t=1
+
+p(mt | m1: t−1) p(xo | mt)
+
+
+
+qk(mk | m1: k−1)
+
+(B-7) 
+
+= p(mk | m1: k−1) p(xo | mk)
+
+qk(mk | m1: k−1) . (B-8) We refer to this as a prior-matching proposal when the proposal coincides with the conditional generative distribution defining the implicit model prior in an idealized setting, i.e., 
+
+qk(mk | m1: k−1) = p(mk | m1: k−1). (B-9) Under this assumption, the transition terms cancel exactly, yielding the idealized incremental weight 
+
+˜wk = p(xo | mk). (B-10) In practice, the proposal is conditioned on additional contextual information (e.g., data-dependent feedback, task context, or finite context windows), and the exact incremental weight would take the form 
+
+˜wtrue  
+
+> k
+
+= p(xo | mk) p(mk | m1: k−1)
+
+qk(mk | m1: k−1, x o, c 1: k−1) . (B-11) Because this context-conditioned proposal density is implicit and intractable for large language models, ModelSMC omits the correction factor and uses p(xo|mk) as a practical, approximate importance weight. 
+
+Resulting weighting rule. Thus, under a prior-matching proposal, the incremental SMC weight at iteration k is precisely the marginal likelihood of the newly proposed model. This yields the weighting rule used in ModelSMC as the likelihood 
+
+˜w(m) ∝ p(xo | m). (B-12) 
+
+Factorization and numerical stabilization. Assuming iid observed data xo,
+
+p(xo | m) = 
+
+> M
+
+Y
+
+> j=1
+
+p(xjo | m). (B-13) In practice, ModelSMC uses the normalized geometric mean 
+
+˜w(m) = 
+
+> M
+
+Y
+
+> j=1
+
+p(xjo | m)
+
+!1/M 
+
+, (B-14) which preserves particle ordering while improving numerical stability for large M .14 ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+Remarks. 
+
+• Implicit model prior. The prior p(m) is implicit and defined by the marginal distribution over models induced by the LLM generative process. The proposal distribution corresponds to its conditional transitions. ModelSMC therefore performs inference under this implicit prior rather than an explicit analytic one. • Approximate prior matching. The derivation assumes an idealized prior-matching proposal that ignores contextual conditioning. In practice, the LLM proposal depends on feedback and task-specific context, so the exact importance ratio for the SMC weight would additionally include a proposal correction term. Because this proposal density is implicit and intractable, ModelSMC uses likelihood-based weights as a practical approximation, corresponding to inference under an implicit LLM-induced prior. • Static target. The sequence (m1, . . . , m K ) is artificial and introduced solely to enable SMC; all marginals correspond to the same static posterior p(m | xo).• Tempering extension. The current formulation uses the full likelihood p(xo | mk) at every iteration. This can be generalized by introducing a schedule β1 ≤ · · · ≤ βK = 1 and replacing the target at iteration k with p(xo | mk)βk ,recovering a standard tempered SMC sampler (Del Moral et al., 2006). The existing temperature parameter τ (Eq. D-39) could be adapted to serve this role. 
+
+# C. Proof of ModelSMC Convergence 
+
+Theorem C.1 (restated Theorem 3.1) . Let π(m) ∝ p(xo|m)p(m) be a fixed target distribution over models, and let 
+
+q(m′|m) denote an idealized proposal kernel induced by the propagation step. Assume (i) support coverage , i.e., any m
+
+with π(m) > 0 can be generated with non-zero probability; (ii) uniformly bounded importance weights; (iii) conditional independence of propagated particles given resampling; and (iv) exact likelihood evaluation , i.e., the importance weights are computed using the true marginal likelihood p(xo|m). Let {(mi, w i)}Ni=1 be the particle population at a fixed iteration. Then, for any bounded test function φ,
+
+> N
+
+X
+
+> i=1
+
+wiφ(mi) P
+
+−→ Eπ [φ(m)] as N → ∞ , (C-15) 
+
+with asymptotic variance O(1 /N ). The result holds in the presence of resampling. 
+
+Discussion of assumptions. 
+
+• Assumption (i) (support coverage) requires that the proposal induced by the LLM assigns non-zero probability to any model with non-zero posterior mass. This assumption cannot be verified formally and depends critically on the expressive capacity and training of the underlying LLM. In practice, we assume that a large class of scientifically meaningful models, including those commonly used in the literature, their combinations, and moderate extrapolations thereof, lie within the effective support of the proposal distribution. The use of textual feedback and task-specific prompts allows the proposal to be steered toward relevant regions of model space, but does not guarantee full coverage. If this assumption is violated, ModelSMC converges to the posterior restricted to the subset of models reachable by the proposal, resulting in asymptotic bias. • Assumption (ii) (uniformly bounded importance weights) ensures finite variance of the Monte Carlo estimator. While difficult to verify formally, it is encouraged in ModelSMC by finite surrogate likelihood outputs, and normalization via a geometric mean across observations. • Assumption (iii) is standard in SMC analyses and is satisfied by resampling followed by conditionally independent propagation (Del Moral, 2004). In ModelSMC, propagation additionally depends on particle context, so strict condi-tional independence is not fully met in practice. The theorem therefore characterizes an idealized setting that serves as a reference point for the algorithm’s behavior. • Assumption (iv) formalizes an idealized setting in which the marginal likelihood p(xo|m) is available exactly. In ModelSMC, this likelihood is approximated using a surrogate density estimator using NLE or NLE-PFN (Papamakar-ios et al., 2019), see Sec. D.2. The theorem therefore characterizes the asymptotic behavior of an idealized sampler and serves as a reference point for the practical algorithm, as is standard in analyses of likelihood-free SMC methods (Del Moral et al., 2006). 15 ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+The following argument establishes consistency for an idealized importance sampling or SMC scheme in which the pro-posal distribution qk is known and used to compute exact importance weights. In ModelSMC, the proposal is implicit and context-dependent, so the theorem applies to the corresponding idealized sampler that motivates the practical algorithm. 
+
+Proof. The proof follows classical importance sampling arguments and their extension to SMC samplers for static target distributions, adapted to the ModelSMC setting (Robert et al., 1999; Del Moral, 2004; Del Moral et al., 2006). 
+
+Step 1: Target expectation and proposal identity. Fix an iteration k. Conditional on the resampling step at iteration 
+
+k − 1, the propagation step induces a proposal distribution 
+
+qk(m) := pLLM (m | mk−1), (C-16) where mk−1 denotes a resampled ancestor. By assumption (i), the support of qk contains the support of π.For any bounded test function φ, we have 
+
+Eπ [φ(m)] = 
+
+Z
+
+φ(m) π(m) dm =
+
+Z
+
+φ(m) π(m)
+
+qk(m) qk(m) dm = Eqk
+
+ π(m)
+
+qk(m) φ(m)
+
+
+
+. (C-17) 
+
+Step 2: Importance sampling estimator. Let m1, . . . , m N be i.i.d. samples from qk(m). Define (unnormalized) impor-tance weights 
+
+˜wi = π(mi)
+
+qk(mi) , wi = ˜wi
+
+PNj=1 ˜wj
+
+. (C-18) The corresponding estimator is 
+
+ˆIN := 
+
+> N
+
+X
+
+> i=1
+
+wi φ(mi). (C-19) By the strong law of large numbers, 
+
+> N
+
+X
+
+> i=1
+
+wi φ(mi) a.s. 
+
+−−→ Eqk
+
+ π(m)
+
+qk(m) φ(m)
+
+
+
+= Eπ [φ(m)] , (C-20) 
+
+> N
+
+X
+
+> i=1
+
+wi
+
+> a.s.
+
+−−→ Eqk
+
+ π(m)
+
+qk(m)
+
+
+
+=
+
+Z
+
+π(m) dm = 1 . (C-21) Hence ˆIN → Eπ [φ(m)] almost surely. 
+
+Step 3: Variance decomposition. Define the random variables 
+
+Zi := π(mi)
+
+qk(mi) φ(mi), mi ∼ qk i.i.d. (C-22) Then 
+
+1
+
+N
+
+> N
+
+X
+
+> i=1
+
+Zi
+
+> a.s.
+
+−−→ Eπ [φ(m)] . (C-23) Moreover, 
+
+Var 
+
+ ˆIN
+
+
+
+= 1
+
+N Var( Z1). (C-24) 16 ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+Step 4: Variance goes to zero. By Assumption (ii) (uniformly bounded importance weights) and boundedness of φ,there exists C < ∞ such that 
+
+π(m)
+
+qk(m) φ(m) ≤ C for all m. (C-25) Hence Var( Z1) ≤ C2, and therefore 
+
+Var 
+
+ ˆIN
+
+
+
+= Var 1
+
+N
+
+> N
+
+X
+
+> i=1
+
+Zi
+
+!
+
+≤ C2
+
+N = O(1 /N ) −→ 0. (C-26) 
+
+Step 5: Convergence in probability (Chebyshev). For any ε > 0, Chebyshev’s inequality yields 
+
+P
+
+ ˆIN − Eπ [φ(m)] ≥ ε
+
+
+
+≤
+
+Var 
+
+ ˆIN
+
+
+
+ε2 ≤ C2
+
+N ε 2 , (C-27) which converges to zero as N → ∞ . This establishes convergence in probability of the importance sampling estimator to 
+
+Eπ [φ(m)] .
+
+Step 6: Effect of resampling. The resampling step replaces the weighted particle system by an equally weighted one whose empirical measure is unbiased. Under Assumption (iii) (conditional independence of propagated particles given resampling) and bounded importance weights, resampling does not change the limit of the estimator and introduces addi-tional variance of order O(1 /N ) only. Therefore, resampling preserves convergence in probability and the Monte Carlo rate. 
+
+Step 7: Importance sampling vs. SMC (path-space argument). ModelSMC performs SMC updates with incremental weights of the form 
+
+wk = πk(mk)
+
+πk−1(mk−1) qk(mk | mk−1) , (C-28) where {πk} is an artificial sequence of target distributions whose marginal at iteration k is π. Viewing SMC as importance sampling on the extended path space (m0, . . . , m k), the product of incremental weights along a trajectory equals the standard importance weight π(mk)/q k(mk) for the marginal distribution. Hence, analyzing the corresponding importance sampling estimator suffices to establish consistency of the SMC estimator. 
+
+Step 8: Conclusion. Combining the above steps, we obtain that 
+
+> N
+
+X
+
+> i=1
+
+wi φ(mi) P
+
+−→ Eπ [φ(m)] as N → ∞ , (C-29) with asymptotic variance O(1 /N ). Thus, ModelSMC provides a consistent Monte Carlo approximation of the posterior 
+
+p(m | xo).
+
+Remarks. 
+
+• Mixture proposal. The mixture kernel in Algorithm 1 clones a fraction of particles while propagating the remainder via the LLM. Since cloned particles retain their previous weights and the overall kernel satisfies the support coverage assumption as N → ∞ , this does not affect the validity of the convergence argument. • Idealized setting. The theorem characterizes the asymptotic behavior of an idealized ModelSMC sampler with exact importance weights. The implemented algorithm uses approximate weights due to implicit, context-conditioned LLM proposals, and should therefore be interpreted as an approximation to this idealized sampler. • Prompt engineering and proposal quality. Prompt design affects the proposal distribution implicitly by shaping the inductive biases of the LLM. From the perspective of the theorem, prompt engineering serves as a practical mechanism to improve support coverage and reduce weight variance, analogous to hand-crafted proposal kernels in traditional Monte Carlo methods. It influences finite-sample efficiency but does not affect the asymptotic consistency result. 17 ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+# D. Method Details 
+
+D.1. Parameter Estimation 
+
+ModelSMC does not require the value of the external parameters θ for the model discovery process. Since many down-stream applications require parameter estimation, we estimate the parameter values ˆθ that best explain the observed data. For an observation xo and associated context co, we estimate ˆθo by maximizing the posterior p(θ|x, c, m ) with respect to θ
+
+as ˆθo = arg max  
+
+> θ∈Θ
+
+log p (θ | xo, c o, m ) . (D-30) To simplify notation, we drop the conditioning on the discovered model for the remainder of this section. The key ingredient for estimating ˆθo via Eq. D-30 is access to the posterior p (θ|x, c ), which in practice is usually intractable. Therefore, we use a surrogate model 
+
+pψ (θ | x, c ) ≈ p(θ | x, c ). (D-31) One approach for obtaining pψ is Neural Posterior Estimation (Lueckmann et al., 2017; Papamakarios & Murray, 2016, NPE) which trains a density estimator pψ from scratch using a training set of nsim synthetic samples 
+
+D = {(θj ∼ p(θ), c j ∼ p(c), x j = m(cj , θ j ) ∼ p(x | m(θ, c )) }nsim 
+
+> j=1
+
+. (D-32) Once pψ is trained, the expression in Eq. D-30 is estimated by drawing npost samples from pψ and selecting the sample that maximizes pψ (θ|x, c )ˆθo = arg max 
+
+> θ∈Θo
+
+log pψ (θ | xo, c o) , with Θo = {θl ∼ pψ (θ | xo, c o)}npost  
+
+> l=1
+
+. (D-33) An alternative to NPE is NPE-PFN (Vetter et al., 2025). NPE-PFN employs TabPFN as a conditional density estimator. TabPFN (Hollmann et al., 2025) is a Prior-data Fitted Network (M¨ uller et al., 2022) for tabular data, which provides one-dimensional density estimates and can be autoregressively extended for higher-dimensional densities. The key difference between NPE and NPE-PFN is that NPE-PFN does not train a new surrogate model but uses D (see, Eq. D-32) as an in-context dataset for the pretrained TabPFN model. Hence, NPE-PFN allows for training-free posterior estimation. Following Vetter et al. (2025) and adapting to the case of additional external context co, the posterior can be decomposed into a product over the parameter dimensions as 
+
+p(θ|xo, c o) ≈
+
+> dθ
+
+Y
+
+> j=1
+
+qψ (θj | θ<j , x o, c o, D<j ) . (D-34) For a dθ -dimensional parameter space, θj is the j-th component of θ, and θ<j the components of θ up to, but not including, the j-th. Analogously, D<j is defined as D<j = θij , θi<j , x i, c i :  θi, x i, c i ∈ D . In the setting of NPE-PFN qψ
+
+is a one-dimensional density estimate by TabPFN. To sample from the approximated posterior Eq. D-34, the individual dimensions of θ are sampled recursively. The parameter estimation scheme Eq. D-30 used for NPE can also be applied with NPE-PFN. For high-dimensional pa-rameter spaces, however, the recursive sampling and density estimation (Eq. D-34) for npost posterior samples can slow down the discovery process. To reduce the computational costs of the parameter estimation, we exploit NPE-PFNs factor-ization of the posterior Eq. D-34 and introduce a new strategy for estimating ˆθ0 which is based on temperature-scaling the posterior. Temperature-scaling refers to exponentiating a density with an exponent of 1 
+
+> T
+
+, with the temperature T > 0. Applying this transformation to a density leaves the positions of the modes, i.e., the local maxima, unchanged. Furthermore, for 
+
+T ≪ 1 the temperature-scaled density becomes localized around the mode with the highest density value in the original density. Sampling from the temperature-scaled distribution accordingly produces samples that have a high density under the original distribution. Sampling from the temperature-scaled posterior at T ≪ 1 instead of the posterior itself can significantly reduce the necessary amount of posterior samples npost in Eq. D-33 as all samples are close to the posterior mode with the highest density value. Therefore, we temperature-scale the posterior to obtain 
+
+p(θ|xo, c o) 1 
+
+> T
+
+≈
+
+> dθ
+
+Y
+
+> j=1
+
+qψ (θj | θ<j , x o, c o, D<j ) 1 
+
+> T
+
+. (D-35) 18 ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+Crucially, Eq. D-35 only requires to power-scale the one-dimensional factors in the product rather than the full, potentially high-dimensional, posterior itself. In our experiments, we draw one sample from the temperature-scaled posterior and use it as ˆθo. Drawing only one sample from the temperature-scaled posterior reduces the computational cost of the parameter estimation from npost sampling and density estimation steps to a single sampling step. Therefore, this parameter estimation approach exploits the factorization of the posterior in NPE-PFN and significantly reduces the computational costs of the parameter estimation. 
+
+D.2. Estimation of Resampling Weights: Likelihood Estimation 
+
+Eq. 4 defines the resampling weight of a particle as the likelihood of the observed data x0 under the model m, marginalized over the external parameters θ. In practice, the likelihood p(x|θ, c, m ) is intractable. Therefore, we use a surrogate model 
+
+pϕ(x|θ, c, m ) ≈ p(x|θ, c, m ) in the computation of Eq. 4. For simplicity, we drop the conditioning on m for the remainder of this section. One approach to learn a surrogate model is to apply Neural Likelihood Estimation (Papamakarios et al., 2019, NLE). NLE uses the training set D (see Eq. D-32) to train the surrogate model pϕ(x|θ, c, m ) via maximum likelihood training. An alternative to NLE is to adapt NPE-PFN (Vetter et al., 2025) to likelihood estimation. We denote this approach as NLE-PFN. Compared to Eq. D-34, NLE-PFN effectively interchanges θ and x, yielding 
+
+p(x|θ, c ) ≈
+
+> dx
+
+Y
+
+> j=1
+
+qψ (xj | x<j , θ, c, B<j ) , (D-36) where dx denotes the dimensionality of the observation space, xj the j-th component of the observation, and 
+
+x<j the components of x up to, but not including, the j-th. The in-context dataset B is defined as B<j =xij , xi<j , θ i, c i :  θi, x i, c i ∈ D . As in NPE-PFN, each factor in Eq. D-36 is estimated by a one-dimensional den-sity estimate from TabPFN (Hollmann et al., 2025). With the likelihood surrogate model pϕ(x | θ, c, m ), Eq. 4 can be estimated by the Monte Carlo estimate 
+
+p(xio | mik) ≈ 1
+
+B
+
+> B
+
+X
+
+> b=1
+
+p(xio | mik, θ b, c i
+
+> 0
+
+), θbi.i.d. 
+
+∼ p (θ) , ∀b = 1 , ..., B. (D-37) For high-dimensional observations, we can use summary statistics s : X → Rd with d ≪ dx (Lueckmann et al., 2017). Assuming that s(x) retains most of the relevant information about x, the approximation of the likelihood changes to 
+
+p(x|θ, c ) ≈ pϕ(s(x)|θ, c ). (D-38) Evaluating Eq. D-37 for each observed instance (xjo, c jo) ∈ xo allows us to compute the unnormalized resampling weight 
+
+˜wik (Eq. 5) of a model mik. In practice, we use the slightly adapted definition Eq. D-39 of ˜wik of the form 
+
+˜wik ∝ exp 
+
+ 1
+
+τ log 
+
+ MY
+
+> j=1
+
+p(xjo | mik)
+
+1/M 
+
+ . (D-39) The temperature parameter τ in Eq. D-39 controls the bias of the resampling step. For τ ≪ 1, particles explaining the data well are favored, whereas for τ ≫ 1, the selection becomes more uniform across all particles. Unless stated otherwise, the temperature is set to τ = 1 in all experiments. Importantly, the temperatures T and τ used in Eq. D-39 and Eq. D-35 are two distinct hyperparameters. In the definition of the resampling weights used by ModelSMC (Eq. 5 and Eq. D-39) the geometric mean over all observed instances is used rather than the direct product. First, the geometric mean yields weights whose magnitudes are invariant to the number of observed samples. Second, in practice, this approach reduces the risk of numerical instabilities. 
+
+D.3. Prompting Strategy 
+
+In the propagation step of ModelSMC (see Algorithm 1 and Sec. 3.3), an LLM is used as a conditional sampler for implementations of models, implicitly synthesizing new models. To obtain meaningful implementations, we condition the LLM on text-based conditions incorporating information about previously generated models and the task to solve. 19 ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+Passing information about models generated earlier in the discovery process, especially their implementations, to the LLM, is a well-established strategy in LLM-based model discovery (Holt et al., 2025; Castro et al., 2025; Romera-Paredes et al., 2024; Agarwal et al., 2025). We follow this general scheme by providing the ancestry of implementations maik 
+
+> k−1
+
+and the ancestry of performance feedback caik 
+
+> k−1
+
+to the LLM. Both rely on the ancestry of the resampled particle. Injecting ancestral information in the propagation step enables the LLM to reason about the effect of changes to the models on their performance. Furthermore, we pass a task-specific context ctask to the LLM, which does not change over the course of the discovery run. The task-specific context ctask contains all information about the task. By passing ctask to the LLM, we aim at triggering the LLM’s broad knowledge base to further improve its ability to provide implementations that solve the given task. ModelSMC structures ctask into three parts: 1. System description. We include all prior information about the task to solve. This includes information about the initial solution provided to ModelSMC or the metrics used to evaluate the generated models. The description also contains information about the scientific domain and about the data used to test the synthesized models. 2. Signature description. We collect all information about the framework in which the generated models are evaluated. This includes details such as the interpretation and structure of the model’s input arguments and outputs. 3. Task description. This part summarizes the aim of the discovery run and describes how the tasks should be ap-proached (i.e., to reason from previous attempts, use coding standards, or specific coding instructions). The different parts of ctask can vary across different applications, depending on the amount of prior knowledge, the envi-ronment used to evaluate the code, the scientific domain, and the specifics of the task. For the full prompts, we refer to the supplementary materials. The generation of contextual feedback cik of a model mik (see Algorithm 1) is performed after model simulation, and the numerical performance metrics are computed. The contextual feedback has two stages. In the first stage, the system description and the numerical evaluation metrics are provided to the LLM, which is instructed to diagnose the model performance based on the metrics. This stage also records and provides feedback on any exceptions and errors arising during evaluation. In the second stage, a separate LLM call produces structured feedback conditioned on the diagnosis, the model implementation, the system description, and the evaluation outcomes. The resulting feedback is designed to guide subsequent LLM propagation steps by highlighting concrete directions for model revision. During model simulation and evaluation, exceptions may arise due to invalid code, numerical instability, non-terminating simulations, or timeouts. Such exceptions are explicitly caught and recorded. When an exception occurs, a structured description of the failure mode (e.g., error messages, timeout events, or invalid outputs) is included in the first-stage diagnosis and propagated to the LLM as part of the contextual feedback. This allows models that failed to receive targeted corrective feedback to be revised if they are later resampled as ancestors, rather than being irreversibly discarded. 
+
+# E. Baseline Methods 
+
+E.1. FunSearch+ 
+
+FunSearch (Romera-Paredes et al., 2024) is an LLM-based evolutionary method to evolve function implementations to improve their performance with respect to an evaluation function. The program database used by FunSearch to store previ-ously generated functions consists of several pools of functions, referred to as islands. Periodically, the worst-performing islands are discarded and reinitialized with a function from the remaining well-performing islands. When generating the prompt to synthesize a new function, FunSearch randomly selects an island and samples k functions from this island with sampling probabilities based on their score and length. The selected functions are sorted by their scores and inserted into the program skeleton to provide ranked examples to the LLM. Based on this prompt, the LLM is tasked to implement a new function with the goal of generating a higher-scoring function. Newly generated functions are added to the same island from which the functions in the prompt were selected. Therefore, the islands evolve independently between reinitialization steps. A key difference between ModelSMC and FunSearch is that FunSearch selects the functions in the prompt based on the score but does not consider ancestral relations. As originally proposed for problems from extremal combinatorics, FunSearch does not allow the use of external model parameters θ. We therefore include the ability to use and estimate model parameters in FunSearch and denote this extended 20 ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+version as FunSearch+. Including external model parameters into FunSearch is conceptually inspired by Castro et al. (2025). Castro et al. (2025) applies gradient descent-based optimization on a likelihood-based criterion to estimate the values of the model parameters. The score of a discovered model is given by the validation performance of this criterion, given the optimized parameters. Instead of using gradient-based parameter optimization, we use the parameter estimation approach based on NPE and NPE-PFN described in Sec. D.1. The advantage of using NPE and NPE-PFN to estimate ˆθ
+
+over gradient-based approaches is to obtain posterior estimates for the parameters without requiring differentiable model. Inspired by the use of a likelihood-based score in Castro et al. (2025), we also use a likelihood-based score in FunSearch+, which we define as 
+
+s = log 
+
+ MY
+
+> j=1
+
+pϕ(xjo | m, c jo, ˆθj )
+
+1/M 
+
+. (E-40) In Eq. E-40, ˆθj denotes the parameter estimate for the observed instance (xjo, c jo) ∈ xo and pϕ(x|m, c, θ ) is a surrogate likelihood for the unknown true likelihood p(x|m, c, θ ). The surrogate likelihood is estimated as described in Sec. D.2. We base our implementation of FunSearch+ on the openly available FunSearch implementation provided by Zhang (2024). Our main modifications include evolving class methods rather than standalone functions and including our parameter estimation (Sec. D.1) and scoring schemes (see Eq. E-40). Zhang (2024) relies on string-based modifications of functions and is therefore tightly coupled to Python code. As a result, unlike ModelSMC, it cannot be readily extended to other programming languages. 
+
+E.2. ModelSMC N =1 
+
+This baseline method represents alternative LLM-based approaches for model discovery that evolve an initial model in a single trajectory of models. A representative of this class of algorithms is, for example, G-Sim (Holt et al., 2025). ModelSMC N =1 uses the same implementation as ModelSMC (including the definition of the resampling weights), but only samples one particle per iteration and only keeps one particle as a candidate for resampling. 
+
+# F. Experimental Details 
+
+Here, we provide details on the exact configurations used in the experiments. For a complete list of all settings and details on the implementation, we refer to the accompanying code. 
+
+F.1. Validation of ModelSMC for Model Discovery 
+
+The experiment presented in Sec. 4.1 tests the probabilistic inference mechanism underlying ModelSMC without using LLMs to synthesize new models. To implement this, we restrict ModelSMC to select models from a finite model space consisting of 20 predefined candidate models that produce ten-dimensional observations. F.1.1. C ANDIDATE MODELS 
+
+The candidate models used in this experiment are Gaussian Mixture Models (GMMs). Given the number of mixture components ncomp ∈ N, a set of covariance matrices Σi ∈ R10 ×10 ncomp  
+
+> i=1
+
+, mean vectors μi ∈ R10 ncomp  
+
+> i=1
+
+, and weights 
+
+wi ∈ R+ 
+
+> ncomp
+> i=1
+
+with P 
+
+> i
+
+wi = 1 , we define a GMM as 
+
+pGMM (x | s, u ) = 
+
+> ncomp
+
+X
+
+> i=1
+
+wi · 1(2 π)dx/2 det ( s2Σi)1/2 exp 
+
+
+
+− 12s2
+
+ x −  sμ i + u T  Σi−1  x −  sμ i + u 
+
+. (F-41) Here, dx = 10 is the dimensionality of the data space, and s and u are the external parameters of the model: the scale parameter s is scalar and follows a uniform prior over the interval [0 .1, 2] . The shift parameter u is a ten-dimensional vector, where all but four components are set to zero. Each of the four non-zero components follows a uniform prior over the interval [−2, 2] . The non-zero components are sampled uniformly at random when initializing the candidate model and remain unaltered over the discovery run. The external parameters allow to scale and to shift the GMM along selected components to fit it to the observed data. For each candidate model, the configuration of the underlying GMM is randomly 21 ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+initialized as 
+
+ncomp ∼ Unif ({1, 2, ..., 10 }) , (F-42) 
+
+˜wi ∼ Unif ([0 , 1]) , wi = ˜wi
+
+Pncomp  
+
+> j=1
+
+˜wj , ∀i = 1 , ..., n comp , (F-43) 
+
+μij ∼ Unif ([ −5, 5]) , ∀j = 1 , ..., 10 , ∀i = 1 , ..., n comp , (F-44) 
+
+˜Σijk ∼ Unif ([ −2, 2]) , ∀j, k = 1 , ..., 10 , ∀i = 1 , ..., n comp , (F-45) 
+
+Σi = αi · ˜Σi  ˜ΣiT
+
+, αi ∼ Unif ([1 , 2]) , ∀i = 1 , ..., n comp . (F-46) In each discovery run, one of the 20 candidate models is selected as the ground truth model m∗, and observed data is drawn from m∗ with s = 1 and u = [0 , ..., 0] , i.e., no scaling and shifting is applied. F.1.2. E XPERIMENTAL CONFIGURATION 
+
+Ten different ground truth models are selected from the set of 20 candidate models. For each ground truth model, ten discovery runs are conducted, each with a different random seed, resulting in a total of 100 discovery runs. The set of candidate models is the same for all discovery runs. ModelSMC’s resampling weights are estimated using NLE (Papamakarios et al., 2019) with a training set D of size 5,000 (Sec. D.2). No additional context is used, i.e., a training instance consists of parameters θ = ( s, u ) drawn from the prior and a simulation m(θ). The observed set x0 is of size 1,000 and is drawn from the ground-truth model. To compute the Monte Carlo estimate Eq. D-37, B =2,000 prior samples are used. We employ sbi’s (Boelts et al., 2025) default hyperparameters for NLE but limit the maximum number of training epochs to 500. All discovery runs proceed for 30 iterations and cloning probability α=1 (i.e., no new models are proposed by an LLM). In this LLM-free setting, ModelSMC reduces to resampling from the fixed candidate pool according to likelihood-based weights.The particle pool is limited to a maximum size of N =50 particles. Therefore, no new models are generated. To ensure that all candidate models are available for selection by ModelSMC, the resampling weights are computed for all 20 candidate models in the first iteration. In addition to not using an LLM in the propagation step, no text-based performance feedback (Sec. D.3) is generated. 
+
+F.2. SIR Model 
+
+We apply ModelSMC to a synthetic dataset where the ground truth simulator model is known. In particular, we use a simple epidemiological SIR model (Kermack & McKendrick, 1927). The SIR model considers three populations—Susceptible, Infected, Recovered—with interactions controlled by two external parameters, a base transmission rate β and a recovery probability γ. In this experiment, we use a time-discretized adaptation of the classical SIR model from Holt et al. (2025). F.2.1. D ATASET 
+
+We use the implementation of the ground truth model by Holt et al. (2025) to generate observed data. Synthetic data is generated by drawing the initial numbers of susceptible, infected, and recovered individuals from the prior distributions specified as (Holt et al., 2025) 
+
+S0 ∼ Unif ({50 , 51 , ..., 99 , 100 }) , I0 ∼ Unif ({1, 2, ..., 4, 5}) , R0 = 0 . (F-47) These initial population sizes define the context c = ( S0, I 0, R 0). Given the external parameters β and γ, the population sizes at time step t ∈ { 1, ..., T } are computed recursively from those at time t − 1. Let N = St−1 + It−1 + Rt−1 and 
+
+pinf = 1 .0 − exp( −β · It−1/N ). New infections and recoveries are drawn as 
+
+Ninf ∼ Binomial (St−1, p inf ) , Nrec ∼ Binomial (It−1, γ ) , (F-48) and the state is updated via 
+
+St = St−1 − Ninf , It = It−1 + Ninf − Nrec , Rt = Rt−1 + Nrec . (F-49) 22 ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+Because infections and recoveries are sampled from Binomial distributions, the transitions across time steps are stochastic. In total, the simulation runs for T = 60 time steps, yielding three time series of 61 time steps. The prior distributions for the external parameters follow Holt et al. (2025) and are given by 
+
+γ ∼ Unif ([0 , 1]) , β ∼ Unif ([0 , 2]) . (F-50) In our experiments, these priors are fixed for all generated models and are not treated as part of the model. In contrast to Holt et al. (2025), we do not use an LLM to synthesize the dimensionality of the parameter space and the bounds of the uniform priors. In analogy to the NPE-based parameter estimation scheme applied in (Holt et al., 2025), a single training trajectory drawn from the ground truth model is used to estimate β and γ. For computations of evaluation metrics, including the resampling weights, we use x0 containing 100 samples drawn from the same generative process. F.2.2. E XPERIMENTAL CONFIGURATION 
+
+Parameter estimation for β and γ is performed using NPE with a training set of 1,000 synthetic instances (Sec. D.1). Each synthetic training sample consists of a context c = ( S0, I 0, R 0) drawn from the initial condition priors, parameters 
+
+θ = ( γ, β ) drawn from their uniform priors, and an observation x = m(θ, c ). The observation is a 183-dimensional vector formed by concatenating the simulated time series of susceptible, infected, and recovered populations. After training, parameter values are inferred using 10 4 samples drawn from the approximate posterior pψ (θ|xo, c o, m )
+
+using maximum log-posterior (MAP) criterion (Eq. D-33). Here, xo denotes the single observed trajectory generated from the ground-truth data-generating model and co the corresponding initial condition. The resulting parameter estimate for β
+
+and γ is fixed and reused for all downstream computations. No summary statistics are applied to the observations. This estimation procedure is inspired by (Holt et al., 2025) but differs in multiple aspects: In our implementation, the initial condition is explicitly treated as a condition in NPE. Moreover, we normalize the observations and the initial conditions elementwise by the total population size before passing them to the density estimator. Finally, we use a MAP estimate based on posterior samples, whereas Holt et al. (2025) averages posterior samples, which can lead to poor parameter estimates for multimodal posteriors. Resampling weights for ModelSMC are computed using NLE (Sec. D.2). The training set for NLE is identical to the normalized training set used for NPE in the parameter estimation step. We approximate the marginal likelihood (Eq. D-37) using 2,000 prior samples. ModelSMC runs for up to 20 iterations, with cloning probability α=0 .7 (i.e., 15 newly proposed models per iteration). The particle pool is limited to a maximum size of N =50 particles. Discovery runs are terminated if the optimized metric does not improve for more than ten iterations. The prompts in ctask (Sec. D.3) are constructed by adapting the prompts used in Holt et al. (2025) to match the specifics of ModelSMC. We follow the same procedure for the program skeleton. Components predicting prior bounds are removed, and the initial simulator model is restricted to return constant population sizes. For ModelSMC N =1 (see Sec. E.2), up to 150 models are generated with early stopping if no improvement is detected for more than 100 iterations. FunSearch+ (Sec. E.1) generates 150 functions and also uses the same evaluation pipeline as the other two approaches. All methods include up to five previously generated implementations, i.e., ancestors, to the LLM. To compute the results in Table 1, all methods are run with ten different initial random seeds. The two baseline methods use the same parameter estimation scheme as ModelSMC. For implementation details, we refer to the accompanying code. 
+
+F.3. Pharmacological Kidney Model 
+
+F.3.1. D ATASET 
+
+The dataset is originally from Dluhy et al. (1972); we use the version provided with the manuscript from Maddah & Hallow (2022). The data contains measured plasma potassium and aldosterone responses to a standardized potassium chloride infusion in healthy humans under controlled dietary conditions. Subjects were assigned to four diet groups defined by low/high potassium (40 vs. 200 mEq/day) and low/high sodium (10 vs. 200 mEq/day) intake for 6–10 days, then received potassium chloride at 0.62 mEq/min for 120 min followed by 180 min recovery. Plasma potassium and aldosterone were sampled at baseline, during infusion (0, 30, 90, 120 min), and after recovery (300 min). This constitutes a total of 40 unique data points. There are no summary statistics used. 23 ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+As context c is passed to the model, we give the initial condition of the model. The initial condition is derived from steady-state conditions with normal sodium and potassium intake. The model parameters θ are drawn from uniform priors. For details about the bounds of the prior, we refer to the accompanying code. F.3.2. E XPERIMENTAL CONFIGURATION 
+
+ModelSMC is run for 20 iterations with cloning probability α=0 .8 (i.e., 10 newly proposed models per iteration). The particle pool is limited to a maximum size of N =50 particles. If the best resampling weight does not improve for 15 consecutive iterations, the run is terminated early. Parameter estimation is performed using NPE-PFN with temperature-scaled posteriors (Sec. D.1), using temperature T = 10 −5 and 2,000 simulator calls per evaluation. Resampling weights are estimated using NLE-PFN (Sec. D.2), and the marginal likelihood estimate in Eq. D-37 is approximated with B =2,000 prior samples. In each propagation step, up to five previously discovered models are provided as few-shot context to the LLM (Sec. D.3). For ModelSMC N =1, the same parameter and weight estimation settings are used, but only a single particle is propagated and retained per iteration. ModelSMC N =1 is run for 100 iterations without early stopping based on lack of improvement. All experiments are performed using fixed, manually defined summary statistics and are evaluated using the negative average log marginal likelihood estimated by NLE-PFN. 
+
+F.4. Hodgkin-Huxley Model 
+
+F.4.1. D ATASET 
+
+We consider data from the Allen cell types database (Allen Institute for Brain Science, 2015), which consists of 10 in-vitro recordings from a mouse cortex. This data was previously used for parameter inference (Gonc ¸alves et al., 2020; Vetter et al., 2025). We use the same set of seven summary statistics as previously proposed in Gonc ¸alves et al. (2020): Spike count, mean, and standard deviation of the resting potential, and the first four voltage moments, i.e., mean, standard deviation, skew and kurtosis. The additional context c passed to the model is a two-dimensional vector containing the initial membrane voltage V0 and the input current I to the cell. The prior over the conditions is defined by uniformly drawing the context values from the observed set x0. The two context dimensions are drawn independently, resulting in 100 possible combinations of initial voltage and input current. Model parameters θ are ten-dimensional vectors with components independently drawn from uniform priors, in the same way as provided in Gonc ¸alves et al. (2020). For details about the bounds of the prior, we refer to the accompanying code. F.4.2. E XPERIMENTAL CONFIGURATION 
+
+ModelSMC runs for 20 iterations with cloning probability α=0 .7 (i.e., 15 newly proposed models per iteration). The particle pool is limited to a maximum size of N =50 particles. If the best resampling weight does not improve for more than 15 iterations, the discovery runs are terminated prematurely. For parameter estimation, we employ NPE-PFN-based parameter estimation utilizing temperature-scaling of the posterior (Sec. D.1). The temperature used for temperature-scaling (Eq. D-35) is T = 10 −5. NPE-PFN uses an in-context dataset D (Eq. D-32) of size 5,000. Resampling weights, i.e. likelihood estimates, are obtained using NLE-PFN (Sec. D.2), and Eq. D-37 is estimated with B =2,000 prior samples. NLE-PFN and NPE-PFN are applied to seven standard summary statistics (Gonc ¸alves et al., 2020) rather than to the full voltage traces. In each propagation step, up to five ancestral samples are prompted to the LLM (Sec. D.3). For ModelSMC N =1 (Sec. E.2), we use the same configuration for parameter and weight estimation as in ModelSMC, with the difference of only propagating a single particle in each iteration and only considering one particle as a candidate for resampling. ModelSMC N =1 runs for 150 iterations. FunSearch+ (Sec. E.1) generates 150 models and uses up to five previously synthesized models to construct the prompts used for propagation. Per prompt, four new models are generated. The program database consists of ten islands, and reinitialization of the worst-performing islands is performed every four hours. To estimate the parameters of the generated models and to compute the score (Eq. E-40), NPE-PFN and NLE-PFN are used with the same settings as in ModelSMC and ModelSMC N =1. All three methods are run with ten different initial random seeds to obtain the results presented in Table 1. 24 ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 
+
+# G. Additional Experiments 
+
+G.1. Extended Version of Table 1         
+
+> Table G-1. Extended version of Table 1 . Metrics are collected for the best-performing particle from each of the ten discovery runs. Best-performing particles are selected according to the metric which was applied to weight particles during the discovery process. We report the median metric together with a 90% confidence interval. The confidence interval is estimated using a percentile bootstrap: 10 4
+> bootstrap samples of size ten are drawn with replacement from the metric values of the selected particles. The median is computed for each sample, and the 5% and 95% quantiles of the resulting distribution are reported.
+
+− 1 
+
+> M
+
+log p(xo|m)( ↓)
+
+ModelSMC FunSearch+ ModelSMC N =1 SIR -503.37 (-583.33 - -448.45) -500.00 (-521.88 - -474.78) -464.17 (-503.99 - -415.40) Kidney 43.58 (42.53 - 45.10) N/A 46.29 (45.70 - 47.09) HH 25.18 (24.91 - 25.59) 28.96 (28.21 - 29.67) 25.95 (25.36 - 26.12) 
+
+− 1 
+
+> M
+
+log p(xo|ˆθ, m )( ↓)
+
+SIR -492.67 (-577.77 - -441.17) -492.05 (-515.91 - -472.39) -455.13 (-491.27 - -412.55) Kidney 55.05 (51.51 - 57.23) N/A 58.63 (56.48 - 83.43) HH 15.47 (14.23 - 16.45) 12.05 (10.92 - 12.86) 15.64 (13.59 - 17.73) 
+
+G.2. LLM Token Usage 
+
+A metric to assess the effectiveness of an LLM-based model discovery algorithm is how many tokens are passed to and generated by an LLM to synthesize a model with a certain performance on the observed data. To minimize computational costs, the number of tokens needed for a certain performance should be as small as possible. In this section, we examine how ModelSMC performs under this metric compared to the baseline methods (Sec. E.1 and Sec. E.2). The results in Fig. G-1 are based on the discovery runs evaluated in Sec. 4.2. For each evaluated task and method, the five best-performing runs are selected. For FunSearch+, this selection is based on the score Eq. E-40 and for ModelSMC and ModelSMC N =1 based on the resampling weight Eq. 5. For each run, the globally best performance and total number of used tokens at each iteration are collected. These properties are averaged over the five runs. Fig. G-1 shows that while the two baselines, ModelSMC N =1 and FunSearch+, both generate 150 functions, the amount of required tokens strongly differs. This discrepancy is expected. In addition to the ancestry of the resampled model, ModelSMC and ModelSMC N =1 pass prompts ctask and text-based performance evaluations (Sec. D.3) to the LLM in the propagation step. FunSearch+, on the other hand, only provides the code skeleton with the functions sampled from the program database to the LLM. Therefore, FunSearch+ requires fewer input tokens. Furthermore, ModelSMC and ModelSMC N =1 require more output tokens since both generate text-based performance feedback, which is not part of FunSearch+. At the maximum token budget used by the baselines, ModelSMC performs comparably to the two baseline approaches and, in the case of ModelSMC N =1, even exceeds its performance in some settings (left panel, bottom row, and right panel, second row of Fig. G-1). Thus, formulating the model discovery process as probabilistic inference does not negatively affect the efficiency of the discovery process compared to the baselines. 25 ModelSMC – A Probabilistic Framework for LLM-Based Model Discovery 0 2 4 6 8                                      
+
+> Total Tokens 1e6
+> 600
+> 550
+> 500
+> 450
+> 400
+> 350
+> 300
+> logp(x o|m)
+> SIR
+> 02468
+> Total Tokens 1e6
+> 600
+> 550
+> 500
+> 450
+> 400
+> 350
+> 300
+> logp(x o| , m)
+> SIR
+> 0.0 0.2 0.4 0.6 0.8 1.0 1.2 1.4
+> Total Tokens 1e7
+> 24
+> 25
+> 26
+> 27
+> 28
+> logp(x o|m)
+> Allen
+> 0.0 0.2 0.4 0.6 0.8 1.0 1.2 1.4
+> Total Tokens 1e7
+> 10.0
+> 10.5
+> 11.0
+> 11.5
+> 12.0
+> logp(x o| , m)
+> Allen
+> 0.0 0.2 0.4 0.6 0.8 1.0 1.2
+> Total Tokens 1e7
+> 42
+> 44
+> 46
+> 48
+> 50
+> logp(x o|m)
+> Kidney
+> 0.0 0.2 0.4 0.6 0.8 1.0 1.2
+> Total Tokens 1e7
+> 50
+> 55
+> 60
+> 65
+> logp(x o| , m)
+> Kidney
+> ModelSMC (N=1) ModelSMC FunSearch+
+
+Figure G-1. Performance of the discovered models as a function of token usage . Each row corresponds to a task, and each column to a performance metric. Dark blue: ModelSMC. Light Blue: Model SMC N =1. Green: FunSearch+. The depicted performance metrics and token counts are averaged over the five best discovery runs out of the ten discovery runs conducted for the experiments discussed in Sec. 4.2. First row: Synthetic data from a SIR epidemiological model (Sec. F.2). Second row: Hodgkin-Huxley Model (Sec. 4.4 and Sec. F.4). Third row: Pharmacological kidney model (Sec. 4.3 and Sec. F.3). Left column: Negative average log-likelihood of the observed data marginalized over the model parameters θ, i.e., the resampling weight for ModelSMC (Eq. 5). Right column: Negative average log-likelihood of the observed data given the parameter estimate ˆθ (Eq. E-40) 
+
+26
