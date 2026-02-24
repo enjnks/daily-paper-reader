@@ -1,0 +1,131 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-02-24T04:36:19.963849+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 1,
+    "deep_cap": 6,
+    "deep_selected": 1,
+    "quick_candidates": 2,
+    "quick_skim_target": 11,
+    "quick_selected": 2
+  },
+  "deep_dive": [
+    {
+      "id": "2602.19516v1",
+      "title": "Pixel2Phys: Distilling Governing Laws from Visual Dynamics",
+      "abstract": "Discovering physical laws directly from high-dimensional visual data is a long-standing human pursuit but remains a formidable challenge for machines, representing a fundamental goal of scientific intelligence. This task is inherently difficult because physical knowledge is low-dimensional and structured, whereas raw video observations are high-dimensional and redundant, with most pixels carrying little or no physical meaning. Extracting concise, physically relevant variables from such noisy data remains a key obstacle. To address this, we propose Pixel2Phys, a collaborative multi-agent framework adaptable to any Multimodal Large Language Model (MLLM). It emulates human scientific reasoning by employing a structured workflow to extract formalized physical knowledge through iterative hypothesis generation, validation, and refinement. By repeatedly formulating, and refining candidate equations on high-dimensional data, it identifies the most concise representations that best capture the underlying physical evolution. This automated exploration mimics the iterative workflow of human scientists, enabling AI to reveal interpretable governing equations directly from raw observations. Across diverse simulated and real-world physics videos, Pixel2Phys discovers accurate, interpretable governing equations and maintaining stable long-term extrapolation where baselines rapidly diverge.",
+      "authors": [
+        "Ruikun Li",
+        "Jun Yao",
+        "Yingfan Hua",
+        "Shixiang Tang",
+        "Biqing Qi",
+        "Bin Liu",
+        "Wanli Ouyang",
+        "Yan Lu"
+      ],
+      "primary_category": "cs.CE",
+      "categories": [
+        "cs.CE"
+      ],
+      "published": "2026-02-23 05:16:47+00:00",
+      "link": "https://arxiv.org/pdf/2602.19516v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "Extracting formalized physical knowledge and governing laws from visual data",
+      "llm_evidence_cn": "从视觉数据中提取形式化的物理知识和支配规律",
+      "llm_evidence": "从视觉数据中提取形式化的物理知识和支配规律",
+      "llm_tldr_en": "Proposes Pixel2Phys to distill low-dimensional physical laws from high-dimensional video data using MLLMs.",
+      "llm_tldr_cn": "提出Pixel2Phys框架，利用多模态大模型从高维视频数据中提炼低维物理定律。",
+      "llm_tldr": "提出Pixel2Phys框架，利用多模态大模型从高维视频数据中提炼低维物理定律。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2602.20133v1",
+      "title": "AdaEvolve: Adaptive LLM Driven Zeroth-Order Optimization",
+      "abstract": "The paradigm of automated program generation is shifting from one-shot generation to inference-time search, where Large Language Models (LLMs) function as semantic mutation operators within evolutionary loops. While effective, these systems are currently governed by static schedules that fail to account for the non-stationary dynamics of the search process. This rigidity results in substantial computational waste, as resources are indiscriminately allocated to stagnating populations while promising frontiers remain under-exploited. We introduce AdaEvolve, a framework that reformulates LLM-driven evolution as a hierarchical adaptive optimization problem. AdaEvolve uses an \"accumulated improvement signal\" to unify decisions across three levels: Local Adaptation, which dynamically modulates the exploration intensity within a population of solution candidates; Global Adaptation, which routes the global resource budget via bandit-based scheduling across different solution candidate populations; and Meta-Guidance which generates novel solution tactics based on the previously generated solutions and their corresponding improvements when the progress stalls. We demonstrate that AdaEvolve consistently outperforms the open-sourced baselines across 185 different open-ended optimization problems including combinatorial, systems optimization and algorithm design problems.",
+      "authors": [
+        "Mert Cemri",
+        "Shubham Agrawal",
+        "Akshat Gupta",
+        "Shu Liu",
+        "Audrey Cheng",
+        "Qiuyang Mang",
+        "Ashwin Naren",
+        "Lutfi Eren Erdogan",
+        "Koushik Sen",
+        "Matei Zaharia",
+        "Alex Dimakis",
+        "Ion Stoica"
+      ],
+      "primary_category": "cs.NE",
+      "categories": [
+        "cs.NE",
+        "cs.AI",
+        "cs.CL"
+      ],
+      "published": "2026-02-23 18:45:31+00:00",
+      "link": "https://arxiv.org/pdf/2602.20133v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Uses LLMs as mutation operators in evolutionary loops for program generation",
+      "llm_evidence_cn": "在程序生成的演化循环中将大语言模型用作变异算子",
+      "llm_evidence": "在程序生成的演化循环中将大语言模型用作变异算子",
+      "llm_tldr_en": "AdaEvolve uses adaptive LLM-driven evolution for program generation, sharing methodological roots with SR.",
+      "llm_tldr_cn": "AdaEvolve利用自适应大模型驱动的演化进行程序生成，与符号回归方法论相似。",
+      "llm_tldr": "AdaEvolve利用自适应大模型驱动的演化进行程序生成，与符号回归方法论相似。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    },
+    {
+      "id": "2602.20152v1",
+      "title": "Behavior Learning (BL): Learning Hierarchical Optimization Structures from Data",
+      "abstract": "Inspired by behavioral science, we propose Behavior Learning (BL), a novel general-purpose machine learning framework that learns interpretable and identifiable optimization structures from data, ranging from single optimization problems to hierarchical compositions. It unifies predictive performance, intrinsic interpretability, and identifiability, with broad applicability to scientific domains involving optimization. BL parameterizes a compositional utility function built from intrinsically interpretable modular blocks, which induces a data distribution for prediction and generation. Each block represents and can be written in symbolic form as a utility maximization problem (UMP), a foundational paradigm in behavioral science and a universal framework of optimization. BL supports architectures ranging from a single UMP to hierarchical compositions, the latter modeling hierarchical optimization structures. Its smooth and monotone variant (IBL) guarantees identifiability. Theoretically, we establish the universal approximation property of BL, and analyze the M-estimation properties of IBL. Empirically, BL demonstrates strong predictive performance, intrinsic interpretability and scalability to high-dimensional data. Code: https://github.com/MoonYLiang/Behavior-Learning ; install via pip install blnetwork.",
+      "authors": [
+        "Zhenyao Ma",
+        "Yue Liang",
+        "Dongxu Li"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.AI",
+        "stat.ML"
+      ],
+      "published": "2026-02-23 18:59:04+00:00",
+      "link": "https://arxiv.org/pdf/2602.20152v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "interpretable optimization structures in symbolic form for scientific domains",
+      "llm_evidence_cn": "科学领域中以符号形式表示的可解释优化结构",
+      "llm_evidence": "科学领域中以符号形式表示的可解释优化结构",
+      "llm_tldr_en": "Proposes Behavior Learning to learn interpretable optimization structures in symbolic form from data.",
+      "llm_tldr_cn": "提出行为学习框架，从数据中学习可解释的符号化优化结构。",
+      "llm_tldr": "提出行为学习框架，从数据中学习可解释的符号化优化结构。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    }
+  ]
+}

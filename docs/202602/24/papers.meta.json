@@ -1,0 +1,48 @@
+{
+  "label": "2026-02-24",
+  "date": "2026-02-24",
+  "generated_at": "2026-02-24T04:37:27",
+  "count": 3,
+  "papers": [
+    {
+      "paper_id": "202602/24/2602.19516v1-pixel2phys-distilling-governing-laws-from-visual-dynamics",
+      "section": "deep",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Discovering physical laws directly from high-dimensional visual data is a long-standing human pursuit but remains a formidable challenge for machines, representing a fundamental goal of scientific intelligence. This task is inherently difficult because physical knowledge is low-dimensional and structured, whereas raw video observations are high-dimensional and redundant, with most pixels carrying little or no physical meaning. Extracting concise, physically relevant variables from such noisy data remains a key obstacle. To address this, we propose Pixel2Phys, a collaborative multi-agent framework adaptable to any Multimodal Large Language Model (MLLM). It emulates human scientific reasoning by employing a structured workflow to extract formalized physical knowledge through iterative hypothesis generation, validation, and refinement. By repeatedly formulating, and refining candidate equations on high-dimensional data, it identifies the most concise representations that best capture the underlying physical evolution. This automated exploration mimics the iterative workflow of human scientists, enabling AI to reveal interpretable governing equations directly from raw observations. Across diverse simulated and real-world physics videos, Pixel2Phys discovers accurate, interpretable governing equations and maintaining stable long-term extrapolation where baselines rapidly diverge.\n\n---"
+    },
+    {
+      "paper_id": "202602/24/2602.20133v1-adaevolve-adaptive-llm-driven-zeroth-order-optimization",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "The paradigm of automated program generation is shifting from one-shot generation to inference-time search, where Large Language Models (LLMs) function as semantic mutation operators within evolutionary loops. While effective, these systems are currently governed by static schedules that fail to account for the non-stationary dynamics of the search process. This rigidity results in substantial computational waste, as resources are indiscriminately allocated to stagnating populations while promising frontiers remain under-exploited. We introduce AdaEvolve, a framework that reformulates LLM-driven evolution as a hierarchical adaptive optimization problem. AdaEvolve uses an \"accumulated improvement signal\" to unify decisions across three levels: Local Adaptation, which dynamically modulates the exploration intensity within a population of solution candidates; Global Adaptation, which routes the global resource budget via bandit-based scheduling across different solution candidate populations; and Meta-Guidance which generates novel solution tactics based on the previously generated solutions and their corresponding improvements when the progress stalls. We demonstrate that AdaEvolve consistently outperforms the open-sourced baselines across 185 different open-ended optimization problems including combinatorial, systems optimization and algorithm design problems."
+    },
+    {
+      "paper_id": "202602/24/2602.20152v1-behavior-learning-bl-learning-hierarchical-optimization-structures-from-data",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Inspired by behavioral science, we propose Behavior Learning (BL), a novel general-purpose machine learning framework that learns interpretable and identifiable optimization structures from data, ranging from single optimization problems to hierarchical compositions. It unifies predictive performance, intrinsic interpretability, and identifiability, with broad applicability to scientific domains involving optimization. BL parameterizes a compositional utility function built from intrinsically interpretable modular blocks, which induces a data distribution for prediction and generation. Each block represents and can be written in symbolic form as a utility maximization problem (UMP), a foundational paradigm in behavioral science and a universal framework of optimization. BL supports architectures ranging from a single UMP to hierarchical compositions, the latter modeling hierarchical optimization structures. Its smooth and monotone variant (IBL) guarantees identifiability. Theoretically, we establish the universal approximation property of BL, and analyze the M-estimation properties of IBL. Empirically, BL demonstrates strong predictive performance, intrinsic interpretability and scalability to high-dimensional data. Code: https://github.com/MoonYLiang/Behavior-Learning ; install via pip install blnetwork."
+    }
+  ],
+  "errors": []
+}
