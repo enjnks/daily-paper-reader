@@ -1,0 +1,113 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-02-25T04:34:53.572281+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 2,
+    "deep_cap": 6,
+    "deep_selected": 2,
+    "quick_candidates": 1,
+    "quick_skim_target": 11,
+    "quick_selected": 1
+  },
+  "deep_dive": [
+    {
+      "id": "2602.20413v1",
+      "title": "KANDy: Kolmogorov-Arnold Networks and Dynamical System Discovery",
+      "abstract": "We introduce the Kolmogorov-Arnold Network for Dynamics (KANDy) as a zero-depth, wide neural architecture capable of discovering governing equations in chaotic and complex dynamical systems. Building on the foundation of Kolmogorov-Arnold Networks (KANs), KANDy explicitly learns governing equations by replacing sparse regression with a KAN. The synthesis of KANs and sparse regression addresses the limitations of equation discovery for KANs applied to dynamical systems and overcomes cases where sparse regression is hindered by sparsity constraints. Additionally, we show that our model, applied to the Hopf Fibration, recovers topological structure, thereby improving coherence with attractor properties. We apply our model to discrete and continuous dynamical systems, as well as to chaotic partial differential equations (PDEs). These results position KANDy as an interpretable and effective alternative for data-driven modeling of nonlinear dynamical systems.",
+      "authors": [
+        "Kevin Slote",
+        "Jeremie Fish",
+        "Erik Bollt"
+      ],
+      "primary_category": "math.DS",
+      "categories": [
+        "math.DS"
+      ],
+      "published": "2026-02-23 23:24:21+00:00",
+      "link": "https://arxiv.org/pdf/2602.20413v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "Directly proposes a KAN-based architecture for discovering governing equations in dynamical systems.",
+      "llm_evidence_cn": "直接提出了一种基于KAN的架构，用于发现动力系统中的控制方程。",
+      "llm_evidence": "直接提出了一种基于KAN的架构，用于发现动力系统中的控制方程。",
+      "llm_tldr_en": "Introduces KANDy, a network that replaces sparse regression with KANs to discover equations in chaotic systems.",
+      "llm_tldr_cn": "引入KANDy，通过KAN替代稀疏回归来发现混沌系统中的控制方程，改进了方程发现能力。",
+      "llm_tldr": "引入KANDy，通过KAN替代稀疏回归来发现混沌系统中的控制方程，改进了方程发现能力。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    },
+    {
+      "id": "2602.20557v1",
+      "title": "GENSR: Symbolic Regression Based in Equation Generative Space",
+      "abstract": "Symbolic Regression (SR) tries to reveal the hidden equations behind observed data. However, most methods search within a discrete equation space, where the structural modifications of equations rarely align with their numerical behavior, leaving fitting error feedback too noisy to guide exploration. To address this challenge, we propose GenSR, a generative latent space-based SR framework following the `map construction -> coarse localization -> fine search'' paradigm. Specifically, GenSR first pretrains a dual-branch Conditional Variational Autoencoder (CVAE) to reparameterize symbolic equations into a generative latent space with symbolic continuity and local numerical smoothness. This space can be regarded as a well-structured `map'' of the equation space, providing directional signals for search. At inference, the CVAE coarsely localizes the input data to promising regions in the latent space. Then, a modified CMA-ES refines the candidate region, leveraging smooth latent gradients. From a Bayesian perspective, GenSR reframes the SR task as maximizing the conditional distribution $p(\\mathrm{Equ.} \\mid \\mathrm{Num.})$, with CVAE training achieving this objective through the Evidence Lower Bound (ELBO). This new perspective provides a theoretical guarantee for the effectiveness of GenSR. Extensive experiments show that GenSR jointly optimizes predictive accuracy, expression simplicity, and computational efficiency, while remaining robust under noise.",
+      "authors": [
+        "Qian Li",
+        "Yuxiao Hu",
+        "Juncheng Liu",
+        "Yuntian Chen"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.SC"
+      ],
+      "published": "2026-02-24 05:14:34+00:00",
+      "link": "https://arxiv.org/pdf/2602.20557v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "Directly proposes a novel symbolic regression framework using generative latent spaces",
+      "llm_evidence_cn": "直接提出了一种基于生成潜空间的创新符号回归框架",
+      "llm_evidence": "直接提出了一种基于生成潜空间的创新符号回归框架",
+      "llm_tldr_en": "GenSR uses a CVAE to map discrete equations into a continuous latent space for more effective symbolic regression.",
+      "llm_tldr_cn": "GenSR利用CVAE将离散方程映射到连续潜空间，以实现更有效的符号回归搜索。",
+      "llm_tldr": "GenSR利用CVAE将离散方程映射到连续潜空间，以实现更有效的符号回归搜索。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2602.20857v1",
+      "title": "Functional Continuous Decomposition",
+      "abstract": "The analysis of non-stationary time-series data requires insight into its local and global patterns with physical interpretability. However, traditional smoothing algorithms, such as B-splines, Savitzky-Golay filtering, and Empirical Mode Decomposition (EMD), lack the ability to perform parametric optimization with guaranteed continuity. In this paper, we propose Functional Continuous Decomposition (FCD), a JAX-accelerated framework that performs parametric, continuous optimization on a wide range of mathematical functions. By using Levenberg-Marquardt optimization to achieve up to $C^1$ continuous fitting, FCD transforms raw time-series data into $M$ modes that capture different temporal patterns from short-term to long-term trends. Applications of FCD include physics, medicine, financial analysis, and machine learning, where it is commonly used for the analysis of signal temporal patterns, optimized parameters, derivatives, and integrals of decomposition. Furthermore, FCD can be applied for physical analysis and feature extraction with an average SRMSE of 0.735 per segment and a speed of 0.47s on full decomposition of 1,000 points. Finally, we demonstrate that a Convolutional Neural Network (CNN) enhanced with FCD features, such as optimized function values, parameters, and derivatives, achieved 16.8% faster convergence and 2.5% higher accuracy over a standard CNN.",
+      "authors": [
+        "Teymur Aghayev"
+      ],
+      "primary_category": "eess.SP",
+      "categories": [
+        "eess.SP",
+        "cs.LG"
+      ],
+      "published": "2026-02-24 12:58:21+00:00",
+      "link": "https://arxiv.org/pdf/2602.20857v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Parametric optimization of mathematical functions for time-series decomposition",
+      "llm_evidence_cn": "用于时间序列分解的数学函数参数化优化",
+      "llm_evidence": "用于时间序列分解的数学函数参数化优化",
+      "llm_tldr_en": "FCD performs continuous optimization on mathematical functions to decompose non-stationary time-series data.",
+      "llm_tldr_cn": "FCD对数学函数进行连续优化，以分解非平稳时间序列数据并保证物理可解释性。",
+      "llm_tldr": "FCD对数学函数进行连续优化，以分解非平稳时间序列数据并保证物理可解释性。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    }
+  ]
+}
