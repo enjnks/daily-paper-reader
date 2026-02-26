@@ -1,5 +1,10 @@
 * [首页](/)
 * Daily Papers
+  * 2026-02-26 <!--dpr-date:20260226-->
+    * 精读区
+      * <a class="dpr-sidebar-item-link" href="#/202602/26/2602.21307v1-symtorch-a-framework-for-symbolic-distillation-of-deep-neural-networks"><div class="dpr-sidebar-title">SymTorch: A Framework for Symbolic Distillation of Deep Neural Networks</div><div class="dpr-sidebar-tags"><span class="dpr-sidebar-tag dpr-sidebar-tag-score"><span class="dpr-stars" title="评分：10.0/10（5.0/5）" aria-label="5.0 out of 5"><span class="dpr-stars-bg">☆☆☆☆☆</span><span class="dpr-stars-fill" style="width:100%">★★★★★</span></span></span> <span class="dpr-sidebar-tag dpr-sidebar-tag-keyword">SR</span> <span class="dpr-sidebar-tag dpr-sidebar-tag-query">SR</span></div></a>
+      * <a class="dpr-sidebar-item-link" href="#/202602/26/2602.21393v1-an-information-based-model-selection-criterion-for-data-driven-model-discovery"><div class="dpr-sidebar-title">An information-based model selection criterion for data-driven model discovery</div><div class="dpr-sidebar-tags"><span class="dpr-sidebar-tag dpr-sidebar-tag-score"><span class="dpr-stars" title="评分：9.0/10（4.5/5）" aria-label="4.5 out of 5"><span class="dpr-stars-bg">☆☆☆☆☆</span><span class="dpr-stars-fill" style="width:90%">★★★★★</span></span></span> <span class="dpr-sidebar-tag dpr-sidebar-tag-keyword">SR</span> <span class="dpr-sidebar-tag dpr-sidebar-tag-query">SR</span></div></a>
+    * 速读区
   * 2026-02-25 <!--dpr-date:20260225-->
     * 精读区
       * <a class="dpr-sidebar-item-link" href="#/202602/25/2602.20413v1-kandy-kolmogorov-arnold-networks-and-dynamical-system-discovery"><div class="dpr-sidebar-title">KANDy: Kolmogorov-Arnold Networks and Dynamical System Discovery</div><div class="dpr-sidebar-tags"><span class="dpr-sidebar-tag dpr-sidebar-tag-score"><span class="dpr-stars" title="评分：10.0/10（5.0/5）" aria-label="5.0 out of 5"><span class="dpr-stars-bg">☆☆☆☆☆</span><span class="dpr-stars-fill" style="width:100%">★★★★★</span></span></span> <span class="dpr-sidebar-tag dpr-sidebar-tag-keyword">SR</span> <span class="dpr-sidebar-tag dpr-sidebar-tag-query">SR</span></div></a>

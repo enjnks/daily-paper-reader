@@ -1,0 +1,79 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-02-26T04:32:18.000892+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 2,
+    "deep_cap": 6,
+    "deep_selected": 2,
+    "quick_candidates": 0,
+    "quick_skim_target": 11,
+    "quick_selected": 0
+  },
+  "deep_dive": [
+    {
+      "id": "2602.21307v1",
+      "title": "SymTorch: A Framework for Symbolic Distillation of Deep Neural Networks",
+      "abstract": "Symbolic distillation replaces neural networks, or components thereof, with interpretable, closed-form mathematical expressions. This approach has shown promise in discovering physical laws and mathematical relationships directly from trained deep learning models, yet adoption remains limited due to the engineering barrier of integrating symbolic regression into deep learning workflows. We introduce SymTorch, a library that automates this distillation by wrapping neural network components, collecting their input-output behavior, and approximating them with human-readable equations via PySR. SymTorch handles the engineering challenges that have hindered adoption: GPU-CPU data transfer, input-output caching, model serialization, and seamless switching between neural and symbolic forward passes. We demonstrate SymTorch across diverse architectures including GNNs, PINNs and transformer models. Finally, we present a proof-of-concept for accelerating LLM inference by replacing MLP layers with symbolic surrogates, achieving an 8.3\\% throughput improvement with moderate performance degradation.",
+      "authors": [
+        "Elizabeth S. Z. Tan",
+        "Adil Soubki",
+        "Miles Cranmer"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG"
+      ],
+      "published": "2026-02-24 19:17:56+00:00",
+      "link": "https://arxiv.org/pdf/2602.21307v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "Directly addresses symbolic regression and PySR integration",
+      "llm_evidence_cn": "直接涉及符号回归和 PySR 集成",
+      "llm_evidence": "直接涉及符号回归和 PySR 集成",
+      "llm_tldr_en": "Introduces SymTorch, a library for distilling deep neural networks into interpretable symbolic equations via PySR.",
+      "llm_tldr_cn": "推出 SymTorch 库，通过 PySR 将深度神经网络蒸馏为可解释的符号方程。",
+      "llm_tldr": "推出 SymTorch 库，通过 PySR 将深度神经网络蒸馏为可解释的符号方程。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    },
+    {
+      "id": "2602.21393v1",
+      "title": "An information-based model selection criterion for data-driven model discovery",
+      "abstract": "Data-driven model discovery (DDMD) algorithms are powerful tools for extracting interpretable symbolic models from data. However, identifying the model that best balances goodness-of-fit and sparsity is often a laborious process requiring user fine-tuning, is prone to overfitting, and results may significantly vary depending on model initialization and specific training procedure. Here, we present a sparse regression algorithm that automatically and adaptively generates candidate models, and uses a novel sample-length-scaling logarithmic information criterion (SLIC) to identify the best model from these candidates. We demonstrate that SLIC greatly outperforms other popular information criteria in extracting the correct model from the data of several nonlinear ordinary and partial differential equations. Then, we demonstrate SLIC's ability to discover interpretable models from experimental datasets in fluid dynamics and nanotechnology that generate new testable predictions.",
+      "authors": [
+        "Michael C Chung",
+        "Alen Zacharia",
+        "Juan Guan"
+      ],
+      "primary_category": "q-bio.QM",
+      "categories": [
+        "q-bio.QM"
+      ],
+      "published": "2026-02-24 21:45:10+00:00",
+      "link": "https://arxiv.org/pdf/2602.21393v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Extracts interpretable symbolic models from data using sparse regression and a novel information criterion.",
+      "llm_evidence_cn": "使用稀疏回归和新型信息准则从数据中提取可解释的符号模型。",
+      "llm_evidence": "使用稀疏回归和新型信息准则从数据中提取可解释的符号模型。",
+      "llm_tldr_en": "Presents SLIC, a criterion for data-driven model discovery that balances sparsity and fit in symbolic regression.",
+      "llm_tldr_cn": "提出SLIC准则，用于在符号回归中平衡稀疏性与拟合度，实现自动化的数据驱动模型发现。",
+      "llm_tldr": "提出SLIC准则，用于在符号回归中平衡稀疏性与拟合度，实现自动化的数据驱动模型发现。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    }
+  ],
+  "quick_skim": []
+}
