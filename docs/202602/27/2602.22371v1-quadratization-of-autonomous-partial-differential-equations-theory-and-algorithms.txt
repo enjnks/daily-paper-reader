@@ -1,0 +1,1208 @@
+Title: Quadratization of Autonomous Partial Differential Equations: Theory and Algorithms
+
+URL Source: https://arxiv.org/pdf/2602.22371v1
+
+Published Time: Fri, 27 Feb 2026 01:11:10 GMT
+
+Number of Pages: 28
+
+Markdown Content:
+# Quadratization of Autonomous Partial Differential Equations: Theory and Algorithms 
+
+Albani Olivieri a, ∗, Gleb Pogudin b, Boris Kramer a
+
+> aDepartment of Mechanical and Aerospace Engineering, University of California San Diego, CA, United States
+> bLIX, CNRS, École Polytechnique, Institute Polytechnique de Paris, France
+
+Abstract 
+
+Quadratization for partial differential equations (PDEs) is a process that transforms a nonquadratic PDE into a quadratic form by introducing auxiliary variables. This symbolic transformation has been used in diverse fields to simplify the analysis, simulation, and control of nonlinear and nonquadratic PDE models. This paper presents a rigorous definition of PDE quadratization, theoretical results for the PDE quadratization problem of spatially one-dimensional PDEs—including results on existence and complexity—and introduces QuPDE , an algorithm based on symbolic computation and discrete optimization that outputs a quadratization for any spatially one-dimensional polynomial or rational PDE. This algorithm is the first computational tool to find quadratizations for PDEs to date. We demonstrate QuPDE ’s performance by applying it to fourteen nonquadratic PDEs in diverse areas such as fluid mechanics, space physics, chemical engineering, and biological processes. QuPDE delivers a low-order quadratization in each case, uncovering quadratic transformations with fewer auxiliary variables than those previously discovered in the literature for some examples, and finding quadratizations for systems that had not been transformed to quadratic form before. 
+
+Keywords: Symbolic computation, nonlinear dynamical systems, partial differential equations, combinatorial optimization, model reduction 
+
+1. Introduction 
+
+The analysis and simulation of complex dynamical processes described by partial differential equa-tions (PDE) remain a centerpiece of scientific inquiry. In particular, nonpolynomial and nonquadratic PDEs describe a wide range of dynamical processes in science and engineering. Some examples are the cubic FitzHugh-Nagumo model [19], which explains the activation and deactivation dynamics of a spiking neuron; the cubic Brusselator model [46], used to predict oscillations in chemical reactions; the rational Euler equations that govern inviscid flows [33]; and the nonadiabatic tubular reactor model [30] with an exponential Arrhenius reaction term. While moderate to high-degree polynomial and nonpolynomial models are common, their analysis, control, and model reduction are challenging. Multiple approaches for representing these systems have been explored to simplify their study, such as graphs [65, 54], linear formulations [13], and quadratic recasting. Quadratic representations are particularly attractive among these methods, as nonlinear models with quadratic right-hand side are arguably easier to study, yet allow highly nonlinear dynamical behavior. For example, the works [39, 44, 68, 72, 56] present techniques and guarantees for estimating stability domains for quadratic and polynomial systems, while [3] addresses finite-time stability problems for such systems. In control theory, finding approximations of solutions and guarantees of feedback control problems for polynomial and quadratic systems has been the subject of multiple studies, e.g., [20, 50, 2].   
+
+> ∗Corresponding author
+> Email address: a1olivieri@ucsd.edu (Albani Olivieri)
+
+1
+
+> arXiv:2602.22371v1 [cs.SC] 25 Feb 2026
+
+Recent techniques for solving Hamilton-Jacobi-Bellman equations, which provide an optimal feedback law for nonlinear systems, have shown that exploiting quadratic [8, 40] and polynomial structure [21, 37, 9, 22] allows for scalable algorithm design to dimensions otherwise not possible. In [12], the authors present theory and guarantees on stability, integrability, and solutions for quasi-polynomial dynamical systems, defined as linear combinations of monomials with real-valued exponents. The works [10, 27, 28] explore quadratic recasting to improve Taylor series methods for finding numerical solutions to dynamical and algebraic systems. Similarly, the study [6] uses this type of reformulation to perform stability analysis of nonlinear dynamical systems with periodic solutions. The authors in [61] also leverage variable transformations for converting nonlinear differential equations into S-systems, a canonical form that offers mathematical tractability and efficient numerical solutions. Another scientific field that relies on quadratic representations is the area of reduced-order modeling. Transforming or lifting nonquadratic systems into quadratic ones was first introduced in [26] in the context of model reduction, and has since been used to obtain different—often quadratic—model reformulations for several purposes: to learn stable reduced models [62, 25], to perform projection-based model reduction [42], to develop system-theoretic reduced models [7, 41, 60], and for data-driven reduced-order modeling [58, 48, 29, 49, 38, 66, 57, 35]. Analog computation with chemical reaction networks has also exploited quadratic model reformulation. By lifting differential equation models into quadratic form, a chemical reaction network can be transformed into a bimolecular one to obtain an elementary chemical reaction representation. This result was fundamental in proving the Turing completeness of elementary chemical reactions [32, 24, 11]. To obtain a quadratic form of a PDE system with higher-degree polynomial (or nonpolynomial) right-hand side expressions, one may need to add auxiliary functions to the original PDE along with their corresponding differential equations. We refer to the set of functions introduced as a quadratiza-tion . Throughout this paper, we treat the quadratization problem as a symbolic one. Therefore, we refer to the PDEs right-hand side functions as variables, including those introduced by a quadratiza-tion. Moreover, we call a quadratization optimal—see Section 2 for a formal definition—if it introduces the minimum number of auxiliary variables, and a monomial quadratization if the variables introduced are one-term polynomials. Let us illustrate PDE quadratization with an example. 
+
+Example 1. Consider the PDE for the unknown function u(x, t ) as 
+
+∂u ∂t = ∂u ∂x + u3. (1) 
+
+Let the initial boundary value problem be defined by the initial condition u(x, 0) = 0 and the boundary conditions u(a, t ) = c and u(b, t ) = d on the domain [a, b ], with a, b, c, d ∈ R and b ≥ a. To bring (1) 
+
+into quadratic form, we formally define the auxiliary variable w = w(u) := u2. We now need to add a new differential equation to (1) :
+
+∂w ∂t = 2 u ∂u ∂t = 2 u ∂u ∂x + 2 u4. (2) 
+
+Using the definition of w, we write the new quadratic PDE system as 
+
+∂u ∂t = ∂u ∂x + uw and ∂w ∂t = 2 u ∂u ∂x + 2 w2, (3) 
+
+with the initial conditions given by u(x, 0) = w(x, 0) = 0 and the boundary conditions u(a, t ) = c,
+
+u(b, t ) = d, w(a, t ) = c2 and w(b, t ) = d2. Since the right-hand side expressions in (3) are quadratic in the states {u, w }, we say that the set {u2} is a quadratization for the PDE (1) .
+
+There is a lack of computational tools for finding quadratizations for PDE systems; so far, they have been derived by hand. There are several reasons for that. First, finding an optimal quadratization is an NP-hard problem—see [32] for the case of ODEs and our result in Section 2.3 for the PDE case. Second, due to the multivariate nature of PDEs, the spatial derivatives of the unknown functions and 2auxiliary variables can become part of the quadratic transformations. As a result, the process becomes more complex, since the quadratization should include the derivatives of each auxiliary variable up to a defined order depending on the smoothness of the solution. These challenges have made it difficult to develop computational methods and theoretical guarantees for quadratization of PDEs—in contrast to the ODE setting, where multiple studies have focused on the quadratization problem, and two software tools are available to compute a quadratization for any ODE [17, 32, 18, 26, 16]. In [17], the authors present the QBee algorithm that, given a nonquadratic polynomial ODE system, finds an optimal quadratic transformation by introducing auxiliary variables that are monomials in the original variables. An extension to QBee was introduced in the later work [16] to handle a special case of quadratization for arbitrary-dimensional ODEs. This type of transformation, referred to as dimension-agnostic quadratization, brings to quadratic form a class of ODEs that maintain the same symbolic structure even as their dimension varies and yields a quadratization that can be generalized to any dimension. An example of such an ODE system is a semi-discretized PDE that is affine in its spatial derivatives, where the nonlinear terms remain symbolically identical when the discretization size increases, and the coupling term from the approximation of the spatial derivatives is linear. With this extension of QBee , one can find quadratizations for such PDEs by computing their semi-discretization as a preprocessing step. The work in [16] is the only study that could partially address the problem of finding quadratizations for a specific class of PDEs. The shortcomings of this approach are: (i) The spatial discretization of a PDE can be time-consuming and problem-specific; (ii) QBee only produces quadratizations for a subclass of PDEs, the ones that are affine in the spatial derivatives; and (iii) QBee guarantees optimal monomial quadratizations only for ODE systems. For dimension-agnostic quadratizations, it does not guarantee optimality ([16, Sec 5.5]), which can lead to large quadratic PDE systems after lifting (see Section 4.3). Thus, to the best of our knowledge, no algorithm for finding quadratizations for polynomial or rational PDEs exists to date, despite the high interest in many fields, as referenced above, in using quadratically recasted models. To address this gap, the main contributions of this work are (i) a formal definition of quadratization for PDEs, (ii) theoretical results for the PDE quadratization problem of spatially one-dimensional PDEs, and (iii) an algorithm based on symbolic computation and discrete optimization techniques that outputs a low-order quadratization for any spatially one-dimensional polynomial or rational PDE. This paper is structured as follows: Section 2 shows our theoretical contributions related to the quadratization problem applied to PDEs. Section 3 presents the algorithm QuPDE , which produces quadratizations for spatially one-dimensional polynomial and rational PDEs. Section 4 demonstrates the broad applicability of the QuPDE algorithm on fourteen nonlinear and nonquadratic PDEs from multiple fields, including chemistry, space physics, biology, fluid dynamics, and engineering. We conclude with a summary and an outlook on topics of further research in Section 5. 
+
+2. Theoretical Results 
+
+In Section 2.1, we introduce the notation used throughout the paper and frame the scope of this work. Then, we present a rigorous definition for the quadratization of a spatially one-dimensional PDE in Section 2.2. In Section 2.3, we show theoretical results related to the existence of such transformations and the complexity of finding an optimal one. 
+
+2.1. Notation and limitations 
+
+Let Ω ⊆ R denote the spatial domain and x ∈ Ω a point in it. When referring to PDE systems, we denote by u : Ω × [0 , ∞) → Rn a vector of functions u1, . . . , u n in a suitable function space such that ui : Ω × [0 , ∞) → R, where i = 1 , . . . , n . For brevity, we often omit the explicit dependence of 
+
+u on the spatial and temporal variables, and write u = u(x, t ). Moreover, we use ∂u ∂x = ∂xu = ux
+
+interchangeably to refer to the partial derivatives of u; for higher-order derivatives, we write ∂hu∂x h =
+
+3∂hx u = ux...x . We denote the vector of the x-partial derivatives of u of order h as ∂hx u, i.e., 
+
+∂hx u := ∂hx u1 . . . ∂hx un
+
+⊤ .
+
+To formulate the quadratization problem as a symbolic problem, let F denote a field, and consider 
+
+υ1, . . . , υ n formally as symbolic variables that could refer to functions or their partial derivatives, e.g., 
+
+υ1 := u(x, t ), υ2 := ux(x, t ) or υ3 := uxx (x, t ). We use the notation F[υ1, . . . , υ n] to refer to the set of all polynomials in the variables υj with j = 1 , . . . , n . More generally, let υ1, . . . , υm be vectors with 
+
+υi := 
+
+h
+
+υ(i)1 . . . υ(i)
+
+> n
+
+i⊤
+
+, for all i = 1 , . . . , m . Then, we refer to the set of polynomials in the variables 
+
+υ(i) 
+
+> j
+
+as 
+
+F[υ1, . . . , υm] = F[υ(1) 1 , . . . , υ (1)  
+
+> n
+
+, . . . , υ (m)1 , . . . , υ (m) 
+
+> n
+
+].
+
+Let v be a vector with d polynomial entries in F[υ1, . . . , υ n]. Then we write v ∈ Fd[υ1, . . . , υ n], where 
+
+Fd[υ1, . . . , υ n] represents the space of all vector-valued functions with d components in F[υ1, . . . , υ n].We call a monomial a polynomial that has only one term, and the total degree of a monomial is defined as the sum of the degrees of all its variables. Let w1 ∈ R[u, ∂ xu, . . . , ∂ c1 
+
+> x
+
+u], . . . , w ℓ ∈ R[u, ∂ xu, . . . , ∂ cℓ 
+
+> x
+
+u] and w := w1 . . . wℓ
+
+. We denote by C := {c1, . . . , c ℓ} the set of maximal derivative orders appearing in the polynomials w1, . . . , w ℓ. For each polynomial wi and a fixed integer k, we define ∂≤k−ci 
+
+> x
+
+wi as the vector with the spatial derivatives of wi up to order k − ci, i.e., 
+
+∂≤k−ci 
+
+> x
+
+wi := wi ∂xwi . . . ∂k−ci 
+
+> x
+
+wi
+
+⊤ .
+
+Using this notation, we define the vector 
+
+∂≤k−C  
+
+> x
+
+w := ∂≤k−c1 
+
+> x
+
+w1 . . . ∂≤k−cℓ 
+
+> x
+
+wℓ
+
+⊤ , (4) which contains the spatial derivatives of the variables in w up to the order determined by the set C
+
+and the integer k.
+
+Remark 1. Before showing our theoretical results on PDE quadratization, we emphasize that this work does not include the analysis of certain aspects of PDE theory, such as the existence and uniqueness of solutions to the boundary value problem associated with the quadratic PDE reformulations. While such analysis is important and remains a direction for future research, this work formally obtains new symbolic (quadratic) representations for PDEs that are not intended to be solved or discretized. Instead, we aim to use these transformations, which we derive from the PDE’s symbolic structure, in model learning [58, 53, 45], system analysis [39], and control [40]. 2.2. Definitions 
+
+We offer a rigorous definition for quadratization of a spatially one-dimensional PDE. 
+
+Definition 1. (Quadratization for PDEs) Let u := u1 . . . un
+
+⊤ be a vector of unknown functions 
+
+u1(x, t ), . . . , u n(x, t ). Consider a polynomial, spatially one-dimensional, time-dependent PDE system of the form 
+
+∂tu1 = p1(u, ∂ xu, . . . , ∂ hx u), . . . , ∂tun = pn(u, ∂ xu, . . . , ∂ hx u), (5) 
+
+with p1, . . . , p n ∈ R[u, ∂ xu, . . . , ∂ hx u]. For polynomials 
+
+w1 ∈ R[u, ∂ xu, . . . , ∂ c1 
+
+> x
+
+u], . . . , w ℓ ∈ R[u, ∂ xu, . . . , ∂ cℓ 
+
+> x
+
+u],
+
+define the vector w := w1 . . . wℓ
+
+⊤ and the set 
+
+W := {w1, . . . , w ℓ}.
+
+4Then, W is said to be a quadratization of differential order k for the PDE (5) , if there are polynomials g1, . . . , g n+ℓ ∈ R[u, ∂ xu, . . . , ∂ kx u, ∂ ≤k−C  
+
+> x
+
+w] of total degree at most two, such that 
+
+∂tu1 = g1, . . . , ∂tun = gn,∂tw1 = gn+1 , . . . , ∂twℓ = gn+ℓ,
+
+for every u1, . . . , u n ∈ Ck(Ω) . Here, the notation ∂≤k−C  
+
+> x
+
+w refers to the vector of partial derivatives in-troduced in (4) with C = {c1, . . . , c ℓ}. The cardinality of W is called the order of quadratization , while the differential order k refers to the maximal spatial-derivative order of u in the resulting quadratic PDE system. A quadratization of the smallest possible order is called an optimal quadratization . If all polynomials w1, . . . , w ℓ are monomials, the quadratization is called a monomial quadratization .2.3. Existence and NP-hardness 
+
+We provide a theoretical result regarding the existence of quadratizations for polynomial PDEs. Then, we discuss the complexity of finding an optimal quadratization. 
+
+Theorem 1 (Existence of a PDE quadratization) . A PDE system of the form (5) of order h has a monomial quadratization of differential order 3h.
+
+Proof : Since we look for a quadratization with differential order 3h, we assume that u1, . . . , u n are sufficiently smooth functions to compute 2h spatial derivatives of the original system (5). Computing these derivatives results in the following equations 
+
+∂tu1 = p1(u, ∂ xu, . . . , ∂ hx u), . . . , ∂tun = pn(u, ∂ xu, . . . , ∂ hx u),∂x(∂tu1) = ∂xp1(u, ∂ xu, . . . , ∂ hx u), . . . , ∂x(∂tun) = ∂xpn(u, ∂ xu, . . . , ∂ hx u),
+
+...
+
+∂2hx (∂tu1) = ∂2hx p1(u, ∂ xu, . . . , ∂ hx u), . . . , ∂2hx (∂tun) = ∂2hx pn(u, ∂ xu, . . . , ∂ hx u).
+
+Since u1, . . . , u n ∈ C3h(Ω) , we can apply Schwarz’s theorem to interchange the order of differentiation. Then, we write the equivalent system 
+
+∂tu1 = p1(u, ∂ xu, . . . , ∂ hx u), . . . , ∂tun = pn(u, ∂ xu, . . . , ∂ hx u),∂t(∂xu1) = ∂xp1(u, ∂ xu, . . . , ∂ hx u), . . . , ∂t(∂xun) = ∂xpn(u, ∂ xu, . . . , ∂ hx u),
+
+...
+
+∂t(∂2hx u1) = ∂2hx p1(u, ∂ xu, . . . , ∂ hx u), . . . , ∂t(∂2hx un) = ∂2hx pn(u, ∂ xu, . . . , ∂ hx u).
+
+(6) Now, by treating each ∂ixuj as a function of t (e.g., by fixing an arbitrary value of x), we can symbol-ically consider (6) as an ODE system with n(2 h + 1) state variables u, ∂ xu, . . . , ∂ 2hx u and nh input variables ∂2h+1  
+
+> x
+
+u, . . . , ∂ 3hx u.We first show that this ODE system has an input-free quadratization as defined in [16, Definition 3.4]. By [16, Proposition 3.9], an ODE system with υ1, . . . , υ N state variables has an input-free mono-mial quadratization if (i) the system is input-affine; and (ii) given r differential operators D1, . . . , D r as defined in [16, Proposition 3.9] and the subalgebra A generated by D1, . . . , D r , the following condition is satisfied for the ODE: dim {A(υi) | A ∈ A} < ∞ for every 1 ≤ i ≤ N. (7) We show that condition (i) is true for the system (6) by contradiction. Let us assume that (6) is not input-affine. This means that at least one of the right-hand side expressions in (6) has a monomial with m spatial derivatives of order greater than 2h, where m ≥ 2. Initially, these derivatives had 5an order of at most h, so each must have been differentiated at least 2h + 1 − h = h + 1 times. Each differentiation increases only one of the derivative orders in a monomial by one; therefore, the right-hand side that is not input-affine was differentiated at least m(h + 1) = mh + m times. However, to obtain the system (6) only 2h differentiations were taken, and since 2h < mh + m, we arrive at a contradiction. Then, we conclude that (6) must be input-affine. To prove (ii) for (6), we rely on [16, Lemma 3.13]. This lemma states that an ODE with state variables υ1, . . . , υ N meets the condition (7) if its corresponding differential operators satisfy 
+
+Di(υj ) ∈ C[υ1, . . . υ j−1] for every 1 ≤ i ≤ r and 1 ≤ j ≤ N . This means that if the differential oper-ators are of triangular form, then the dimension of each {A(υi) | A ∈ A} is finite. Now, consider an equation in (6) with a left-hand side of the form ∂t(∂ax uj ) and the input variable ∂bxuk in its right-hand side, with 1 ≤ j, k ≤ n, a ≤ 2h and 2h + 1 ≤ b ≤ 3h. In this equation, the monomial with the partial derivative ∂bxuk was differentiated at least b − h times. Since the system is input-affine, it follows that any other derivative in this monomial has order of at most h + ( a − (b − h)) . To have differential operators of triangular form, the inequality h + ( a − (b − h)) < a must hold for every a and b, which is equivalent to 2h < b . Since 2h + 1 ≤ b is always true in system (6), the condition in (7) is satisfied. With this, we deduce that the ODE system (6) has a monomial input-free quadratization. Note that the input-free monomial quadratization of (6) is also a quadratization of the original PDE (5) with a differential order of 3h. □
+
+In [32], the authors showed that finding optimal polynomial quadratizations of ODEs is NP-hard. Since PDEs are more general mathematical structures than ODEs, we present a reduction-based proof to show that the same problem for PDEs is of the same complexity. 
+
+Proposition 1. Finding an optimal monomial quadratization for a nonquadratic polynomial system of PDEs of the form (5) is NP-hard. 
+
+Proof : To prove by reduction, let us reformulate the ODE quadratization problem such that it becomes an instance of the PDE quadratization problem. Consider a polynomial system of ODEs 
+
+˙u1 = p1(u1, . . . , u n), . . . , ˙un = pn(u1, . . . , u n). (8) Defining u(t) := u1(t) . . . un(t)⊤, we state the equivalence ˙u = ∂tu, which shows that the ODE system (8) is equivalent to (5) with h = 0 , i.e., with no partial derivatives in the space variable. Then, finding an optimal monomial quadratization for (8) can be reduced to solving the same problem for the PDE 
+
+∂tu1 = p1(u1, . . . , u n), . . . , ∂tun = pn(u1, . . . , u n).
+
+Since finding an optimal monomial quadratization for an ODE is an NP-hard problem [32], we con-clude that the same problem applied to PDEs is also NP-hard. □
+
+3. PDE Quadratization Algorithm 
+
+Having presented a theoretical foundation of PDE quadratizations, we introduce the first algorith-mic solution to find such transformations. We provide a detailed description of the proposed algorithm in Section 3.1, and discuss its practical aspects in Section 3.2. 
+
+3.1. Proposed algorithm: QuPDE 
+
+We present QuPDE , a computational tool based on symbolic computation and optimization tech-niques that finds quadratizations for polynomial or rational PDEs. We divide its construction into four algorithmic modules. The first module, described in Section 3.1.1, symbolically derives monomial decompositions from a given PDE system. In Section 3.1.2, we introduce a second module that verifies 6whether a set of auxiliary variables is a quadratization. The third module, explained in Section 3.1.3, handles the search strategy to explore possible quadratizations based on the Branch-and-Bound frame-work [52]. Lastly, the fourth module in Section 3.1.4 presents a method for finding quadratizations for rational PDEs. 
+
+3.1.1. Monomial decomposition of nonquadratic terms and Module 1 
+
+Given a polynomial symbolic PDE of the form (5), we first identify all possible ways of decom-posing a nonquadratic monomial on the PDE’s right-hand into a product of two variables, such that they are quadratic in the new set of auxiliary variables. These decompositions, which we denote as 
+
+M1, . . . , Mm, define the search space of potential quadratizations. 
+
+Example 2 (Monomial decompositions) . There are five possible decompositions that turn the quartic term u2
+
+> x
+
+u2 into a quadratic one: M1 := (1 , u 2
+
+> x
+
+u2), M2 := ( u2
+
+> x
+
+u, u ), M3 := ( ux, u xu2), M4 := (uxu, u xu) and M5 := ( u2
+
+> x
+
+, u 2). Note that the expressions 1, u, and ux do not require the introduction of auxiliary variables. Then, if we choose decompositions M1, M2, or M3 to rewrite the original monomial, we disregard the expressions 1, u, or ux, respectively and define only one auxiliary variable: 
+
+u2
+
+> x
+
+u2 for M1, u2
+
+> x
+
+u for M2, and uxu2 for M3. Choosing M4 would also require the definition of one auxiliary variable uxu. If we choose decomposition M5 instead, we must introduce two auxiliary variables: u2 
+
+> x
+
+and u2.
+
+Example 2 shows that finding the decompositions of a monomial translates into a combinatorial problem, where the goal is to answer the question: In how many ways can we divide a set of elements of size n into two subsets? We solve this problem to derive an upper bound on the number of possible monomial decompositions. Let the elements of a monomial be its polynomial variables repeated by their exponents. For example, in u2
+
+> x
+
+u2 the elements are ux, u x, u, u , where ux, u x, and u, u are indistinguishable. We call d the total number of such elements, that is, the total degree of the monomial; in the example u2
+
+> x
+
+u2, d = 4 . Now consider a monomial of degree d. For each element of this monomial, we decide whether to place it in the first of the two subsets into which we are dividing the original expression. This gives us 2d possible options. Note that this result treats equivalent decompositions as distinct; for example, (u2
+
+> x
+
+, u 2) and (u2, u 2
+
+> x
+
+) are identified as different decompositions. Since we are only interested in combinations rather than ordered pairs, we divide the result 2d by two: 
+
+2d
+
+2 = 2 d−1. (9) We assume that all elements within the monomial are distinguishable in our analysis. Consequently, (9) provides an upper bound on the decompositions of a nonquadratic monomial. The conservativeness of this upper bound is shown in Example 2, where there are only five possible decompositions of u2
+
+> x
+
+u2,yet applying this bound gives 2d−1 = 2 3 = 8 different tuples. To find decompositions M1, . . . , Mm from a PDE of the form (1), Module 1 first stores as tuples all possible ways to rewrite the lowest-degree nonquadratic monomial encountered on the right-hand side of the PDE as the product of two elements. We adopt this strategy motivated by the result in (9), which implies that lower-degree monomials result in less decompositions. Next, Module 1 generates a set D containing these decompositions and sorts them according to predefined heuristics designed to find a lower-order quadratization faster. We implement three heuristics that prioritize auxiliary variables with a higher chance of deriving lower-degree monomials after differentiation—namely, those with lower polynomial degree or lower order of derivatives. These are listed below. H1: Sort by order and degree. Differentiating monomials with higher-order derivatives can lead to polynomials with many nonquadratic terms. To mitigate this, we sort the monomial decompo-sitions by prioritizing expressions of lower order of derivatives and then of lower degree. H2: Sort by degree and order. The result in (9) implies that decomposing a monomial with a high degree leads to a high number of decompositions, which translates into more candidates for 7quadratizations to explore. To reduce the number of decompositions, this rule sorts monomial decompositions by lower degree and secondly by lower order. H3: Sort by a function of order and degree. This rule sorts the monomial decompositions in descend-ing order using a linear combination of the degree and order of the derivatives. Let j be the highest order of derivatives and d the total degree of a monomial; the default in QuPDE for this heuristic is d + 2 j.In Module 1, we describe the steps of this module through a pseudocode, while Example 3 illustrates its application to a PDE. 
+
+Module 1 (Monomial decomposition of nonquadratic terms) 
+
+Input: (i) Symbolically defined right-hand side of a PDE of the form (5), (ii) Sorting heuristic (H1, H2, or H3) 
+
+Output: Set D with tuples of size at most two sorted by the heuristic  
+
+> 1:
+
+p ← lowest-degree nonquadratic monomial encountered on the PDE’s right-hand side  
+
+> 2:
+
+M1, . . . , Mm ← monomial decompositions of p 
+
+> 3:
+
+Remove from M1, . . . , Mm the monomials that do not propose auxiliary variables  
+
+> 4:
+
+D ← {M 1, . . . , Mm} 
+
+> 5:
+
+Sort D according to heuristic  
+
+> 6:
+
+return D
+
+Example 3 (Application of Module 1) . Consider the one-dimensional quartic PDE 
+
+ut = u3ux. (10) 
+
+Following step 1 of Module 1, we identify u3ux as the only nonquadratic monomial in the right-hand side of (10) . In step 2, we compute the monomial decompositions of u3ux, from which we obtain the tuples M1 := ( u, u 2ux), M2 := ( u2, u xu), M3 := ( u3, u x) and M4 := ( u3
+
+> x
+
+u, 1) . With each of these tuples, one can rewrite the original expression as quadratic. As stated in step 3, we dispose of monomials that do not propose auxiliary variables in each Mi—in this example, u, ux, and 1—to arrive at the candidate auxiliary variables for quadratization listed in the set D := {(u2ux), (u2, u xu), (u3), (u3
+
+> x
+
+u)}. Then, we follow step 4 and sort D by a determined criterion. For illustration purposes, we show the result of sorting according to each of the heuristics defined above: using H1 we get the sorted D = {(u3), (u2, u xu), (u2ux), (u3
+
+> x
+
+u)}, using H2 we get 
+
+D = {(u2, u xu), (u3), (u2ux), (u3
+
+> x
+
+u)} and using H3 we get D = {(u3), (u2, u xu), (u2ux), (u3
+
+> x
+
+u)}.
+
+Having established how to obtain the auxiliary variables that lead to a quadratic form for a particular monomial, we next present the algorithmic module that determines whether a set of these variables is a quadratization. 
+
+3.1.2. Verification of a quadratization and Module 2 
+
+We now algorithmically verify whether a set of monomials (e.g., one produced by the application of Module 1) forms a quadratization for a polynomial PDE. We follow the ideas in [17] and define three sets for this purpose. The first set, V, contains the polynomials of a potential quadratization, including the spatial derivatives of the auxiliary variables that are allowed according to the differential order set for the quadratization. The second set, V2, includes all polynomials that result from multiplying the elements of the first set with one another. The third set, P, contains the polynomials on the right-hand side of the PDE and the time derivatives of the auxiliary variables. 
+
+Definition 2. (Definition of the sets V, V2 and P) Consider a vector 
+
+w := w1 . . . wℓ
+
+⊤ ,
+
+8where w1, . . . , w ℓ ∈ R[u, ∂ xu, . . . , ∂ mx u] are auxiliary monomials that comprise a potential quadrati-zation W of differential order k of a PDE of the form (5) . We define the sets V, V2 and P as follows: 
+
+• V denotes the set of polynomials to be used for rewriting the PDE as quadratic. This set con-tains: the original variables of the PDE and their spatial derivatives up to order k, the auxiliary variables and their allowed spatial derivatives given by the set C = {c1, . . . , c ℓ} and k, and the constant 1, i.e., 
+
+V := 1, u, ∂ xu, . . . , ∂ kx u, ∂ ≤k−C  
+
+> x
+
+w . (11) 
+
+• V2 is the set of all polynomials that are generated by multiplying two elements of V, i.e., 
+
+V2 := {v1v2 | v1, v 2 ∈ V} . (12) 
+
+• P is the set of the polynomials on the right-hand side of both the n equations of the original PDE and the time derivatives corresponding to the ℓ auxiliary variables, i.e., 
+
+P := {p1(u, ∂ xu, . . . , ∂ kx u), . . . , p n+ℓ(u, ∂ xu, . . . , ∂ kx u)}
+
+Based on the definitions of V, V2, and P, it is sufficient to verify that the polynomials in P are linear combinations of elements in V2 to conclude that the corresponding set of auxiliary variables is a quadratization of the given PDE. This result is stated in the following proposition. 
+
+Proposition 2. Consider the set V2, and let W be the set of auxiliary variables associated with V2.Then, W is a quadratization of differential order k if and only if all p(u, ∂ xu, . . . , ∂ kx u) ∈ P belong to the linear span of V2.
+
+Proof : Let us consider the potential quadratization W and its corresponding vector w. Then, 
+
+V = 1, u, ∂ xu, . . . , ∂ kx u, ∂ ≤k−C  
+
+> x
+
+w .
+
+Let pj (u, ∂ xu, . . . , ∂ kx u) ∈ P , g1(u, ∂ xu, . . . , ∂ kx u), . . . , g m(u, ∂ xu, . . . , ∂ kx u) be all the polynomials in 
+
+V2, and α1, . . . α m ∈ R. First, we note from the definition of V and V2 that g1, . . . , g m are polynomials resulting from the multiplication of at most two elements, where each element is either a variable in u,a spatial derivative of a component of u, an auxiliary variable, or a spatial derivative of an auxiliary variable. Then, if pj = Pni=1 αigi, it follows that pj can be written as a polynomial of degree at most two in the variables u, ∂ xu, . . . , ∂ kx u, ∂ ≤k−C  
+
+> x
+
+w. Note that P is the set of all polynomials of the right-hand side of the PDE system, including the time derivatives of the auxiliary variables. Then, if the condition above is satisfied for all pj ∈ P with j ∈ { 1, . . . , n + ℓ}, W is a quadratization of the PDE. Conversely, if W is a quadratization of the PDE, then all pj ∈ P are linear combinations of the elements in V2. □
+
+To algorithmically check the condition in Proposition 2, we define a vector b ∈ Rr [u, ∂ xu, . . . , ∂ kx u]
+
+that contains all the monomials within V2 and P. Namely, 
+
+b := m1 m2 . . . mr
+
+⊤ ,
+
+where m1, m 2, . . . , m r ∈ R[u, ∂ xu, . . . , ∂ kx u] are all unique monomials within the polynomials in V2
+
+and P ordered lexicographically. Moreover, we represent a polynomial as a vector v ∈ Rr , where each nonzero entry corresponds to the presence of monomial mi (for i = 1 , . . . , r ) in the polynomial ordered according to b, i.e., 
+
+v := ( αi)i, (13) where αi is the coefficient of mi in the polynomial. Next, we define a matrix V2 ∈ Rp×r based on the polynomials in V2 as: 
+
+V2 := ( αi)ji , (14) 9where αi is the coefficient of mi in the polynomial gj , for j = 1 , . . . , p with p the size of the set V2. In this matrix, the rows are the transpose of each polynomial vector. Having this matrix representation allows us to apply Gaussian elimination to first obtain the reduced row-echelon form of V2, which we denote by V2, and then use the rows of V2 to reduce each polynomial vector in P. If the result of a reduction is not zero for a polynomial in P, we store the nonquadratic reduced polynomial in a set that we denote by Rnq . If Rnq remains empty after reducing all polynomials in P, we return the quadratic transformation. Otherwise, we output the set Rnq , which contains the nonquadratic polynomials from the reduction step that could not be made quadratic using V2. We show the underlying algorithm of 
+
+QuPDE ’s verification module in Module 2. 
+
+Module 2 (Verification of a quadratization) 
+
+Input: (i) Symbolically defined polynomial PDE of the form (5), (ii) Set W, (iii) Differential order k
+
+Output: Right-hand side polynomials of a quadratic PDE system of the form (5) or Rnq  
+
+> 1:
+
+P ← set of polynomials in the right-hand side of both the PDE and the differential equations of the elements in W 
+
+> 2:
+
+V ← set V based on W, k, and P as defined in (11)  
+
+> 3:
+
+V2 ← matrix form of corresponding V2, defined in (12)  
+
+> 4:
+
+V2 ← reduced row-echelon form of V2 
+
+> 5:
+
+Rnq ← {}  
+
+> 6:
+
+p1, . . . , pn+ℓ ← polynomials in P in vector representation  
+
+> 7:
+
+for pi ∈ P do  
+
+> 8:
+
+pi ← reduction of pi with respect to the rows of V2 
+
+> 9:
+
+if pi̸ = 0 then  
+
+> 10:
+
+Append pi to Rnq  
+
+> 11:
+
+else  
+
+> 12:
+
+gi(u, ∂ xu, . . . , ∂ kx u, ∂ ≤k−C  
+
+> x
+
+w) ← symbolic and quadratic representation of pi 
+
+> 13:
+
+if Rnq is empty then return {g1, . . . , g n+ℓ} 
+
+> 14:
+
+else return Rnq 
+
+For practical efficiency, the software implementation of Module 2 performs all reductions at the polynomial level. The explicit matrix representation presented in this section serves illustrative pur-poses. In the following example, we show how Module 2 verifies if a set of auxiliary variables is a quadratization for a particular PDE. 
+
+Example 4 (Verification of a quadratization) . Consider the cubic PDE 
+
+ut = uxu2. (15) 
+
+We introduce the auxiliary variable w := u2 and write the differential equation wt = 2 utu = 2 uxu3.Additionally, we aim to obtain a quadratization of differential order 1, so we calculate the first-order spatial derivative of the auxiliary variable, wx = 2 uxu. To apply Module 2 to verify whether the set 
+
+W := {w} is a quadratization for (15) , we set P = {ut, w t} = {uxu2, 2uxu3} and construct V by listing the polynomials that are part of the potential quadratization for (15) , i.e., V := {1, u, u x, u 2, 2uxu}. It follows 
+
+V2 = {1, u, u x, u 2, 2uxu, u xu, u 3, 2uxu2, u 2
+
+> x
+
+, u 2ux, 2u2
+
+> x
+
+u, u 4, 2uxu3, 4u2
+
+> x
+
+u2}.
+
+We set the monomial basis b as 
+
+b = 1 u ux u2 u2 
+
+> x
+
+uxu u3 uxu2 u2
+
+> x
+
+u u4 uxu3 u2
+
+> x
+
+u2⊤ . (16) 10 Then, the matrix representation of V2 is 
+
+V2 =
+
+
+
+1 0 0 0 0 0 0 0 0 0 0 00 1 0 0 0 0 0 0 0 0 0 00 0 1 0 0 0 0 0 0 0 0 00 0 0 1 0 0 0 0 0 0 0 00 0 0 0 0 2 0 0 0 0 0 00 0 0 0 0 1 0 0 0 0 0 00 0 0 0 0 0 1 0 0 0 0 00 0 0 0 0 0 0 2 0 0 0 00 0 0 0 1 0 0 0 0 0 0 00 0 0 0 0 0 0 1 0 0 0 00 0 0 0 0 0 0 0 2 0 0 00 0 0 0 0 0 0 0 0 1 0 00 0 0 0 0 0 0 0 0 0 2 00 0 0 0 0 0 0 0 0 0 0 4
+
+
+
+.
+
+Following step 2, we apply Gaussian elimination to V2 and obtain: 
+
+V2 := 
+
+I12 ×12 
+
+02×12 
+
+
+
+,
+
+which yields the set of polynomials: 
+
+{1, u, u x, u 2, u 2
+
+> x
+
+, u xu, u 3, u xu2, u 2
+
+> x
+
+u, u 4, u xu3, u 2
+
+> x
+
+u2, 0, 0}.
+
+Let v1, . . . , v 12 the polynomials represented by the nonzero row vectors in V2. Then, the reduction of the nonquadratic expressions stored in P is 
+
+ut = ut − v8 = uxu2 − uxu2 = 0 ,wt = wt − 2 · v11 = 2 uxu3 − 2 · uxu3 = 0 .
+
+Since ut and wt are both equal to zero, Rnq = ∅, which confirms that {u2} is a quadratization for the PDE (15) .
+
+In Section 3.1.1, we have shown that there are numerous ways to define auxiliary variables to express a term as quadratic. Here, in Section 3.1.2, we have introduced a mechanism to identify whether a particular set of auxiliary variables is a quadratization. Next, in Section 3.1.3, we describe an optimization algorithm that determines the order in which Module 2 verifies whether the sets produced by Module 1 are quadratizations, and yields the best one among those found. 
+
+3.1.3. Efficient search strategies and Module 3 
+
+We implement a search algorithm using a Branch-and-Bound (B&B) [52] approach to find a low-order quadratization of a PDE, along with additional strategies to speed up the search. The space of elements traversed by this algorithm, which we call the search space , consists of all sets of auxiliary variables introduced by Module 1. We assign to this search space a tree representation, which we call the search tree , as illustrated in Figure 1. Here, the root is an empty set and its children nodes are the monomial decompositions generated by Module 1; the level of a node in the tree is determined by the number of branching steps between that node and the root; and each node represents a subproblem ,which has a corresponding PDE that results from adding to the original PDE the auxiliary variables in the current node and its ancestors. 11 Figure 1: Example of a search tree of monomial decompositions represented by M1, . . . , M7.
+
+We formally state how the problem of finding a low-order quadratization through the search tree translates to the B&B framework using the standard B&B terminology (e.g., [52]). 
+
+Problem 1. (Branch-and-Bound formulation for finding a low-order quadratization) 
+
+• The search space S is the set of all monomials in the variables of a PDE of the form (5) and their spatial derivatives up to order k. Namely, 
+
+S ⊆ { m ∈ R[u, ∂ xu, . . . , ∂ kx u] | m is a monomial }. (17) 
+
+• The objective is to minimize the number of monomials introduced in a quadratization. This leads to the problem of finding the quadratization 
+
+W∗ = arg min 
+
+> W⊆S
+
+|W| ,
+
+where W is a quadratization of (5) and | · | denotes the cardinality of a set. 
+
+• Each subproblem is defined by a finite subset of monomials M ⊆ S , such as those produced by the monomial decompositions of a nonquadratic term within the set Rnq , introduced in Module 2. 
+
+The B&B framework requires three additional components: the search strategy that defines the order in which subproblems in the tree are explored; the branching strategy, which partitions the search space to produce new subproblems in the tree; and the pruning rules that prevent the explo-ration of regions in the search tree that cannot yield better solutions. Below, we describe the B&B components of the search and branch strategy for the quadratization problem along with the pruning rules implemented. 
+
+Search strategy. We use a depth-first search with backtracking [67, 52]. Namely, the algorithm explores the search tree as far as possible along each node until it finds a quadratization, and then it retraces to unexplored subproblems. 
+
+Branching strategy. We apply a wide branching technique, where the children nodes of a subproblem are generated by applying Module 1 to the nonquadratic polynomials of its associated PDE—elements of Rnq . Note that at the root of the tree, Rnq simply contains the nonquadratic terms of the right-hand side of the original PDE. Then, the children nodes represented by potential auxiliary variables are organized according to the sorting heuristic chosen from those introduced in Section 3.1.1 (H1, H2, H3). This sorting determines the order in which the subproblems are explored. 12 Pruning rules. We implement two pruning rules to prevent the exploration of suboptimal regions of the search tree. The first rule is essential for the algorithm, as it directly targets the objective function to minimize—the number of auxiliary variables introduced. The second rule is related to the order of partial derivatives we allow within the quadratic equations and hence to the regularity of the PDE solutions. We detail these rules below: PR1: The smallest order—that is, the minimum number of monomials—of a quadratization found within the visited nodes. In the first run of the algorithm, this value is initialized at a predefined bound that the user can change. This bound determines the maximum depth of the tree. PR2: The order of derivatives within the auxiliary variables. This pruning rule enforces user-specified regularity restrictions on the existence and continuity of higher-order spatial derivatives of the solution, and guarantees that the order of derivatives within the transformed quadratic system does not exceed the differential order set for the quadratization. Therefore, if a branch introduces monomials with higher-order derivatives than those allowed for the problem, the algorithm prunes that branch. Motivated by the result in Theorem 1, QuPDE ’s default differential order for a quadratization is three times the highest order of the system ( 3h). Since auxiliary variables are differentiated with respect to space h times to obtain their differential equations, by default, the algorithm prunes branches that introduce variables with spatial derivatives of order higher than 2h, i.e., 3h − h = 2 h. Nonetheless, the user can modify this upper bound. Next, we explain the steps of the B&B search algorithm implemented in Module 3. The search algorithm starts at the empty root node, as depicted in Figure 1, with a predetermined bound for the largest quadratization it will admit. Then, at each branch, the algorithm evaluates whether it should be pruned based on the defined pruning rules. If Module 3 confirms that a particular branch does not produce a quadratization of lower order than the best one found so far, Module 2 checks whether the corresponding set of auxiliary variables in that node is a quadratization. If so, the algorithm returns the quadratization, updates the best solution found so far, and does backtracking. If the auxiliary variables do not yield a quadratization, the search algorithm generates the children of the current node, i.e., its subproblems, and explores them using a depth-first search strategy. After finishing the search throughout the tree, the algorithm returns the smallest set of auxiliary variables, which is a low-order quadratization for the PDE. Module 3 shows the instructions of this algorithm through a pseudocode, and Example 5 illustrates how this module works for a given PDE. 13 Module 3 (Search algorithm using Branch-and-Bound framework) 
+
+Input: (i) Symbolically defined PDE system of the form (5), (ii) Set of symbolic auxiliary monomials 
+
+W ⊆ S , (iii) Best quadratization found so far cW ⊆ S of size ℓ (initialized at a predetermined bound) 
+
+Output: Quadratization W∗ ⊆ S  
+
+> 1:
+
+if any of the pruning rules applied to W outputs True then return cW 
+
+> 2:
+
+if Module 2 verifies that W is a quadratization for the PDE then  
+
+> 3:
+
+if |W| < | cW| then return W 
+
+> 4:
+
+else return cW 
+
+> 5:
+
+else  
+
+> 6:
+
+Rnq ← result of applying Module 2 to the PDE with the set W 
+
+> 7:
+
+D ← monomial decompositions generated by Module 1 of Rnq  
+
+> 8:
+
+for Mi ∈ D do  
+
+> 9:
+
+W ← W ∪ M i 
+
+> 10:
+
+W ← call Module 3 with the inputs: (i) the new PDE system consisting of the original equations plus the differential equations from W, (ii) W as the current set of auxiliary variables, and (iii) cW as the best solution found so far  
+
+> 11:
+
+if |W| < | cW| then cW ← W  
+
+> 12:
+
+Remove Mi from W
+
+return W∗ ← cW
+
+Example 5 (B&B search algorithm) . Consider the cubic PDE 
+
+ut = u2uxxx . (18) 
+
+We decompose the nonquadratic monomial u2uxxx into M1 := ( uxxx u2, 1) , M2 := ( uxxx u, u ) or 
+
+M3 := ( u2, u xxx ), remove the already existing expressions 1, u, and uxxx , and sort the resulting tuples by the heuristic H3 to obtain the set D := {(u2), (uxxx u), (uxxx u2)}. Then, based on D, we draw the search tree as 
+
+∅
+
+(u2) (uxxx u) (uxxx u2)
+
+where each node in parentheses represents the variables we are adding to the system at that tree level. Now the algorithm enters the first branch, i.e, the node described by (u2). The subproblem that this node represents is the PDE system we obtain by introducing the auxiliary variable in the set {u2}
+
+to the original PDE. We define w := u2 and write the new PDE: 
+
+ut = u2uxxx (19) 
+
+wt = 2 u3uxxx . (20) 
+
+After applying Module 2 to (19) and (20) , we obtain that the reduced wt with respect to the set V2 is 
+
+wt = wt − wxxx w + 32 wxwxx = 6 u3
+
+> x
+
+u. This results in Rnq = {6u3
+
+> x
+
+u}, confirming that the set {u2} is not a quadratization. Therefore, we explore the subproblems of this node by executing Module 1 for 
+
+Rnq , which in this case computes the decompositions of the nonquadratic monomial u3
+
+> x
+
+u. After sorting 
+
+14 these decompositions by H3, the tree for this search takes the form 
+
+∅
+
+(u2)
+
+(u2
+
+> x
+
+, u xu) (u2
+
+> x
+
+u) (u3
+
+> x
+
+) (u3
+
+> x
+
+u)
+
+(uxxx u) (uxxx u2)
+
+When the algorithm visits the node represented by (u2
+
+> x
+
+, u xu), it executes Module 2 on {u2, u 2
+
+> x
+
+, u xu}
+
+and confirms that this set is a quadratization. This is depicted with the green box in the tree: 
+
+∅                      
+
+> (u2)
+> (u2
+> x, u xu)(u2
+> xu)(u3
+> x)(u3
+> xu)
+> (uxxx u)
+> (u2
+> xu)(u2
+> x, u xxxx u)(uxuxxxx , u xu)(u2
+> xuxxxx )(uxuxxxx u)(u2
+> xuxxxx u)
+> (u2uxxx )
+> (uxxx u)(u2
+> xxx , u 3)(u2
+> xxx u, u 2)(u3uxxx )(u2u2
+> xxx )(u3u2
+> xxx )
+> 12345678910 11 12 13 14 15
+
+(21) 
+
+where the order of traversed branches is labeled with blue numbers. After finding the quadratization on the node in the green box, it backtracks to the parent node (u2) and starts exploring nodes with possible lower-order quadratizations. From the third to the fifteenth step in (21) , the algorithm verifies that the nodes given by those branches are not quadratizations. Moreover, since the order of the best quadratization found so far is three, it prunes the four branches depicted in gray. After verifying in step fifteen that the last lower-order quadratization candidate, the set {u2uxxx , u 3u2
+
+> xxx
+
+}, is not a quadratization for (18) , Module 3 yields {u2, u 2
+
+> x
+
+, u xu} as the best solution. 
+
+We can further reduce the number of nodes traversed by Module 3 and increase its chances of finding a smaller quadratization by introducing additional steps to the search strategy. This improvement is demonstrated in Example 6 below, where finding a lower-order quadratization for PDE (18) requires visiting only four nodes instead of fifteen. 
+
+Improvements to the search strategy 
+
+We introduce an additional step to find a bound to prune more branches within the search tree and have a better chance of finding lower-order quadratizations. Given a polynomial PDE, if a set of ℓ
+
+auxiliary variables yields a quadratization, it happens in practice that a smaller subset could also be a quadratization for the PDE. In our implementation, we added an extra step where each time Module 3 finds a quadratization, it tries to find a better one within all the subsets of the quadratization found. If Module 3 finds a smaller quadratization through this extra step, it uses this new bound for pruning future branches. We illustrate the effect of this modification by revisiting Example 5. 
+
+Example 6 (Modification to the B&B search algorithm) . We consider the PDE (18) . When Module 3 finds the first quadratization of this PDE in its second step depicted in (21) , the state of the search tree is: 
+
+∅
+
+(u2)
+
+(u2
+
+> x
+
+, u xu)
+
+> 2
+
+(u2
+
+> x
+
+u) (u3
+
+> x
+
+) (u3
+
+> x
+
+u)
+
+> 1
+
+(uxxx u) (uxxx u2)
+
+15 Instead of searching for smaller quadratizations in other branches, Module 3 calls Module 2 for each subset of the quadratization found: {u2, u 2
+
+> x
+
+, u xu}. This is depicted below 
+
+∅
+
+(u2)
+
+(uxu, u 2
+
+> x
+
+)
+
+{u2} {u2
+
+> x
+
+} {uxu} {u2, u 2
+
+> x
+
+} . . . 
+
+> 2
+
+(u2
+
+> x
+
+u) (u3
+
+> x
+
+) (u3
+
+> x
+
+u)
+
+> 1
+
+(uxxx u)
+
+> 3
+
+(uxxx u2)
+
+> 4
+
+(22) 
+
+where the dotted line arrows distinguish these subsets from the formal search tree nodes. As shown in (22) , Module 3 searches for a quadratization among the subsets {u2}, {u2
+
+> x
+
+}, {uxu}, {u2, u 2
+
+> x
+
+}. In the last set of variables, it identifies a quadratization; then, it stops searching within the rest of the node’s subsets and updates the minimum quadratization order found. Given the update of the pruning rule, the path that Module 3 follows through the tree is the one illustrated in (22) in blue numbers, where the resulting best quadratization is {u2, u 2
+
+> x
+
+}.
+
+Having described the complete pipeline for obtaining quadratizations of polynomial PDEs, we introduce a method for handling rational PDEs, building on the algorithms presented in Module 1, Module 2, and Module 3. 
+
+3.1.4. Polynomialization of rational PDEs and Module 4 
+
+Nonlinear PDEs can have rational functions in their drift. Some examples are the Euler equations [33] and the HUX (Heliospheric Upwinding eXtrapolation) model that predicts the heliospheric solar wind speed [59, 34]. However, the modules presented so far only handle PDEs of polynomial nature. One way to find a quadratization of a PDE with rational terms using our tools is to transform the right-hand side expressions into polynomials by introducing rational auxiliary variables, a technique commonly referred to as polynomialization . For example, consider the PDE ut = 1 
+
+> u+1
+
+. We could introduce an auxiliary variable q = 1 
+
+> u+1
+
+, and the system would have the differential equations: ut = q
+
+and yt = − 1(u+1) 3 = −q3. The problem with this approach lies in the omission of the relation 
+
+q = 1 
+
+> u+1
+
+by the algorithmic modules, which would mean disregarding the constraint (u + 1) · q = 1 
+
+during the quadratization procedure. This problem affects our solution’s ability to find low-order quadratizations for the original PDE as it may not recognize that a polynomial is quadratic if we apply the simplification (u + 1) · q = 1 , as it is shown in Example 7. Consider p1, . . . , p n ∈ R[u, ∂ xu, . . . , ∂ hx u] and d1, . . . , d n ∈ R[u, ∂ xu, . . . , ∂ hx u]. We present Mod-ule 4, which addresses PDEs of the form 
+
+∂tu1 = p1(u, ∂ xu, . . . , ∂ hx u)
+
+d1(u, ∂ xu, . . . , ∂ hx u) , . . . , ∂ tun = pn(u, ∂ xu, . . . , ∂ hx u)
+
+dn(u, ∂ xu, . . . , ∂ hx u) , (23) and includes the rational constraints while finding a quadratization. This module finds the partial fraction decomposition of a multivariate rational function by following [31, Alg. 2]. There, the authors propose a two-step procedure given a multivariate rational fraction: (i) construct a special set of polynomials called a Gröbner basis [14] using a set of polynomials known as an ideal [23], and (ii) reduce the rational function with respect to this basis. To illustrate this approach, we introduce the definitions of a polynomial ideal and a Gröbner basis. In polynomial algebra, a set of polynomials 
+
+g1, . . . , g m ∈ F[υ1, . . . , υ n], called generators, define an ideal set denoted by I. This ideal consists of all possible polynomial combinations of the generators, where the coefficients are the polynomials themselves: I := ⟨g1, . . . , g m⟩ = {P 
+
+> i
+
+figi | fi ∈ F[υ1, . . . , υ n]}, where the notation ⟨·⟩ indicates that I
+
+16 is generated by g1, . . . , g m. A Gröbner basis is a set of generators of a particular ideal that allows one to find a unique remainder when reducing other polynomials with respect to this basis. To apply these ideas in Module 4, we consider f1, . . . , f m as the irreducible factors of the denomi-nators of a rational function within (23), where f1, . . . , f m ∈ R[u, ∂ xu, . . . , ∂ hx u]. Now, let q1, . . . , q m
+
+be the formal variables representing the inverses of f1, . . . , f m, e.g., qi = 1 
+
+> fi
+
+for i ∈ { 1, . . . , m }, and consider the ideal 
+
+I = ⟨q1f1 − 1, . . . , q mfm − 1⟩, (24) where I ⊂ R[q1, . . . , q m, u, ∂ xu, . . . , ∂ hx u]. Setting the generators qifi − 1 = 0 imposes the constraint 
+
+qi = 1 /f i. Motivated by this, we construct a Gröbner basis corresponding to the generators of the ideal (24) and use it to reduce polynomials during quadratization steps involving polynomial operations, e.g., Gaussian elimination in Module 2. This ensures that any product of the form qifi
+
+will be replaced by 1. The detailed steps of this procedure are listed in pseudocode in Module 4, and Example 7 illustrates the integration of Module 4 into the quadratization procedure. 
+
+Module 4 (QuPDE ’s module for PDEs with rational terms) 
+
+Input: Symbolically defined rational PDE system of the form (23) 
+
+Output: (i) Set of auxiliary variables W, (ii) A Gröbner basis corresponding to the constraints of the rational variables, (iii) The PDE system in polynomial form expressed in terms of the rational auxiliary variables  
+
+> 1:
+
+W ← {}  
+
+> 2:
+
+for each right-hand side expression in the PDE system do  
+
+> 3:
+
+Rewrite the expression as p(u, ∂ xu, . . . , ∂ hx u)
+
+d(u, ∂ xu, . . . , ∂ hx u) 
+
+> 4:
+
+Cancel common factors between p and d 
+
+> 5:
+
+{f1, . . . , f m} ← terms of the factorization d = Qmi=1 f ji 
+
+> i
+
+, with ji > 0 
+
+> 6:
+
+for fi ∈ { f1, . . . , f m} do  
+
+> 7:
+
+qi ← 1 
+
+> fi
+> 8:
+
+if qi /∈ W then  
+
+> 9:
+
+I ← I ∪ { qifi − 1} 
+
+> 10:
+
+W ← W ∪ { qi} 
+
+> 11:
+
+G ← Gröbner basis of I 
+
+> 12:
+
+Rewrite each right-hand side of the rational PDE system using the variables in W, add to the system the differential equations corresponding to the auxiliary variables in W, and reduce each expression with respect to G to obtain a polynomial system  
+
+> 13:
+
+return W, G and the polynomial PDE system 
+
+Example 7 (Quadratization for a rational PDE) . Consider the PDE 
+
+ut = uxxx 
+
+u . (25) 
+
+Since (25) has a rational term, we follow the steps in Module 4 to obtain a polynomial system. Let 
+
+p := uxxx and d := u. First, note that the right-hand side of (25) is already expressed in the factorized form p/d , where the only factorization term of d is f1 := u. Then, we immediately follow step 7 of Module 4 and introduce the auxiliary variable q := 1 /f 1 = 1 /u to define the ideal set I := ⟨qu − 1⟩,from which we construct the Gröbner basis {qu − 1}. Following step 12, we rewrite the original PDE as ut = uxxx q, add the corresponding differential equation of q to the polynomial PDE, and reduce it with respect to the Gröbner basis. Then, we obtain the following PDE: 
+
+ut = uxxx q, (26) 
+
+qt = −q3uxxx . (27) 17 Now, to find a quadratization for the polynomial PDE described by (26) and (27) , we execute Module 3, reducing each polynomial multiplication with respect to the defined Gröbner basis. With this modification, Module 3 finds the quadratization {q3}. Defining w := q3, we obtain the quadratic PDE system: 
+
+wt = wxxx q + 2 qxwxx − 14 qxx wx,qt = −uxxx w, ut = uxxx q. 
+
+Note that if we apply Module 3 to the polynomialized system (26) and (27) without executing Module 4, the best quadratization we would obtain would be {q3, q 5}, as the algorithm would not register the definition of q.3.1.5. QuPDE overview 
+
+To summarize the construction of QuPDE , Figure 2 presents a flowchart depicting QuPDE ’s routine when a nonquadratic PDE is given as input, showing how Module 1, Module 2, Module 3, and Module 4 interact to find a quadratization. First, if the PDE system has rational expressions, QuPDE executes Module 4 to polynomialize it. Once there is a polynomial PDE, QuPDE identifies its quadratization candidates by running Module 1. Then, Module 3 constructs the search tree that determines when Module 2 verifies if a set is a quadratization, and runs Module 1 to generate the subproblems. Finally, it produces the best quadratization found for the given PDE.   
+
+> Figure 2: Flowchart for QuPDE to illustrate the interaction between the different modules.
+
+3.2. Practical aspects of QuPDE 
+
+Theorem 1 shows that it is always possible to find a quadratization with differential order 3h for a polynomial PDE of the form (5). When this condition is met theoretically but QuPDE does not find a 18 quadratization, it may be because (i) a user-specified value for the differential order of quadratization 
+
+k is not high enough, or (ii) the bound defined for the initial value of PR1 in Module 3—the maximum depth of the search tree allowed—did not suffice. In either case, following the steps in Proposition 3 ensures that a quadratization will be found. 
+
+Proposition 3. For any polynomial and rational PDE of the form (5) , the combined application of Module 1, Module 2, Module 3, and (if necessary) Module 4 is guaranteed to find a quadratization by following the steps: 1. Fix initial values for the bound on the auxiliary variables, N , and the differential order of quadratization, k.2. Run QuPDE with the chosen N and k.3. If the search is unsuccessful, set k = k + 1 and N = 2 · N , and go back to step 2. 
+
+Proof : Since Theorem 1 guarantees that PDEs of the form (5) admit a quadratization of differential order 3h, that is, with solutions in C3h(Ω) , QuPDE can always find one by sufficiently increasing both the number of auxiliary functions and the differential order of quadratization k up to 3h. □
+
+QuPDE is a symbolic search algorithm that only knows the smoothness of a PDE solution through the user-specified differential order of quadratization k. Consequently, (i) QuPDE can find quadratizations for PDEs with u ∈ Cℓ(Ω) , where ℓ < 3h; and (ii) QuPDE could output quadratizations for a PDE that assume a solution is ℓ+j times differentiable, even if the original solution of the PDE is only in Cℓ(Ω) .An example of case (ii) is shown below. 
+
+Example 8 (QuPDE ’s smoothness assumption) . Consider the PDE ut = u2
+
+> x
+
+u with ℓ = 1 , i.e., u ∈
+
+C1(Ω) . We define the auxiliary variable w := uxu and set k = 2 to calculate wx = uxx u + u2
+
+> x
+
+. The set {w = uxu} is a quadratization for this PDE and yields the quadratic system given by ut = uxw
+
+and wt = 2 wxw. Since k was set to a value larger than ℓ, this variable transformation assumes that 
+
+u is a solution ℓ + 1 times differentiable, where the expression for wx has a spatial derivative of u of order two. 
+
+4. Benchmarks and Results 
+
+This section presents the results of using QuPDE to find quadratizations for fourteen nonquadratic spatially one-dimensional PDEs from the literature of diverse areas such as fluid mechanics, space physics, chemical engineering, and biological processes. Section 4.1 lists the nonquadratic PDEs, Section 4.2 shows the results of searching for a quadratization for each of them, and Section 4.3 presents how QuPDE compares with QBee [17], the only alternative software that offers an algorithmic solution for the PDE quadratization problem via the detour of semi-discretization. 
+
+4.1. PDE models 
+
+The governing equations for each PDE benchmark are shown below. We omit the initial and boundary conditions since the quadratizations are found based solely on the symbolic form of the PDEs, c.f. Remark 1. 
+
+Dym equation. The Harry Dym equation [43] arises in several areas, such as the analysis of the Saffman-Taylor problem with surface tension [36] and acoustic theory [71]. This equation is completely integrable and represents a system in which dispersion and nonlinearity are coupled: 
+
+ut = u3uxxx . (28) 19 Arrhenius-type reaction model. The non-adiabatic tubular reactor model in [30] describes species concentration and temperature evolution in a single reaction through 
+
+ut = ϵu xx − ux − D uf (v), (29) 
+
+vt = ϵv xx − vx − β(v − θref ) + BD uf (v), (30) where f (v) = eγ− γv is an Arrhenius nonlinear reaction term describing the reaction rate. Here, D is the Damköhler number, ϵ = 1 
+
+> P e
+
+, with P e the Pèclet number and B, β, γ, θ ref are known constants of the system. To use QuPDE on this model, we apply a variable transformation to (29) and (30) by introducing the auxiliary variable y = eγ− γv . Then, we write the rational PDE system 
+
+ut = ϵu xx − ux − D uy, (31) 
+
+vt = ϵv xx − vx − β(v − θref ) + BD uy, (32) 
+
+yt = γv2 y (ϵv xx − vx − β(v − θref ) + BD uy ) . (33) 
+
+Polynomial reaction model. An approximation via Taylor expansion of the non-adiabatic tubular reactor model [41] described in (29) and (30) is 
+
+ut = ϵu xx − ux − D fd(v), (34) 
+
+vt = ϵv xx − vx − β(v − θref ) + BD uf d(v), (35) where fd(v) is a Taylor series approximation of the exponential Arrhenius term, i.e., fd(v) = c0 +
+
+c1v + c2v2 + · · · + cdvd. Section 4.2 shows results with approximations of polynomial degrees three, four, and five. 
+
+Modified KdV equation. The Korteweg-De Vries equation (KdV) [69] is a model for the study of weakly nonlinear long waves, incorporating leading nonlinearity and dispersion. It also describes surface waves of long wavelength and small amplitude in shallow water, and has the form 
+
+ut = au 2ux − uxxx , (36) where a > 0.
+
+Solar wind model. The HUX (Heliospheric Upwinding eXtrapolation) model [34] is a two-dimensional time-stationary model that predicts the heliospheric solar wind speed via the PDE 
+
+ur = Ωrot uϕ
+
+u , (37) where Ωrot is the angular frequency on the Sun’s rotation evaluated at a constant Carrington latitude. In our notation, ϕ is the spatial variable and r plays the role of time. 
+
+Schlögl model. Schlögl’s model [15] is a simple example of a chemical reaction system that exhibits bistability. We consider a version of this model without input functions: 
+
+ut = uxx − k(u − u1)( u − u2)( u − u3), (38) with k ≥ 0 and real numbers u1 < u 2 < u 3.
+
+Euler equations. The Euler equations [33] are derived from the physical principles of conservation of mass, momentum, and energy and describe an inviscid flow through the equations 
+
+ρt = −uρ x − ρu x, (39) 
+
+ut = −uxu − px
+
+ρ , (40) 
+
+pt = −γu xp − up x, (41) where γ is the ratio of specific heats. 20 FitzHugh-Nagamo system. The FitzHugh-Nagamo system [19] is a simplified neuron model of the Hodgkin-Huxley model, which describes activation and deactivation dynamics of a spiking neuron via the PDE system 
+
+vt = ϵv xx + 1
+
+ϵ v(v − 0.1)(1 − v) − 1
+
+ϵ u + 1
+
+ϵ c, (42) 
+
+ut = bv − γu + c, (43) where ϵ, b, γ, c are real and positive constants. 
+
+Schnakenberg equations. The Schnakenberg equations [47] are evolution equations for reaction-diffusion systems with cross-diffusion, given by 
+
+ut = Duuxx + Duv vxx + k1a1 − k2u + k3u2v, (44) 
+
+vt = Dv vxx + Dvu uxx + k4b1 − k3u2v, (45) where Du > 0, Dv > 0, Duv and Dvu are diffusion and cross-diffusion coefficients, and a1, b1, k1, k2,
+
+k3, k4 are all positive constants. 
+
+Brusselator system. The Brusselator [46] models morphogenesis and pattern formation in chemical reactions through the equations 
+
+ut = d1ux + λ(1 − (b + 1) u + bu 2v), (46) 
+
+vt = d2vx + λa 2(u − u2v), (47) where d1, d2, λ, a, b are positive constants. 
+
+Allen-Cahn equation. The Allen-Cahn equation [1] describes the motion of antiphase boundaries in crystalline solids. It was proposed as a simple model for the process of phase separation of a binary alloy at a fixed temperature: 
+
+ut = uxx + u − u3. (48) 
+
+One-dimensional nonlinear heat equation. The nonlinear heat equation [4] presents a rich mathemat-ical structure for studying blow-up phenomena, where solutions cease to exist after a finite time. The equation takes the form 
+
+ut = uxx + up, (49) with p > 1. For our benchmark, we performed tests with p = 6 .
+
+4.2. Results 
+
+The results presented in this section were obtained using our software implementation of QuPDE 
+
+[55] version 0.1.0 1, which is developed as a Python package built using the Sympy library [51]. All experiments were run on an Apple M4 Pro personal laptop with clock speed of 4.5 GHz, 48GB RAM, and macOS Tahoe 26.2 with Python version 3.14.2. In Table 1, we show the results of running QuPDE 
+
+on each example described in Section 4.1. For each PDE, we follow the procedure in Proposition 3 to find the lowest differential order at which QuPDE finds a quadratization, fixing as the initial value the order of the original PDE. Moreover, we use H3 as the sorting heuristic since it performed best overall.  
+
+> 1this version is available at https://doi.org/10.5281/zenodo.18750665 . Current version and support available at
+> https://github.com/albaniolivieri/pde-quad.git
+
+21 Table 1: Results of applying QuPDE to the fourteen PDE problems from above. Listed are the auxiliary variables the algorithm introduced, the execution time, and the number of nodes in the search tree that the algorithm traversed. Examples are ordered by CPU time. 
+
+PDE Quadratization variables CPU time Nodes traversed Solar wind model 1/u 8.8 ± 0.1 [ms] 1Allen-Cahn equation u2 22.4 ± 0.1 [ms] 3Schlögl model u2 43.8 ± 0.2 [ms] 3Modified KdV u2 54.2 ± 0.9 [ms] 4Euler equations 1/ρ 54.6 ± 1.1 [ms] 1FHN system v2 115.1 ± 1.1 [ms] 3Brusselator system u2, uv 129.6 ± 1.2 [ms] 8Nonlinear heat equation u2, u4, u5 205.1 ± 2.5 [ms] 27 Schnakenberg equations uv , u2 445.0 ± 4.1 [ms] 8Dym equation u3, u2
+
+> x
+
+u 628.9 ± 5.5 [ms] 21 Polynomial reaction ( d = 3 ) uv , v2, v2u, v3 9.9 ± 0.1 [s] 69 Polynomial reaction ( d = 4 ) uv , v2, v2u, v4, v3u 62.5 ± 0.4 [s] 305 Arrhenius-type reaction 1/v , 1/v 2, uv , uy/v ,
+
+uy/v 2, y/v , y/v 2 179.1 ± 0.4 [s] 491 Polynomial reaction ( d = 5 ) uv , v2, v3, v3u, v4u, v5 636.1 ± 4.6 [s] 2107 Table 1 shows that, for most of the examples, QuPDE produces the best quadratization found within the order of milliseconds, even for PDEs with rational nonlinearities. Moreover, in nine out of fourteen cases, it finds quadratizations of only one or two auxiliary variables. The last four examples, in which 
+
+QuPDE produces the largest quadratizations and requires the longest computation time, correspond to the highly nonlinear models for the non-adiabatic tubular reactor. Two of these systems are polynomials of degree five and six, since the degree of fd in (34) and (35) is four and five, respectively; and the Arrhenius-type reaction model corresponds to the rational PDE system in (31), (32), and (33). It is worth noting that for the last three examples, the time it takes for QuPDE to find a quadratization, compared to the time for verification, varies considerably. For instance, in the Arrhenius-type reaction model, QuPDE finds the first quadratization within 17 seconds, while the remaining 166 seconds are spent searching for a lower-order quadratization alternative through Module 3. Moreover, to the best of our knowledge, the quadratizations presented here are the first for the nonlinear heat equation and the polynomial reaction models with d = 4 and d = 5 .
+
+4.3. Comparison to the state-of-the-art algorithm QBee 
+
+The QBee algorithm for ODEs [16] offers the only available alternative for finding quadratizations of PDEs via the detour of semi-discretization. Therefore, we compare QuPDE with results obtained from QBee [16, Alg. 5.3] on published semi-discretized forms of four PDE systems: the solar wind model [34], the Allen-Cahn equation [70], and two of the non-adiabatic tubular reactor models: the polynomial approximation with d = 3 [41] and the Arrhenius-type reaction [73]. This comparison is shown in Table 2.    
+
+> Table 2: Comparison between QBee dimension-agnostic quadratization and the proposed QuPDE . Listed are the execution times and the order of the best quadratization found for each PDE.
+
+PDE QBee QuPDE 
+
+CPU time Quad. order CPU time Quad. order Solar wind model 0.47 [s] 4 0.01 [s] 1Allen-Cahn equation 0.06 [s] 1 0.02 [s] 1Polynomial reaction (d = 3) 0.54 [s] 4 9.94 [s] 4Arrhenius-type reaction 76.77 [s] 8 179.13 [s] 622 In Table 2, we see significant differences in the results of the two algorithms. In the solar wind example and the Arrhenius-type reaction model, our algorithm outperforms QBee in the number of variables introduced. For the solar wind model, QBee algorithmically produces a quadratization with four auxiliary variables. However, the semi-discretization of (37) introduces a logarithmic ex-pression, requiring an additional auxiliary variable w := ln( u) from the polynomialization proce-dure. Consequently, using the QBee approach yields to a quadratization of five auxiliary variables: 
+
+{w, 1/u, w/u, ˜u/u, ˜w/u }, where ˜u and ˜w represent the nonzero off-diagonal elements of the discretiza-tion system matrix, see [16, Sec 7.2] for more details. This adds five differential equations to (37), whereas QuPDE requires a single auxiliary variable 1/u through the application of Module 4. In the Arrhenius-type reaction model, QBee yields a quadratization with two more auxiliary variables than 
+
+QuPDE : {1/v, 1/v 2, uy/v 2, uy/v, ˜v/v, ˜u/v, ˜v/v 2, ˜u/v 2}, where the variables ˜u, ˜v correspond to the dis-crete representation of the PDE system in (29) and (30). For the polynomial reaction model and the Allen-Cahn equation, QuPDE and QBee produce the same quadratization. On the other hand, while our algorithm takes longer to find the same quadratization for the polynomial reaction model, its time performance is similar to that of QBee when finding quadratizations for the Allen-Cahn equation and the solar wind model, finding a lower-order quadratization for the latter. We emphasize once again that the state-of-the-art method QBee is limited to finding quadrati-zations for semi-discretized PDEs that are affine in their spatial derivatives. Discretizing nonlinear PDEs is a complex and often cumbersome task, involving many choices in the process that can result in different semi-discretized forms. It also demands a solid understanding of the PDE’s structural properties and its domain. Moreover, requiring users to provide a pre-discretized PDE makes the process of finding quadratizations significantly less user-friendly. As a result, only a limited number of examples are suitable for QBee . On the other hand, the proposed QuPDE offers a user-oriented design that works directly on the symbolic form of any polynomial and rational PDE. 
+
+5. Conclusions 
+
+The concept of variable transformation has been widely explored to bring nonquadratic PDEs to a simpler—here quadratic—form, where control, analysis, and model reduction become easier. While one can find quadratizations for ODE systems using two freely available computational tools [17, 32]; for PDEs, the two options available are either to derive a quadratization by hand or to take the detour of semi-discretization of the PDE and use the ODE quadratization algorithm in [16]. Both approaches are suboptimal and, in the latter case, require expert knowledge in PDE discretization and only applies to a subclass of PDEs. The present work extends the theory of quadratizations for PDEs through three main contributions: a rigorous definition of PDE quadratization, a proof that every polynomial PDE admits a quadratiza-tion under certain regularity conditions, and a demonstration that finding quadratic transformations for PDEs via auxiliary variables is an NP-hard problem. The present paper also contributes to the practical aspects of finding a quadratization of a PDE by presenting the algorithm QuPDE along with a freely available software implementation [55]. This algorithm works directly with the PDE formula-tion of the quadratization problem for any polynomial or rational spatially one-dimensional PDE. To accomplish this, QuPDE employs a symbolic computation-based approach that relies on an optimization algorithm using the Branch-and-Bound framework to make the search for a low-order quadratization feasible. We speed up the search by implementing pruning rules, sorting heuristics, and computational strategies to reduce the number of traversed nodes. QuPDE also includes a polynomialization step for rational functions, a tool to handle a wider range of nonlinear models. We tested QuPDE on fourteen PDE models from diverse areas such as fluid mechanics, space physics, chemical engineering, and biological processes. In each case, QuPDE delivered a low-order quadrati-zation for the benchmarks presented. As demonstrated in our results, QuPDE has (i) discovered new quadratizations that needed fewer auxiliary variables than previously reported in the literature, and, most importantly, does not impose additional requirements such as semi-discretization; and (ii) found 23 entirely new quadratizations for systems that had not been brought to quadratic form before, such as the nonlinear heat equation and the high-degree polynomial models of the tubular reactor model. This work motivates multiple future research directions. First, designing and implementing a polynomialization algorithm that extends PDE quadratization to nonpolynomial systems beyond ra-tional functions; the nonlinear sine-Gordon equation [5] illustrates the advantages of this technique, which becomes quadratic after polynomialization. Second, implementing methods to further reduce the number of equations of the resulting quadratic PDE systems. Third, developing improvements on the algorithm’s efficiency through enhanced search strategies, e.g., random tree search, and additional physics-informed pruning rules. Fourth, extending the theory and algorithmic tools to address PDEs in higher spatial dimension. Lastly, designing and implementing an automated search for structure-preserving quadratizations for energy-conserving systems [63, 64]. 
+
+Acknowledgments 
+
+The authors would like to thank Gonzalo Navarro for his valuable input on the practical aspects of 
+
+QuPDE . B.K. and A.O. are supported in part through NSF-CMMMI award 2144023. G.P. was partially supported by the INS2I PANTOMIME project and the French ANR-22-CE48-0016 NODE project. 
+
+References 
+
+[1] S. M. Allen and J. W. Cahn. A microscopic theory for antiphase boundary motion and its application to antiphase domain coarsening. Acta Metallurgica , 27(6):1085–1095, June 1979. [2] H. Almubarak, N. Sadegh, and D. G. Taylor. Infinite horizon nonlinear quadratic cost regulator. In 2019 American Control Conference (ACC) , pages 5570–5575. IEEE, July 2019. [3] F. Amato, C. Cosentino, and A. Merola. Sufficient conditions for finite-time stability and stabi-lization of nonlinear quadratic systems. IEEE Transactions on Automatic Control , 55(2):430–434, Feb. 2010. [4] C. Bandle and H. Brunner. Blowup in diffusion equations: A survey. Journal of Computational and Applied Mathematics , 97(1-2):3–22, Sept. 1998. [5] A. Barone, F. Esposito, C. J. Magee, and A. C. Scott. Theory and applications of the sine-Gordon equation. La Rivista del Nuovo Cimento , 1(2):227–267, Apr. 1971. [6] F. Bayer, R. I. Leine, O. Thomas, and A. Grolet. Koopman-Hill stability computation of pe-riodic orbits in polynomial dynamical systems using a real-valued quadratic harmonic balance formulation. International Journal of Non-Linear Mechanics , 167:104894, Dec. 2024. [7] P. Benner and T. Breiten. Two-sided projection methods for nonlinear model order reduction. 
+
+SIAM Journal on Scientific Computing , 37(2):B239–B260, Jan. 2015. [8] J. Borggaard and L. Zietsman. The quadratic-quadratic regulator problem: Approximating feedback controls for quadratic-in-state nonlinear systems. In 2020 American Control Conference (ACC) , pages 818–823. IEEE, July 2020. [9] J. Borggaard and L. Zietsman. On approximating polynomial-quadratic regulator problems. 
+
+IFAC-PapersOnLine , 54(9):329–334, 2021. [10] A. Borri, F. Carravetta, and P. Palumbo. Quadratized Taylor series methods for ODE numerical integration. Applied Mathematics and Computation , 458:128237, Dec. 2023. [11] O. Bournez, M. L. Campagnolo, D. S. Graça, and E. Hainry. Polynomial differential equations compute all real computable functions on computable compact intervals. Journal of Complexity ,23(3):317–335, June 2007. 24 [12] L. Brenig. Reducing nonlinear dynamical systems to canonical forms. Philosophical Transactions of the Royal Society A: Mathematical, Physical and Engineering Sciences , 376(2124):20170384, June 2018. [13] S. L. Brunton, B. W. Brunton, J. L. Proctor, and J. N. Kutz. Koopman invariant sub-spaces and finite linear representations of nonlinear dynamical systems for control. PLOS ONE ,11(2):e0150171, Feb. 2016. [14] B. Buchberger. Gröbner bases: A short introduction for systems theorists. In Computer Aided Systems Theory -EUROCAST 2001 , pages 1–19. Springer Berlin Heidelberg, 2001. [15] R. Buchholz, H. Engel, E. Kammann, and F. Tröltzsch. On the optimal control of the Schlögl-model. Computational Optimization and Applications , 56(1):153–185, Mar. 2013. [16] A. Bychkov, O. Issan, G. Pogudin, and B. Kramer. Exact and optimal quadratization of nonlinear finite-dimensional nonautonomous dynamical systems. SIAM Journal on Applied Dynamical Systems , 23(1):982–1016, Mar. 2024. [17] A. Bychkov and G. Pogudin. Optimal monomial quadratization for ODE systems. In Combina-torial Algorithms , pages 122–136. Springer International Publishing, June 2021. [18] D. C. Carothers, G. Parker, J. S. Sochacki, and P. G. Warne. Some properties of solutions to polynomial systems of differential equations. Electronic Journal of Differential Equations (EJDE) [electronic only] , 2005:Paper No. 40, 17 p., 2005. [19] S. Chaturantabut and D. C. Sorensen. Nonlinear model reduction via discrete empirical interpo-lation. SIAM Journal on Scientific Computing , 32(5):2737–2764, Jan. 2010. [20] L. Conger, J. S. L. Li, E. Mazumdar, and S. L. Brunton. Nonlinear system level synthesis for polynomial dynamical systems. In 2022 IEEE 61st Conference on Decision and Control (CDC) ,pages 3846–3852. IEEE, Dec. 2022. [21] N. A. Corbin and B. Kramer. Computing solutions to the polynomial-polynomial regulator problem. In 2024 IEEE 63rd Conference on Decision and Control (CDC) , pages 2689–2696. IEEE, Dec. 2024. [22] N. A. Corbin and B. Kramer. Scalable computation of H∞ energy functions for polynomial control-affine systems. IEEE Transactions on Automatic Control , 70(5):3088–3100, May 2025. [23] D. A. Cox, J. Little, and D. O’Shea. Ideals, Varieties, and Algorithms: An Introduction to Computational Algebraic Geometry and Commutative Algebra . Springer International Publishing, 2015. [24] F. Fages, G. Le Guludec, O. Bournez, and A. Pouly. Strong Turing completeness of continuous chemical reaction networks and compilation of mixed analog-digital programs. In Computational Methods in Systems Biology , pages 108–127. Springer International Publishing, Sept. 2017. [25] P. Goyal, I. Pontes Duff, and P. Benner. Guaranteed stable quadratic models and their appli-cations in sindy and operator inference. Physica D: Nonlinear Phenomena , 483:134893, Dec. 2025. [26] C. Gu. QLMOR: A projection-based nonlinear model order reduction approach using quadratic-linear representation of nonlinear systems. IEEE Transactions on Computer-Aided Design of Integrated Circuits and Systems , 30(9):1307–1320, Sept. 2011. [27] L. Guillot, B. Cochelin, and C. Vergez. A generic and efficient Taylor series-based continua-tion method using a quadratic recast of smooth nonlinear systems. International Journal for Numerical Methods in Engineering , 119(4):261–280, Mar. 2019. 25 [28] L. Guillot, B. Cochelin, and C. Vergez. A Taylor series-based continuation method for solutions of dynamical systems. Nonlinear Dynamics , 98(4):2827–2845, May 2019. [29] M. Guo, S. A. McQuarrie, and K. E. Willcox. Bayesian operator inference for data-driven reduced-order modeling. Computer Methods in Applied Mechanics and Engineering , 402:115336, Dec. 2022. [30] R. F. Heinemann and A. B. Poore. Multiplicity, stability, and oscillatory dynamics of the tubular reactor. Chemical Engineering Science , 36(8):1411–1419, Jan. 1981. [31] M. Heller and A. von Manteuffel. MultivariateApart: Generalized partial fractions. Computer Physics Communications , 271:108174, Feb. 2022. [32] M. Hemery, F. Fages, and S. Soliman. On the complexity of quadratization for polynomial differential equations. In Computational Methods in Systems Biology , pages 120–140. Springer International Publishing, Sept. 2020. [33] H. T. Huynh. Accurate upwind methods for the Euler equations. SIAM Journal on Numerical Analysis , 32(5):1565–1619, Oct. 1995. [34] O. Issan and B. Kramer. Predicting solar wind streams from the inner-heliosphere to Earth via shifted operator inference. Journal of Computational Physics , 473:111689, Jan. 2023. [35] P. Jain, S. McQuarrie, and B. Kramer. Performance comparison of data-driven reduced models for a single-injector combustion process. In AIAA Propulsion and Energy 2021 Forum . American Institute of Aeronautics and Astronautics, July 2021. [36] L. P. Kadanoff. Exact solutions for the Saffman-Taylor problem with surface tension. Physical Review Letters , 65(24):2986–2988, Dec. 1990. [37] D. Kalise and K. Kunisch. Polynomial approximation of high-dimensional Hamilton–Jacobi– Bellman equations and applications to feedback control of semilinear parabolic PDEs. SIAM Journal on Scientific Computing , 40(2):A629–A652, Jan. 2018. [38] P. Khodabakhshi and K. E. Willcox. Non-intrusive data-driven model reduction for differential-algebraic equations derived from lifting transformations. Computer Methods in Applied Mechanics and Engineering , 389:114296, Feb. 2022. [39] B. Kramer. Stability domains for quadratic-bilinear reduced-order models. SIAM Journal on Applied Dynamical Systems , 20(2):981–996, Jan. 2021. [40] B. Kramer, S. Gugercin, J. Borggaard, and L. Balicki. Scalable computation of energy functions for nonlinear balanced truncation. Computer Methods in Applied Mechanics and Engineering ,427:117011, July 2024. [41] B. Kramer and K. Willcox. Balanced truncation model reduction for lifted nonlinear systems. In Realization and Model Reduction of Dynamical Systems: A Festschrift in Honor of the 70th Birthday of Thanos Antoulas , pages 157–174. Springer International Publishing, Cham, June 2022. [42] B. Kramer and K. E. Willcox. Nonlinear model order reduction via lifting transformations and proper orthogonal decomposition. AIAA Journal , 57(6):2297–2307, June 2019. [43] S. Kumar, M. P. Tripathi, and O. P. Singh. A fractional model of Harry Dym equation and its approximate solution. Ain Shams Engineering Journal , 4(1):111–115, Mar. 2013. [44] A. Levin. An analytical method of estimating the domain of attraction for polynomial differential equations. IEEE Transactions on Automatic Control , 39(12):2471–2475, 1994. 26 [45] E. Lew, A. Hekal, K. Potomkin, N. Kochdumper, B. Hencey, S. Bak, and S. Bogomolov. Au-toKoopman: A toolbox for automated system identification via Koopman operator linearization. In Automated Technology for Verification and Analysis , pages 237–250. Springer Nature Switzer-land, Oct. 2023. [46] B. Li and M.-x. Wang. Diffusion-driven instability and Hopf bifurcation in Brusselator system. 
+
+Applied Mathematics and Mechanics , 29(6):825–832, June 2008. [47] A. Madzvamuse, H. S. Ndakwo, and R. Barreira. Cross-diffusion-driven instability for reaction-diffusion systems: analysis and simulations. Journal of Mathematical Biology , 70(4):709–743, Mar. 2014. [48] S. A. McQuarrie, C. Huang, and K. E. Willcox. Data-driven reduced-order models via regularised operator inference for a single-injector combustion process. Journal of the Royal Society of New Zealand , 51(2):194–211, Jan. 2021. [49] S. A. McQuarrie, P. Khodabakhshi, and K. E. Willcox. Nonintrusive reduced-order models for parametric partial differential equations via data-driven operator inference. SIAM Journal on Scientific Computing , 45(4):A1917–A1946, July 2023. [50] A. Merola, F. Nesci, D. Dragone, F. Amato, and C. Cosentino. Mixed FTS/ H∞ control for nonlinear quadratic systems subject to norm-bounded disturbances. In 2023 31st Mediterranean Conference on Control and Automation (MED) , pages 630–635. IEEE, June 2023. [51] A. Meurer, C. P. Smith, M. Paprocki, O. Čertík, S. B. Kirpichev, M. Rocklin, A. Kumar, S. Ivanov, J. K. Moore, S. Singh, T. Rathnayake, S. Vig, B. E. Granger, R. P. Muller, F. Bonazzi, H. Gupta, S. Vats, F. Johansson, F. Pedregosa, M. J. Curry, A. R. Terrel, v. Roučka, A. Saboo, I. Fernando, S. Kulal, R. Cimrman, and A. Scopatz. SymPy: symbolic computing in Python. PeerJ Computer Science , 3:e103, Jan. 2017. [52] D. R. Morrison, S. H. Jacobson, J. J. Sauppe, and E. C. Sewell. Branch-and-bound algorithms: A survey of recent advances in searching, branching, and pruning. Discrete Optimization , 19:79–102, Feb. 2016. [53] M. Netto, Y. Susuki, V. Krishnan, and Y. Zhang. On analytical construction of observable functions in extended dynamic mode decomposition for nonlinear estimation and prediction. In 
+
+2021 American Control Conference (ACC) , pages 4190–4195. IEEE, May 2021. [54] E. Nijholt, B. W. Rink, and S. Schwenker. Quiver representations and dimension reduction in dynamical systems. SIAM Journal on Applied Dynamical Systems , 19(4):2428–2468, Jan. 2020. [55] A. Olivieri and G. Pogudin. QuPDE v0.1.0, Feb. 2026. https://doi.org/10.5281/zenodo. 18750665 . https://github.com/albaniolivieri/QuPDE .[56] A. Papachristodoulou and S. Prajna. Analysis of Non-polynomial Systems Using the Sum of Squares Decomposition , pages 23–43. Springer Berlin Heidelberg, Aug. 2005. [57] E. Qian, B. Kramer, A. N. Marques, and K. E. Willcox. Transform & learn: A data-driven approach to nonlinear model reduction. In AIAA Aviation 2019 Forum . American Institute of Aeronautics and Astronautics, June 2019. [58] E. Qian, B. Kramer, B. Peherstorfer, and K. Willcox. Lift & learn: Physics-informed ma-chine learning for large-scale nonlinear dynamical systems. Physica D: Nonlinear Phenomena ,406:132401, May 2020. [59] P. Riley and R. Lionello. Mapping solar wind streams from the sun to 1 AU: A comparison of techniques. Solar Physics , 270(2):575–592, May 2011. 27 [60] T. K. Ritschel, F. Weiß, M. Baumann, and S. Grundel. Nonlinear model reduction of dynamical power grid models using quadratization and balanced truncation. at - Automatisierungstechnik ,68(12):1022–1034, Nov. 2020. [61] M. A. Savageau and E. O. Voit. Recasting nonlinear differential equations as s-systems: acanonical nonlinear form. Mathematical Biosciences , 87(1):83–115, Nov. 1987. [62] N. Sawant, B. Kramer, and B. Peherstorfer. Physics-informed regularization and structure preser-vation for learning stable reduced models from data with operator inference. Computer Methods in Applied Mechanics and Engineering , 404:115836, 2023. [63] H. Sharma, J. D. Draxl Giannoni, and B. Kramer. Nonlinear energy-preserving model reduc-tion with lifting transformations that quadratize the energy. Physica D: Nonlinear Phenomena ,483:134954, Dec. 2025. [64] H. Sharma, J. D. Draxl Giannoni, and B. Kramer. Structure-preserving lift & learn: Scien-tific machine learning for nonlinear conservative partial differential equations. arXiv preprint arxiv:2507.00301 , 2025. [65] I. Stewart. Networking opportunity. Nature , 427(6975):601–604, Feb. 2004. [66] R. Swischuk, B. Kramer, C. Huang, and K. Willcox. Learning physics-based reduced-order models for a single-injector combustion process. AIAA Journal , 58(6):2658–2672, June 2020. [67] R. Tarjan. Depth-first search and linear graph algorithms. SIAM Journal on Computing ,1(2):146–160, June 1972. [68] A. Tesi, F. Villoresi, and R. Genesio. On stability domain estimation via a quadratic Lyapunov function: convexity and optimality properties for polynomial systems. In Proceedings of 1994 33rd IEEE Conference on Decision and Control , volume 2 of CDC-94 , pages 1907–1912. IEEE, 1994. [69] A.-M. Wazwaz. Chapter 9 the KdV equation. In Handbook of Differential Equations: Evolutionary Equations , pages 485–568. Elsevier, 2008. [70] J. Yang, Q. Du, and W. Zhang. Uniform Lp-bound of the Allen-Cahn equation and its numerical discretization. International Journal of Numerical Analysis and Modeling , 15:213–227, Jan. 2018. [71] D. V. Zakharov. Isoperiodic deformations of the acoustic operator and periodic solutions of the Harry Dym equation. Theoretical and Mathematical Physics , 153(1):1388–1397, Oct. 2007. [72] M. Zarei, A. Kalhor, and D. Brake. Arc length based maximal Lyapunov functions and domains of attraction estimation for polynomial nonlinear systems. Automatica , 90:164–171, Apr. 2018. [73] Y. B. Zhou. Model Reduction for Nonlinear Dynamical Systems with Parametric Uncertainties .MS thesis, Massachusetts Institute of Technology, 2012. 28

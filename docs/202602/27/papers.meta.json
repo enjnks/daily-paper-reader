@@ -1,0 +1,35 @@
+{
+  "label": "2026-02-27",
+  "date": "2026-02-27",
+  "generated_at": "2026-02-27T04:34:15",
+  "count": 2,
+  "papers": [
+    {
+      "paper_id": "202602/27/2602.22967v1-discovery-of-interpretable-physical-laws-in-materials-via-language-model-guided-symbolic-regression",
+      "section": "deep",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Discovering interpretable physical laws from high-dimensional data is a fundamental challenge in scientific research. Traditional methods, such as symbolic regression, often produce complex, unphysical formulas when searching a vast space of possible forms. We introduce a framework that guides the search process by leveraging the embedded scientific knowledge of large language models, enabling efficient identification of physical laws in the data. We validate our approach by modeling key properties of perovskite materials. Our method mitigates the combinatorial explosion commonly encountered in traditional symbolic regression, reducing the effective search space by a factor of approximately $10^5$. A set of novel formulas for bulk modulus, band gap, and oxygen evolution reaction activity are identified, which not only provide meaningful physical insights but also outperform previous formulas in accuracy and simplicity.\n\n---"
+    },
+    {
+      "paper_id": "202602/27/2602.22371v1-quadratization-of-autonomous-partial-differential-equations-theory-and-algorithms",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Quadratization for partial differential equations (PDEs) is a process that transforms a nonquadratic PDE into a quadratic form by introducing auxiliary variables. This symbolic transformation has been used in diverse fields to simplify the analysis, simulation, and control of nonlinear and nonquadratic PDE models. This paper presents a rigorous definition of PDE quadratization, theoretical results for the PDE quadratization problem of spatially one-dimensional PDEs-including results on existence and complexity-and introduces QuPDE, an algorithm based on symbolic computation and discrete optimization that outputs a quadratization for any spatially one-dimensional polynomial or rational PDE. This algorithm is the first computational tool to find quadratizations for PDEs to date. We demonstrate QuPDE's performance by applying it to fourteen nonquadratic PDEs in diverse areas such as fluid mechanics, space physics, chemical engineering, and biological processes. QuPDE delivers a low-order quadratization in each case, uncovering quadratic transformations with fewer auxiliary variables than those previously discovered in the literature for some examples, and finding quadratizations for systems that had not been transformed to quadratic form before."
+    }
+  ],
+  "errors": []
+}
