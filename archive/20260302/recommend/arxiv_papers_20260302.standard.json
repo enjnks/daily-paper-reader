@@ -1,0 +1,48 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-03-02T04:32:13.395987+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 1,
+    "deep_cap": 6,
+    "deep_selected": 1,
+    "quick_candidates": 0,
+    "quick_skim_target": 11,
+    "quick_selected": 0
+  },
+  "deep_dive": [
+    {
+      "id": "2602.24022v1",
+      "title": "Comparison of symbolic regression algorithms in Star/galaxy/quasar separation",
+      "abstract": "This work investigates symbolic regression (SR) as an interpretable alternative to black-box machine learning for the classification of stars, galaxies, and quasars in the Sloan Digital Sky Survey Data Release 17 (SDSS DR17). We conduct a systematic comparative study of four state-of-the-art SR frameworks: {\\tt PySR}, Exhaustive Symbolic Regression ({\\tt ESR}) with MDL-based selection, Physical Symbolic Optimization ({\\tt PhySO}) using deep reinforcement learning, and Multi-View Symbolic Regression ({\\tt MvSR}). By deriving compact analytic functions (complexity $\\leq 10$) on a representative training subset and subsequently evaluating them via a 5-fold stratified cross-validation protocol on 100,000 spectroscopically confirmed objects, we map spectroscopic redshift ($z$) to continuous classification scores. Our results demonstrate that these low-complexity expressions achieve high predictive reliability, with {\\tt MvSR} reaching a Cohen's Kappa of 0.8948 and {\\tt PhySO} achieving exceptional parametric stability ($σ< 0.002$). We show that these models not only match the performance of traditional baselines but also provide a transparent, mathematically concise characterization of the astrophysical boundaries separating galactic and extragalactic populations.",
+      "authors": [
+        "Rachit Deshpande",
+        "Shantanu Desai"
+      ],
+      "primary_category": "astro-ph.IM",
+      "categories": [
+        "astro-ph.IM",
+        "astro-ph.GA"
+      ],
+      "published": "2026-02-27 13:49:10+00:00",
+      "link": "https://arxiv.org/pdf/2602.24022v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "Directly compares multiple SR algorithms (PySR, ESR, PhySO, MvSR) on astronomical datasets.",
+      "llm_evidence_cn": "直接比较了多种符号回归算法（PySR、ESR、PhySO、MvSR）在天文数据集上的表现。",
+      "llm_evidence": "直接比较了多种符号回归算法（PySR、ESR、PhySO、MvSR）在天文数据集上的表现。",
+      "llm_tldr_en": "A systematic comparison of four state-of-the-art symbolic regression frameworks for celestial object classification.",
+      "llm_tldr_cn": "对四种最先进的符号回归框架在天体分类任务中进行了系统的比较研究。",
+      "llm_tldr": "对四种最先进的符号回归框架在天体分类任务中进行了系统的比较研究。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    }
+  ],
+  "quick_skim": []
+}
