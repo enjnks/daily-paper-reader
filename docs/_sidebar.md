@@ -1,5 +1,9 @@
 * [首页](/)
 * Daily Papers
+  * 2026-03-03 <!--dpr-date:20260303-->
+    * 精读区
+    * 速读区
+      * <a class="dpr-sidebar-item-link" href="#/202603/03/2603.02208v1-reasoning-core-a-scalable-procedural-data-generation-suite-for-symbolic-pre-training-and-post-training"><div class="dpr-sidebar-title">Reasoning Core: A Scalable Procedural Data Generation Suite for Symbolic Pre-training and Post-Training</div><div class="dpr-sidebar-tags"><span class="dpr-sidebar-tag dpr-sidebar-tag-score"><span class="dpr-stars" title="评分：6.0/10（3.0/5）" aria-label="3.0 out of 5"><span class="dpr-stars-bg">☆☆☆☆☆</span><span class="dpr-stars-fill" style="width:60%">★★★★★</span></span></span> <span class="dpr-sidebar-tag dpr-sidebar-tag-keyword">SR</span> <span class="dpr-sidebar-tag dpr-sidebar-tag-query">SR</span></div></a>
   * 2026-03-02 <!--dpr-date:20260302-->
     * 精读区
       * <a class="dpr-sidebar-item-link" href="#/202603/02/2602.24022v1-comparison-of-symbolic-regression-algorithms-in-stargalaxyquasar-separation"><div class="dpr-sidebar-title">Comparison of symbolic regression algorithms in Star/galaxy/quasar separation</div><div class="dpr-sidebar-tags"><span class="dpr-sidebar-tag dpr-sidebar-tag-score"><span class="dpr-stars" title="评分：10.0/10（5.0/5）" aria-label="5.0 out of 5"><span class="dpr-stars-bg">☆☆☆☆☆</span><span class="dpr-stars-fill" style="width:100%">★★★★★</span></span></span> <span class="dpr-sidebar-tag dpr-sidebar-tag-keyword">SR</span> <span class="dpr-sidebar-tag dpr-sidebar-tag-query">SR</span></div></a>

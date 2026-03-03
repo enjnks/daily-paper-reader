@@ -1,0 +1,49 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-03-03T04:31:46.695698+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 0,
+    "deep_cap": 6,
+    "deep_selected": 0,
+    "quick_candidates": 1,
+    "quick_skim_target": 11,
+    "quick_selected": 1
+  },
+  "deep_dive": [],
+  "quick_skim": [
+    {
+      "id": "2603.02208v1",
+      "title": "Reasoning Core: A Scalable Procedural Data Generation Suite for Symbolic Pre-training and Post-Training",
+      "abstract": "Training on verifiable symbolic data is a promising way to expand the reasoning frontier of language models beyond what standard pre-training corpora provide. Yet existing procedural generators often rely on fixed puzzles or templates and do not deliver the distributional breadth needed at scale. We introduce Reasoning Core, a scalable suite that procedurally generates verifiable symbolic reasoning data across core formal domains: PDDL planning over randomized domains, first-order logic with equality, context-free grammar parsing and generation, causal reasoning over random Bayesian networks, and systems of equations. Each task is paired with an external solver for rigorous verification and admits continuous difficulty control for curriculum design. Examples can optionally include solver-derived reasoning traces, enabling supervised training from the earliest pre-training stages, and the same interface provides verifiable reward functions for reinforcement learning. Our experiments show that mixing Reasoning Core data into pre-training improves downstream reasoning while preserving, or slightly improving, language modeling quality. Zero-shot evaluations confirm these tasks challenge frontier models such as GPT-5. The code and data are publicly available under the MIT license.",
+      "authors": [
+        "Valentin Lacombe",
+        "Valentin Quesnel",
+        "Damien Sileo"
+      ],
+      "primary_category": "cs.CL",
+      "categories": [
+        "cs.CL"
+      ],
+      "published": "2026-03-02 18:59:29+00:00",
+      "link": "https://arxiv.org/pdf/2603.02208v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "symbolic pre-training and verifiable symbolic data",
+      "llm_evidence_cn": "符号预训练与可验证符号数据",
+      "llm_evidence": "符号预训练与可验证符号数据",
+      "llm_tldr_en": "A suite for generating verifiable symbolic reasoning data across formal domains like systems of equations.",
+      "llm_tldr_cn": "一个用于在方程组等形式领域生成可验证符号推理数据的套件。",
+      "llm_tldr": "一个用于在方程组等形式领域生成可验证符号推理数据的套件。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    }
+  ]
+}
