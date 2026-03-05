@@ -1,0 +1,151 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-03-05T04:30:04.385752+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 0,
+    "deep_cap": 6,
+    "deep_selected": 0,
+    "quick_candidates": 4,
+    "quick_skim_target": 11,
+    "quick_selected": 4
+  },
+  "deep_dive": [],
+  "quick_skim": [
+    {
+      "id": "2603.02792v1",
+      "title": "From Heuristic Selection to Automated Algorithm Design: LLMs Benefit from Strong Priors",
+      "abstract": "Large Language Models (LLMs) have already been widely adopted for automated algorithm design, demonstrating strong abilities in generating and evolving algorithms across various fields. Existing work has largely focused on examining their effectiveness in solving specific problems, with search strategies primarily guided by adaptive prompt designs. In this paper, through investigating the token-wise attribution of the prompts to LLM-generated algorithmic codes, we show that providing high-quality algorithmic code examples can substantially improve the performance of the LLM-driven optimization. Building upon this insight, we propose leveraging prior benchmark algorithms to guide LLM-driven optimization and demonstrate superior performance on two black-box optimization benchmarks: the pseudo-Boolean optimization suite (pbo) and the black-box optimization suite (bbob). Our findings highlight the value of integrating benchmarking studies to enhance both efficiency and robustness of the LLM-driven black-box optimization methods.",
+      "authors": [
+        "Qi Huang",
+        "Furong Ye",
+        "Ananta Shahane",
+        "Thomas Bäck",
+        "Niki van Stein"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "cs.NE"
+      ],
+      "published": "2026-03-03 09:27:52+00:00",
+      "link": "https://arxiv.org/pdf/2603.02792v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Automated algorithm design and optimization",
+      "llm_evidence_cn": "自动算法设计与优化",
+      "llm_evidence": "自动算法设计与优化",
+      "llm_tldr_en": "Leverages LLMs and prior algorithmic code to automate and improve algorithm design.",
+      "llm_tldr_cn": "利用大语言模型和先验算法代码来自动化并改进算法设计。",
+      "llm_tldr": "利用大语言模型和先验算法代码来自动化并改进算法设计。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    },
+    {
+      "id": "2603.02906v1",
+      "title": "Towards Accurate and Interpretable Time-series Forecasting: A Polynomial Learning Approach",
+      "abstract": "Time series forecasting enables early warning and has driven asset performance management from traditional planned maintenance to predictive maintenance. However, the lack of interpretability in forecasting methods undermines users' trust and complicates debugging for developers. Consequently, interpretable time-series forecasting has attracted increasing research attention. Nevertheless, existing methods suffer from several limitations, including insufficient modeling of temporal dependencies, lack of feature-level interpretability to support early warning, and difficulty in simultaneously achieving the accuracy and interpretability. This paper proposes the interpretable polynomial learning (IPL) method, which integrates interpretability into the model structure by explicitly modeling original features and their interactions of arbitrary order through polynomial representations. This design preserves temporal dependencies, provides feature-level interpretability, and offers a flexible trade-off between prediction accuracy and interpretability by adjusting the polynomial degree. We evaluate IPL on simulated and Bitcoin price data, showing that it achieves high prediction accuracy with superior interpretability compared with widely used explainability methods. Experiments on field-collected antenna data further demonstrate that IPL yields simpler and more efficient early warning mechanisms.",
+      "authors": [
+        "Bo Liu",
+        "Shao-Bo Lin",
+        "Changmiao Wang",
+        "Xiaotong Liu"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "stat.ME"
+      ],
+      "published": "2026-03-03 11:59:46+00:00",
+      "link": "https://arxiv.org/pdf/2603.02906v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "interpretable polynomial learning for time-series",
+      "llm_evidence_cn": "时间序列的可解释多项式学习",
+      "llm_evidence": "时间序列的可解释多项式学习",
+      "llm_tldr_en": "Introduces Interpretable Polynomial Learning (IPL) for accurate and transparent time-series forecasting.",
+      "llm_tldr_cn": "引入可解释多项式学习（IPL），用于准确且透明的时间序列预测。",
+      "llm_tldr": "引入可解释多项式学习（IPL），用于准确且透明的时间序列预测。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    },
+    {
+      "id": "2603.03177v1",
+      "title": "Neuro-Symbolic Artificial Intelligence: A Task-Directed Survey in the Black-Box Models Era",
+      "abstract": "The integration of symbolic computing with neural networks has intrigued researchers since the first theorizations of Artificial intelligence (AI). The ability of Neuro-Symbolic (NeSy) methods to infer or exploit behavioral schema has been widely considered as one of the possible proxies for human-level intelligence. However, the limited semantic generalizability and the challenges in declining complex domains with pre-defined patterns and rules hinder their practical implementation in real-world scenarios. The unprecedented results achieved by connectionist systems since the last AI breakthrough in 2017 have raised questions about the competitiveness of NeSy solutions, with particular emphasis on the Natural Language Processing and Computer Vision fields. This survey examines task-specific advancements in the NeSy domain to explore how incorporating symbolic systems can enhance explainability and reasoning capabilities. Our findings are meant to serve as a resource for researchers exploring explainable NeSy methodologies for real-life tasks and applications. Reproducibility details and in-depth comments on each surveyed research work are made available at https://github.com/disi-unibo-nlp/task-oriented-neuro-symbolic.git.",
+      "authors": [
+        "Giovanni Pio Delvecchio",
+        "Lorenzo Molfetta",
+        "Gianluca Moro"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI"
+      ],
+      "published": "2026-03-03 17:34:45+00:00",
+      "link": "https://arxiv.org/pdf/2603.03177v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Survey on neuro-symbolic AI and its practical implementation challenges",
+      "llm_evidence_cn": "神经符号人工智能及其在实际应用中挑战的综述",
+      "llm_evidence": "神经符号人工智能及其在实际应用中挑战的综述",
+      "llm_tldr_en": "A task-directed survey exploring the integration of symbolic computing with neural networks in the black-box era.",
+      "llm_tldr_cn": "一项针对任务的综述，探讨了黑盒模型时代符号计算与神经网络的集成。",
+      "llm_tldr": "一项针对任务的综述，探讨了黑盒模型时代符号计算与神经网络的集成。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    },
+    {
+      "id": "2603.03922v1",
+      "title": "Hierarchical Inference and Closure Learning via Adaptive Surrogates for ODEs and PDEs",
+      "abstract": "Inverse problems are the task of calibrating models to match data. They play a pivotal role in diverse engineering applications by allowing practitioners to align models with reality. In many applications, engineers and scientists do not have a complete picture of i) the detailed properties of a system (such as material properties, geometry, initial conditions, etc.); ii) the complete laws describing all dynamics at play (such as friction laws, complicated damping phenomena, and general nonlinear interactions). In this paper, we develop a principled methodology for leveraging data from collections of distinct yet related physical systems to jointly estimate the individual model parameters of each system, and learn the shared unknown dynamics in the form of an ML-based closure model. To robustly infer the unknown parameters for each system, we employ a hierarchical Bayesian framework, which allows for the joint inference of multiple systems and their population-level statistics. To learn the closures, we use a maximum marginal likelihood estimate of a neural network embeded within the ODE/PDE formulation of the problem. To realize this framework we utilize the ensemble Metropolis-Adjusted Langevin Algorithm (MALA) for stable and efficient sampling. To mitigate the computational bottleneck of repetitive forward evaluations in solving inverse problems, we introduce a bilevel optimization strategy to simultaneously train a surrogate forward model alongside the inference. Within this framework, we evaluate and compare distinct surrogate architectures, specifically Fourier Neural Operators (FNO) and parametric Physics-Informed Neural Network (PINNs).",
+      "authors": [
+        "Pengyu Zhang",
+        "Arnaud Vadeboncoeur",
+        "Alex Glyn-Davies",
+        "Mark Girolami"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "stat.ML"
+      ],
+      "published": "2026-03-04 10:30:08+00:00",
+      "link": "https://arxiv.org/pdf/2603.03922v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Learning unknown dynamics and closure laws from physical data",
+      "llm_evidence_cn": "从物理数据中学习未知的动力学和闭合律",
+      "llm_evidence": "从物理数据中学习未知的动力学和闭合律",
+      "llm_tldr_en": "Develops a methodology to estimate parameters and learn shared unknown dynamics in ODE/PDE systems from data.",
+      "llm_tldr_cn": "开发了一种从数据中估计参数并学习ODE/PDE系统中共享未知动力学的方法。",
+      "llm_tldr": "开发了一种从数据中估计参数并学习ODE/PDE系统中共享未知动力学的方法。",
+      "llm_tags": [
+        "query:SR",
+        "keyword:SR"
+      ],
+      "quick_tier": "6"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "label": "2026-03-05",
+  "date": "2026-03-05",
+  "generated_at": "2026-03-05T04:32:34",
+  "count": 4,
+  "papers": [
+    {
+      "paper_id": "202603/05/2603.02792v1-from-heuristic-selection-to-automated-algorithm-design-llms-benefit-from-strong-priors",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Large Language Models (LLMs) have already been widely adopted for automated algorithm design, demonstrating strong abilities in generating and evolving algorithms across various fields. Existing work has largely focused on examining their effectiveness in solving specific problems, with search strategies primarily guided by adaptive prompt designs. In this paper, through investigating the token-wise attribution of the prompts to LLM-generated algorithmic codes, we show that providing high-quality algorithmic code examples can substantially improve the performance of the LLM-driven optimization. Building upon this insight, we propose leveraging prior benchmark algorithms to guide LLM-driven optimization and demonstrate superior performance on two black-box optimization benchmarks: the pseudo-Boolean optimization suite (pbo) and the black-box optimization suite (bbob). Our findings highlight the value of integrating benchmarking studies to enhance both efficiency and robustness of the LLM-driven black-box optimization methods."
+    },
+    {
+      "paper_id": "202603/05/2603.02906v1-towards-accurate-and-interpretable-time-series-forecasting-a-polynomial-learning-approach",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Time series forecasting enables early warning and has driven asset performance management from traditional planned maintenance to predictive maintenance. However, the lack of interpretability in forecasting methods undermines users' trust and complicates debugging for developers. Consequently, interpretable time-series forecasting has attracted increasing research attention. Nevertheless, existing methods suffer from several limitations, including insufficient modeling of temporal dependencies, lack of feature-level interpretability to support early warning, and difficulty in simultaneously achieving the accuracy and interpretability. This paper proposes the interpretable polynomial learning (IPL) method, which integrates interpretability into the model structure by explicitly modeling original features and their interactions of arbitrary order through polynomial representations. This design preserves temporal dependencies, provides feature-level interpretability, and offers a flexible trade-off between prediction accuracy and interpretability by adjusting the polynomial degree. We evaluate IPL on simulated and Bitcoin price data, showing that it achieves high prediction accuracy with superior interpretability compared with widely used explainability methods. Experiments on field-collected antenna data further demonstrate that IPL yields simpler and more efficient early warning mechanisms."
+    },
+    {
+      "paper_id": "202603/05/2603.03177v1-neuro-symbolic-artificial-intelligence-a-task-directed-survey-in-the-black-box-models-era",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "The integration of symbolic computing with neural networks has intrigued researchers since the first theorizations of Artificial intelligence (AI). The ability of Neuro-Symbolic (NeSy) methods to infer or exploit behavioral schema has been widely considered as one of the possible proxies for human-level intelligence. However, the limited semantic generalizability and the challenges in declining complex domains with pre-defined patterns and rules hinder their practical implementation in real-world scenarios. The unprecedented results achieved by connectionist systems since the last AI breakthrough in 2017 have raised questions about the competitiveness of NeSy solutions, with particular emphasis on the Natural Language Processing and Computer Vision fields. This survey examines task-specific advancements in the NeSy domain to explore how incorporating symbolic systems can enhance explainability and reasoning capabilities. Our findings are meant to serve as a resource for researchers exploring explainable NeSy methodologies for real-life tasks and applications. Reproducibility details and in-depth comments on each surveyed research work are made available at https://github.com/disi-unibo-nlp/task-oriented-neuro-symbolic.git."
+    },
+    {
+      "paper_id": "202603/05/2603.03922v1-hierarchical-inference-and-closure-learning-via-adaptive-surrogates-for-odes-and-pdes",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Inverse problems are the task of calibrating models to match data. They play a pivotal role in diverse engineering applications by allowing practitioners to align models with reality. In many applications, engineers and scientists do not have a complete picture of i) the detailed properties of a system (such as material properties, geometry, initial conditions, etc.); ii) the complete laws describing all dynamics at play (such as friction laws, complicated damping phenomena, and general nonlinear interactions). In this paper, we develop a principled methodology for leveraging data from collections of distinct yet related physical systems to jointly estimate the individual model parameters of each system, and learn the shared unknown dynamics in the form of an ML-based closure model. To robustly infer the unknown parameters for each system, we employ a hierarchical Bayesian framework, which allows for the joint inference of multiple systems and their population-level statistics. To learn the closures, we use a maximum marginal likelihood estimate of a neural network embeded within the ODE/PDE formulation of the problem. To realize this framework we utilize the ensemble Metropolis-Adjusted Langevin Algorithm (MALA) for stable and efficient sampling. To mitigate the computational bottleneck of repetitive forward evaluations in solving inverse problems, we introduce a bilevel optimization strategy to simultaneously train a surrogate forward model alongside the inference. Within this framework, we evaluate and compare distinct surrogate architectures, specifically Fourier Neural Operators (FNO) and parametric Physics-Informed Neural Network (PINNs)."
+    }
+  ],
+  "errors": []
+}

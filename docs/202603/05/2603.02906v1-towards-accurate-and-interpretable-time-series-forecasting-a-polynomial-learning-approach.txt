@@ -1,0 +1,1421 @@
+Title: Towards Accurate and Interpretable Time-series Forecasting: A Polynomial Learning Approach
+
+URL Source: https://arxiv.org/pdf/2603.02906v1
+
+Published Time: Wed, 04 Mar 2026 02:30:17 GMT
+
+Number of Pages: 34
+
+Markdown Content:
+# Towards Accurate and Interpretable Time-series Forecasting: A Polynomial Learning Approach 
+
+Bo Liu a,b , Shao-Bo Lin a, Changmiao Wang c, Xiaotong Liu a, ∗
+
+> aCenter for Intelligent Decision-Making and Machine Learning, School of Management, Xi’an Jiaotong University, Xi’an, China
+> bThe 39th Research Institute of China Electronics Technology Group Corporation, Xi’an, China
+> cShenzhen Research Institute of Big Data, ShenZhen, China
+
+Abstract 
+
+Time series forecasting enables early warning and has driven asset performance manage-ment from traditional planned maintenance to predictive maintenance. However, the lack of interpretability in forecasting methods undermines users’ trust and complicates debug-ging for developers. Consequently, interpretable time-series forecasting has attracted in-creasing research attention. Nevertheless, existing methods suffer from several limitations, including insufficient modeling of temporal dependencies, lack of feature-level interpretabil-ity to support early warning, and difficulty in simultaneously achieving the accuracy and interpretability. This paper proposes the interpretable polynomial learning (IPL) method, which integrates interpretability into the model structure by explicitly modeling origi-nal features and their interactions of arbitrary order through polynomial representations. This design preserves temporal dependencies, provides feature-level interpretability, and offers a flexible trade-off between prediction accuracy and interpretability by adjusting the polynomial degree. We evaluate IPL on simulated and Bitcoin price data, showing that it achieves high prediction accuracy with superior interpretability compared with widely used explainability methods. Experiments on field-collected antenna data further demonstrate that IPL yields simpler and more efficient early warning mechanisms. 
+
+Keywords: time-series forecasting; interpretability; early warning; polynomial learning  
+
+> ∗Corresponding author: ariesoomoon@gmail.com
+> Preprint submitted to Elsevier March 4, 2026
+> arXiv:2603.02906v1 [cs.LG] 3 Mar 2026
+
+1. Introduction 
+
+Time-series data sequentially record the evolution of system states, encompassing stock price fluctuations in financial markets, sensor readings from industrial equipment, and ECG monitoring in healthcare [1, 2, 3]. Leveraging the inherent temporal dependencies in time-series data, future states can be inferred through the identification of recurrent historical patterns; consequently, time-series forecasting is widely applied across critical domains such as healthcare early warning systems, engineering predictive maintenance, and financial market monitoring [4, 5]. Indeed, in asset performance management (APM), the focus has shifted from traditional planned maintenance to time-series-forecasting-driven predictive maintenance 1, with the value of an accurate early warning of a major equipment failure exceeding $100 , 000 in many industries 2. In 2024, the global predictive maintenance market was valued at $10.93 billion and is projected to grow to $70.73 billion by 2032, with a compound annual growth rate of 26.5% during the forecast period 3.Existing time-series–based early warning systems (e.g., OpenText, Falkonry, DolphinDB, and Artesis) predominantly rely on two paradigms: (1) rule-based alerting driven by hu-man experience, and (2) anomaly scoring that triggers alarms based on the deviation of key indicators from their normal states. Neither paradigm is truly based on data-driven pre-dictive models, and both struggle to ensure that early warnings actually correspond to true anomalies. Consequently, according to IoT Analytics, the accuracy of current early warning systems largely remains below 50%, which further leads to alarm fatigue and undermines operators’ trust. Meanwhile, existing time-series forecasting methods—particularly deep learning–based approaches such as RNNs, CNNs, and Transformers [6, 7, 8, 9, 10]—have achieved state-of-the-art prediction performance; however, their black-box nature makes it difficult to interpret how predictions are generated. Beyond compelling prediction 
+
+> 1https://www.gelonghui.com/p/916603
+> 2https://iot-analytics.com/product/predictive-maintenance-asset-performance-market-report-2023-2028/
+> 3https://www.fortunebusinessinsights.com/press-release/predictive-maintenance-market-9602
+
+2performance, it is ultimately interpretability—particularly feature-level interpretability, which clarifies the contribution of individual features to predictions—that enables these models to support trustworthy, actionable, and targeted interventions following warnings [11, 12, 13, 5]. For instance, in industrial settings, effective early warning requires not only anomaly alerts but also precise identification of the sensor readings indicating potential faults, enabling targeted repairs instead of extensive disassembly. Lacking such feature-level interpretability undermines user trust in time-series model outputs and complicates debugging for developers, thereby significantly hindering their real-world deployment in early-warning applications and raising critical legal, ethical, and equity concerns [14, 11, 15, 16, 17, 18]. A striking example of poor interpretability in the financial sector is the 2010 “Flash Crash,” where the U.S. stock market plunged nearly 1,000 points in minutes, triggered by trading systems executing massive sell-offs based on time-series patterns that could not be interpreted in real time. The event erased approximately 1 trillion in market value, ultimately undermining confidence in algorithmic trading systems. Given the importance of interpretability for time-series–based early warning systems, significant efforts have been devoted to developing interpretable time-series forecasting methods. These include approaches integrated with deep learning architectures, such as backpropagation-based methods [19] and perturbation-based methods [20] for convolu-tional neural networks, as well as attention mechanisms for recurrent neural networks [21], and models specifically designed for time-series forecasting, such as the classical ARI-MAX model [22], along with more recent Symbolic Aggregate approXimation (SAX)–based methods [23], fuzzy logic approaches [24], and shapelet-based models [25]. Further model-agnostic interpretability techniques, including extensions of LIME and SHAP for time-series data, also contribute to this growing field [26]. Comprehensive surveys of inter-pretable time-series forecasting methods are available for further reference [10, 26]. Despite these advances, a notable gap remains between existing time-series interpretabil-ity methods and the practical demands of time-series–based early-warning applications. 3This gap manifests in three key aspects: (1) Neglect of temporal dependencies in post-hoc ex-planations : Time-series data exhibit strong temporal dependencies [27], and early-warning applications require explanations that clarify how specific temporal features influence fi-nal predictions. However, existing post-hoc methods often fail to meet this requirement, yielding unreliable explanations: LIME-based methods independently construct surrogate models for each data point [28], and SHAP-based methods evaluate features independently across neighboring time steps [29]. (2) Limited feature-level interpretability in deep learning methods : Interpretability approaches for deep learning models—such as those highlighting influential sub-sequences, attention weights, or salient temporal regions—primarily explain when critical information occurs in the input sequence, but provide limited insight into which features drive the prediction and thus lack the feature-level interpretability required for early-warning applications [19, 20, 21]. Moreover, these methods typically ignore the impact of feature interactions on the prediction outcomes [5]. (3) Accuracy–interpretability trade-off in inherently interpretable methods : Inherently interpretable models such as ARI-MAX provide feature-level interpretability but generally underperform deep learning–based approaches in prediction accuracy [10, 7], making it difficult to meet the dual requirements of accuracy and interpretability in early-warning applications. To bridge this gap, we propose an interpretable polynomial learning (IPL) method for time-series forecasting. This method incorporates explicit polynomial structures, en-abling direct interpretation of both individual features and their interaction effects on predictions. We compare IPL with widely used interpretability methods, including ARI-MAX, LIME, and SHAP, and demonstrate that IPL outperforms these baselines not only in identifying feature contributions, but also in prediction accuracy and computational efficiency—attributes that are critical for real-time early-warning applications. Through perturbation analysis, we show that controlled modifications to input features lead to corresponding changes in prediction outcomes, thereby reflecting the importance of the perturbed features and validating IPL’s ability to quantify feature contributions to predic-4tions. Furthermore, we evaluate IPL on two real-world datasets: Bitcoin market data and field-collected antenna data. For the latter, we construct an interpretability-driven early-warning mechanism, and experimental results demonstrate that the IPL-based warning mechanism achieves superior efficiency and prediction accuracy. l Flexible accuracy -interpretability trade -off     
+
+> lHigh prediction accuracy
+> lFeature -level interpretability
+> Individual features & Feature interactions
+> Our method:
+> IPL
+> lPreservation of temporal dependencies
+> Anomaly detection
+
+✘
+
+> ARIMA/ARIMAX
+> Classical intrinsically
+> models:
+
+✘
+
+✘ 
+
+> Deep learning -based
+> methods:
+> Transformer, Shapelets LIME/SHAP
+> Model -agnostic
+> interpretation methods:
+> Model -agnostic
+
+✘
+
+✘    
+
+> Interpretable time series forecasting
+> Only individual
+> features
+> Indirect failure prediction
+> Remaining useful life
+> Applications enabled
+> Early warning for
+> predictive maintenance
+
+Figure 1: A comparison of different interpretable time-series forecasting methods 
+
+This paper makes two main contributions. First, we contribute to the literature on interpretable time-series forecasting by proposing the IPL approach. By modeling input features through polynomial structures, IPL preserves temporal dependencies and provides feature-level interpretability. Through a tunable polynomial order, IPL enables flexible ad-justment of the accuracy–interpretability trade-off, allowing the selection of an order that simultaneously achieves high accuracy and feature-level interpretability, concretely imple-menting the flexible explainability policy suggested by [30]. As illustrated in Figure 1, IPL uniquely integrates high accuracy, interpretability suitable for early warning, and a tunable accuracy–interpretability trade-off. Second, we contribute to the field of early warning in time-series analysis [4] by demonstrating that, beyond individual features, fea-ture interactions are also critical for prediction outcomes. Numerical results confirm that IPL effectively identifies the contributions of features—both individual and interactive—to predictions, outperforming inherently interpretable methods such as ARIMAX, which focus solely on individual features. The remainder of this paper is organized as follows. Section 2 reviews related work on interpretable time-series forecasting. Section 3 introduces the proposed interpretable poly-nomial learning method. Sections 4, 5, and 6 present numerical experiments conducted on 5simulated data, real-world Bitcoin price data, and field-collected antenna data to validate the proposed method. Section 7 concludes the paper. 
+
+2. Related work 
+
+The growing importance of interpretable time-series forecasting is driven by the need to build trust, ensure accountability, and facilitate model debugging in high-stakes appli-cations [31, 14, 11, 3, 32]. Rather than adhering to the conventional dichotomy of post-hoc versus ante-hoc interpretability, this review follows the developmental trajectory of time-series interpretability methods, aiming to clarify the gap between existing approaches and the practical requirements of early-warning applications. The first category comprises classical intrinsically interpretable methods specifically designed for time series [33, 34, 22]. A representative example is ARIMAX, which achieves feature-level interpretability by directly incorporating original input features into the fore-casting model. However, these approaches focus solely on individual input features and typically ignore interactions among them. Moreover, being predominantly linear or only mildly nonlinear, they often struggle to capture the complex patterns that modern deep learning architectures can learn [10, 7], leading to a trade-off where interpretability comes at the cost of prediction accuracy. The second category includes model-agnostic post-hoc interpretability techniques, such as LIME-based [28, 35] and SHAP-based [29, 36] methods. These techniques are typically applied to pre-trained black-box models and rely on either approximating the model be-havior with a surrogate interpretable model (e.g., LIME) or decomposing predictions into feature-level attributions (e.g., SHAP). While effective in tabular data settings [12] and capable of leveraging the high accuracy of complex pre-trained models, their application to time series faces significant limitations. Specifically, LIME-based perturbations may disrupt the intrinsic dynamical structure of time series, potentially generating unrealistic synthetic samples and leading to unreliable explanations [37]. Similarly, SHAP treats fea-6tures at neighboring time steps as independent, which contradicts the inherent temporal autocorrelation of time series and undermines explanation fidelity. In addition, the compu-tational cost of Shapley value estimation grows exponentially with the number of features, rendering SHAP impractical for long time series [29]. The third category encompasses deep learning-based interpretability methods. These methods typically obtain explanations derived from sub-sequences, attention weights, or salient temporal regions [19, 20, 21], emphasizing temporal importance—when certain in-formation is important or where the model focuses within the input sequence—rather than providing feature-level interpretability of the original input features or explaining how their interactions drive the prediction. In practical early-warning applications, only explanations grounded in observable and controllable input features can offer decision-makers intuitive and actionable insights. In summary, existing approaches to interpretable time-series forecasting suffer from three major limitations: (1) classical linear models are constrained in prediction accuracy; (2) model-agnostic methods disrupt temporal structures and yield explanations with lim-ited reliability; and (3) deep learning-based interpretability methods primarily focus on derived temporal representations rather than the original input features. Furthermore, these approaches generally overlook feature interactions and lack the flexibility to balance prediction accuracy and interpretability. To address these challenges, we propose the interpretable polynomial learning (IPL) method. IPL tightly couples interpretability with model structure by explicitly modeling the original input features and their interactions of arbitrary order through polynomial representations, thereby preserving temporal dependencies while providing feature-level interpretability for both individual features and their interactions. By adjusting the poly-nomial degree, IPL offers a flexible trade-off between prediction accuracy and interpretabil-ity. Experimental results demonstrate that IPL achieves high accuracy while maintaining low computational cost, making it well suited for real-time early-warning applications. 73. Interpretable polynomial learning for time series 
+
+In this section, we first introduce feature-level interpretability, which serves as the motivation for our proposed method. We then present the interpretability imperatives in time-series forecasting, followed by a detailed description of the interpretable polynomial learning method and its specific algorithmic implementation for time series. 
+
+3.1. Feature interpretability: dual focus on individual features and feature interactions 
+
+Existing research on time-series interpretability has primarily focused on individual feature-based explanations while largely overlooking feature interactions [5]. However, recent studies suggest that such explanations often fail to capture the intricate relationships that AI models exploit to generate accurate predictions. In healthcare, for instance, drug interactions can lead to unexpected synergistic or antagonistic effects that are closely tied to a patient’s condition [38], and diseases typically result from complex interactions among clinical factors rather than from isolated individual factors [5]. Methods that provide interpretability for feature interactions therefore not only better represent the prediction process but also align with domain knowledge. In response, a growing body of research aims to develop techniques that explicitly ac-count for feature interactions. One notable line of work extends SHAP to incorporate interaction effects by evaluating subsets of features, thereby quantifying the importance of feature combinations [39, 40]. Some studies aim to develop intrinsic, interaction-based interpretability methods by extending generalized additive models (GAMs) to incorpo-rate pairwise interaction terms [41], though these approaches are limited by the inherently additive nature of the GAM framework. Beyond these, [42] introduced Integrated Hes-sians to assess the importance of feature interactions, while [5] developed a novel graph learning-based model to inherently identify complex interactions between patient attributes and their impact on length of stay prediction. Furthermore, [5] provides a comparative overview of individual-feature and feature-interaction-based interpretability methods, of-fering valuable insights for interested readers. 83.2. Interpretability imperatives in time-series forecasting 
+
+The interpretability of time-series data cannot be effectively addressed using post-hoc methods such as SHAP and related approaches, as these methods independently perturb individual time points, thereby disrupting the inherent sequential structure and leading to uninformative or even misleading explanations. Instead, we require a model intrinsically aligned with the sequential nature of the data—one that preserves temporal dependencies and explicitly characterizes cross-temporal feature interactions (i.e., interactions between different features across different time steps). Accordingly, we adopt a linear polynomial model for time-series forecasting: 
+
+f (x) = 
+
+> s
+
+X
+
+> m=0
+
+X
+
+> 1≤t1≤···≤ tm≤T
+
+X
+
+> 1≤i1≤···≤ im≤d
+
+w(i1,...,i m) 
+
+> t1,...,t m
+
+·
+
+> m
+
+Y
+
+> k=1
+
+x(ik ) 
+
+> tk
+
+.
+
+Table 1 provides a detailed explanation of the components in this formula. 
+
+Table 1: Explanation of the polynomial formula components 
+
+Component Meaning 
+
+s Total degree of the polynomial. 
+
+m Degree of the current monomial (0 ≤ m ≤ s). 
+
+T Total length of the time series. 
+
+d Feature dimension at each time point. 
+
+tk Time index of the k-th variable (1 ≤ tk ≤ T ). 
+
+ik Feature index of the k-th variable (1 ≤ ik ≤ d). 1 ≤ t1 ≤ · · · ≤ tm ≤ T Non-decreasing ordering of time indices. 1 ≤ i1 ≤ · · · ≤ im ≤ d Non-decreasing ordering of feature indices at same time. 
+
+w(i1,...,i m) 
+
+> t1,...,t m
+
+Quantifies the importance of that spatio-temporal interaction pattern. 
+
+Qmk=1 x(ik ) 
+
+> tk
+
+Monomial formed by multiplying m variables; x(ik ) 
+
+> tk
+
+is the value of feature ik at time tk.
+
+We consider a special case when s = 2: 
+
+f (x) = w0 +
+
+> T
+
+X
+
+> t=1
+> d
+
+X
+
+> i=1
+
+w(i) 
+
+> t
+
+x(i) 
+
+> t
+
++ X
+
+> 1≤t1≤t2≤T
+
+X
+
+> 1≤i1≤i2≤d
+
+w(i1,i 2) 
+
+> t1,t 2
+
+x(i1) 
+
+> t1
+
+x(i2) 
+
+> t2
+
+,
+
+where w0 is a constant bias term, w(i) 
+
+> t
+
+captures the importance of feature i at time t, and 
+
+w(i1,i 2) 
+
+> t1,t 2
+
+quantifies the importance of feature interaction between feature i1 at time t1 and feature i2 at time t2.9The design of this polynomial model embodies a deep coupling between the model structure and its interpretability. The weight w(i) 
+
+> t
+
+represents a “time–feature” effect, while 
+
+w(i1,i 2) 
+
+> t1,t 2
+
+quantifies a “time–feature interaction” effect, which is fundamentally different from post-hoc interpretability methods. 
+
+3.3. Interpretable polynomial learning model 
+
+Let D = {(xi, y i)}mi=1 be the set of samples with xi ∈ X ⊆ Rd, and yi ∈ [−M, M ] for some positive number M . Our purpose is arg min  
+
+> f∈P ds
+
+(
+
+1
+
+m
+
+> m
+
+X
+
+> i=1
+
+ϕ(f (xi), y i)
+
+)
+
+(1) for arbitrary s. Since the dimension of Pds is n =  s+ds
+
+, if we can select {ηi}ni=1 ⊂ Rd such that {(1 + ηi · x)s}ni=1 is a linear independent system, then 
+
+Pds =
+
+( nX
+
+> i=1
+
+ci(1 + ηi · x)s : ci ∈ R
+
+)
+
+=: Hη,n , (2) where Hη,n is the finite-basis linear space constructed for solving (1). In this way, (1) can be converted to arg min  
+
+> f∈H η,n
+
+(
+
+1
+
+m
+
+> m
+
+X
+
+> i=1
+
+ϕ(f (xi), y i)
+
+)
+
+. (3) To verify the feasibility of (3), there are two things we should do. The one is to give a selection strategy of {ηi}ni=1 such that (2) holds and the other is to guarantee the non-singularity of the matrix Am,n := ((1 + xi · ηj )s)m,n i,j =1 .We first present the selection strategy for {ηi}ni=1 based on the conceptions of Haar space and fundamental system [43]. Following [43], if a set of points {ηi}ni=1 in Rd can be chosen such that Hη,n forms an ( n+1)-dimensional Haar space, then all the aforementioned issues can be resolved. However, for d ≥ 2, there does not exist a Haar space on Bd with dimension N ≥ 2 [44]. In this context, we employ the fundamental system associated with the polynomial kernel Ks, as introduced in [44]. 10 Definition 1. Let ζ := {ζi}ni=1 ⊂ Rd. ζ is called a Ks-fundamental system if dim Hζ,n =
+
+ s+ds
+
+ .
+
+From the above definition, it is easy to see that arbitrary Ks-fundamental system implies (2). Moreover, [44, Prop.1] demonstrates that almost all n =  d+ss
+
+ points constitutes a 
+
+Ks-fundamental system. Based on [45, Prop.1], we can design simple strategies to choose the centers {ηj }nj=1 .In particular, {ηj }nj=1 can be selected randomly independently and identically according to the uniform distribution, since the uniform distribution is continuous with respect to Lebesgue measure [46]. Then there almost surely holds 
+
+Pds =
+
+( nX
+
+> i=1
+
+ci(1 + ηi · x)s : ci ∈ R
+
+)
+
+.
+
+According to [44], since n is typically much smaller than m, the matrix Am,n is almost surely nonsingular with probability close to one, which establishes the feasibility of the model in (3). 
+
+3.4. Interpretable polynomial learning algorithm for time series 
+
+Building on the IPL model introduced in the previous section, we now present its adap-tation for time-series forecasting. Before doing so, we first describe the setting of time-series data. Unlike independent and identically distributed (i.i.d.) samples, observations in time series are inherently temporally dependent. Specifically, temporal dependence exists not only between inputs and outputs, but also among inputs at different time steps and among outputs across time. Therefore, in addition to incorporating individual input features and their interactions—as formulated in (2)—the time-series IPL algorithm must flexibly embed temporal information into the model. In particular, the model input is extended to include lagged variables, namely past observations of both the input features and the target labels. To align with the requirements of early-warning applications, where users 11 typically focus on the most influential features, we introduce an interpretability threshold that selects only the most relevant terms, thereby yielding a sparse yet interpretable model. According to Algorithm 1, given a dataset, IPL requires only the specification of the polynomial degree s, the numbers of lagged input variables ( Lx) and target labels ( Ly), and an interpretability threshold I. Based on these settings, the algorithm produces an interpretable estimator that simultaneously quantifies the contributions of individual fea-tures and their interactions to each prediction. The proposed algorithm offers the following advantages: 
+
+• Native support for time-series forecasting: The feature-level interpretability of IPL is intrinsically coupled with its model architecture. It not only accommodates the temporal dependencies inherent in time-series data, but also allows for the flexible incorporation of lagged variables as inputs. This design is consistent with widely adopted practices in time-series forecasting [3, 16]. 
+
+• Flexible accuracy–interpretability trade-off: IPL achieves a balance between accuracy and interpretability simply by adjusting the polynomial degree. Unlike deep learning models that require extensive hyperparameter tuning and domain expertise, IPL’s simplicity makes it accessible to non-specialists and thereby facilitates practical use in early warning. 
+
+• Low computational overhead for early-warning applications: IPL employs ADMM for optimization. For a wide range of loss functions, efficient ADMM-based solution strategies are already available, ensuring the model’s scalability and facilitating its implementation in real-time early-warning applications. 
+
+Remark 1. For Step 4 of the IPL algorithm, the update of uk+1 can be expressed analyti-cally as 
+
+uk+1 =  βA ⊤A + αI n
+
+−1 αu k + βA ⊤vk − A⊤wk ,
+
+12 Algorithm 1 Interpretable Polynomial Learning for Time Series 
+
+1. Input : A sample set D = {(xi, y i)}Ti=1 , where T denotes the final data collection timestamp, 
+
+xi ∈ Rd, the polynomial kernel Ks(x, x ′) = (1 + x · x′)s, the polynomial degree s ∈ N, time lag parameters Lx, L y, and an interpretability threshold I.
+
+2. Determine kernel centers: Set n =  s+ds
+
+ (the dimension of polynomial space of degree s
+
+in d variables) and take {nj }nj=1 with nj = xj as the Ks fundamental system. 
+
+3. Construct new time series : Define ˜ xi = ( xi, x i−1, . . . , x i−Lx , y i−1, . . . , y i−Ly ) ∈ Rd+Lx+Ly ,0 ≤ Lx < i, 0 ≤ Ly < i , which yields the expanded sample set ˜D = {(˜ xi, y i)}Ti=1 . Form the kernel matrix A :=  Ks(˜ xi, n j )T,n i=1 ,j =1 .
+
+4. Solve objective function (3) by ADMM : Reformulate (3) as the following optimization problem via introducing another variable v,min  
+
+> u∈Rn,v ∈RT
+
+f (v) s.t. Au − v = 0 , (4) where f (v) := 1
+
+> T
+
+PTi=1 ϕ(vi, y i). The augmented Lagrangian function of (4) is defined by 
+
+Lβ (u, v, w ) = f (v) + ⟨w, Au − v⟩ + β
+
+2 ∥Au − v∥22,
+
+where w ∈ RT is a multiplier variable, β > 0 is the augmented Lagrangian parameter. Based on Lβ , the ADMM algorithm for (3) is as follows: given an initialization u0, v 0, w 0, parameters 
+
+α > 0, β > 0, for k = 0 , 1, . . . ,
+
+uk+1 = arg min 
+
+> u∈Rn
+
+n
+
+Lβ (u, v k, w k) + α
+
+2 ∥u − uk∥22
+
+o
+
+, (5) 
+
+vk+1 = arg min  
+
+> v∈RT
+
+Lβ (uk+1 , v, w k), (6) 
+
+wk+1 = wk + β(Au k+1 − vk+1 ). (7) Apply the proximal update strategy to compute uk+1 in (5), update vk+1 according to the specific loss function ϕ, and finally obtain the global minimizer of (3): f ˜D,s (˜ x) = Pnj=1 u∗ 
+
+> j
+
+Ks(nj , ·). 
+
+5. Extract feature importance : Express the predictor f ˜D,s (·) as an explicit polynomial expansion over the ( d + Lx + Ly)-dimensional input ˜ x:
+
+f ˜D,s (˜ x) = X
+
+> |α|≤ s
+
+ωα ˜xα1 
+
+> 1
+
+· · · ˜xαd+Lx +Ly  
+
+> d+Lx+Ly
+
+,
+
+where α = ( α1, . . . , α d+Lx+Ly ) is a multi-index with αj ∈ N0 denoting the exponent of the j-th variable, and |α| := Pd+Lx+Ly 
+
+> j=1
+
+αj denotes the order of the multi-index (while | · | applied to a scalar represents the absolute value). The coefficient ωα quantifies the contribution of the corresponding monomial term to the prediction. 
+
+6. Select features and coefficients : Collect the surviving multi-indices α and their corre-sponding coefficients ωα into a sparse set Ω I := (α, ω α) | | α| ≤ s, |ωα| ≥ I .
+
+7. Output : The interpretable predictor f I
+
+> ˜D,s
+
+(˜ x) = P 
+
+> (α,ω α)∈ΩI
+
+ωα ˜xα1 
+
+> 1
+
+· · · ˜xαd+dLx +Ly  
+
+> d+dL x+Ly
+
+, and its sparse coefficient set Ω I .
+
+13 where In is the identity matrix of size n. For the squared loss, an analytical solution to (3) 
+
+is given by [44]: f ˜D,s (·) = Pnj=1 cj Ks(nj , ·), with c = ( c1, . . . , c n)⊤ given by c = pinv( A)y.Here, pinv( ·) denotes the pseudo-inverse operator; while for the hinge loss, a fast iterative solver is available in [45]. If ϕ is differentiable, the v-update decomposes into T independent scalar equations: 
+
+1
+
+T ϕ′(vi, y i) + β(vi − bi) = 0 ,
+
+where bi = ( Au k+1 )i + wki /β . For convex loss functions (such as squared, logistic, or hinge loss), each equation corresponds to minimizing a one-dimensional convex function. It can therefore be solved efficiently by Newton’s method: for each i,
+
+v(t+1)  
+
+> i
+
+= v(t) 
+
+> i
+
+− 
+
+> 1
+> T
+
+ϕ′(v(t) 
+
+> i
+
+, y i) + β(v(t) 
+
+> i
+
+− bi) 
+
+> 1
+> T
+
+ϕ′′ (v(t) 
+
+> i
+
+, y i) + β ,
+
+which typically converges in a few iterations. Specifically, for the logistic loss ϕ(v, y ) = log(1 + e−yv ) with y ∈ {− 1, 1}, the Newton iteration becomes 
+
+v(t+1)  
+
+> i
+
+= v(t) 
+
+> i
+
+−
+
+> yi
+> T
+
+σ(yiv(t) 
+
+> i
+
+) − 1 + β(v(t) 
+
+> i
+
+− bi) 
+
+> 1
+> T
+
+σ(yiv(t) 
+
+> i
+
+)1 − σ(yiv(t) 
+
+> i
+
+) + β ,
+
+where σ(z) = 1 /(1 + e−z ).
+
+4. Simulated data analysis under the squared loss 
+
+In this section, we conduct three sets of experiments to evaluate the effectiveness of the proposed IPL under the squared loss function. First, we investigate the importance of time-dependent target variables in time-series analysis. Second, we demonstrate the ad-vantages of IPL in terms of feature interpretability, prediction accuracy, and computational efficiency. Finally, we perform a perturbation analysis by disturbing the most important features identified by each interpretability method, in order to evaluate which method most accurately identifies the features critical for accurate predictions. The interpretability methods used in this study are divided into two categories: (1) 14 Post-hoc interpretability methods: SHAP and LIME. For SHAP, feature contributions are computed using a deep neural network (DNN), whereas in LIME, kernel ridge regression (KRR) serves as the local surrogate model. (2) Ante interpretability method: ARIMAX. Detailed experimental configurations for SHAP, LIME, and ARIMAX are provided in the Appendix. Unless otherwise stated, the same settings for these four methods are applied in all subsequent experiments. In particular, the polynomial degree s for IPL is set to 2 based on its optimal performance in our numerical validation. We generate time-series data comprising training samples {(xt, y t)}Tt=1 and testing sam-ples {(x∗ 
+
+> t′
+
+, y ∗ 
+
+> t′
+
+)}T ′
+
+> t′=1
+
+. The covariates xt and x∗ 
+
+> t′
+
+are independently and identically drawn from the 5-dimensional hypercube [0 , 1] 5 following a uniform distribution. The temporal evolu-tion of the series is described by objective function yt+1 = cos( yt) sin( yt−1) + f (xt) + ϵt,y∗ 
+
+> t′+1
+
+= cos( y∗ 
+
+> t′
+
+) sin( y∗
+
+> t′−1
+
+)+ f (x∗ 
+
+> t′
+
+), the function f (·) is defined as follows with ϵt ∼ N (0 , 0.12)
+
+f (·) = (1 + xt 
+
+> 1
+
++ 2 xt 
+
+> 2
+
++ 3 xt 
+
+> 3
+
++ 4 xt 
+
+> 4
+
++ 5 xt 
+
+> 5
+
++ 6 xt
+
+> 1
+
+xt 
+
+> 2
+
+− 7xt
+
+> 3
+
+xt
+
+> 4
+
+)/15 .
+
+The sample sizes are set to T = 4 , 000 for training and T ′ = 1 , 000 for testing. All experimental results are averaged over 10 independent trials. Except for the LIME-related experiments, which were performed on a GPU, all other experiments were conducted using Python 3.7 on a PC with an Intel Core i5 2GHz processor. The scripts for reproducing these experiments are available at https://github.com/Ariesoomoon/IPL_TS_experiments .
+
+4.1. Importance of temporal dependencies in time series 
+
+Figure 2 illustrates how integrating lagged target variables affects regression perfor-mance. Here, “-x6” denotes a 6-dimensional input formed by combining the original fea-tures with the target variable from the previous time lag, “-x7” represents the original input combined with the target variable from the two preceding lags, and so forth. The results demonstrate a consistent improvement in prediction accuracy as more lagged variables are included, highlighting the value of incorporating historical target information in time-series 15 forecasting. However, starting from x13 , we observe that the prediction accuracy stabilizes. This may be attributed to the fact that the negative impact of introducing redundant fea-tures begins to neutralize the prediction value gained from incorporating additional lagged target variables. -x6  
+
+> -x7
+> -x8
+> -x9
+> -x10
+> -x11
+> -x12
+> -x13
+> -x14
+> -x15
+> -x16
+> -x17
+> -x18
+> -x19
+> -x20
+> 0.005
+> 0.010
+> 0.015
+> 0.020
+> MSE
+> Prediction performance
+> Figure 2: Importance of time-related target variables (“-x6” denotes a 6-dimensional input formed by combining the original features with one lagged target variable, “-x7” with two lagged target variables, and so on).
+
+4.2. Advantages of IPL in providing feature interpretability 
+
+This experiment compares IPL with SHAP, LIME, and ARIMAX to demonstrate the advantages of IPL. We introduce two lagged target variables x7, x 8, and an irrelevant input variable x6 to enhance credibility in examining each method’s ability to exclude it from consideration. Figure 3 presents the top 20 important features identified by different interpretability methods, with IPL’s prediction accuracy intentionally maintained at the lowest level to ensure a robust comparison of their feature interpretability capabilities. Three key obser-vations can be drawn: (1) Only IPL achieves feature importance rankings and magnitudes that are fully consistent with the objective function. While ARIMAX also performs well in this regard, its training process is slower in practice, as it requires identifying the optimal (p, d, q ) orders through grid search. (2) IPL effectively deprioritizes the irrelevant feature 
+
+x6 (ranking it 17 th ). Although LIME demonstrates a similar ability to identify irrelevant variables, it demands significantly more computational time and memory. In fact, the 16 LIME results in this experiment were obtained using GPU acceleration, with its runtime being approximately 1000 times longer than that of IPL executed on a CPU. (3) All meth-ods, particularly intrinsically interpretable ones such as IPL and ARIMAX, successfully identify the importance of the incorporated lagged target variable. x7 
+
+> 1
+> x7·x8
+> x3·x4
+> x8
+> x1·x2
+> x8^2
+> x7^2
+> x5
+> x4
+> x3
+> x2
+> x1
+> x2·x8
+> x4·x8
+> x1·x7
+> x6
+> x5·x7
+> x6·x7
+> x1·x8
+
+0.00 
+
+0.25 
+
+0.50 
+
+0.75 
+
+1.00 
+
+1.25 
+
+1.50 
+
+1.75  
+
+> Absolute Coefficient Value
+> 1.6999
+> -1.2945
+> -1.1004
+> -0.5743
+> 0.5678
+> 0.4983
+> -0.4443
+> -0.4230
+> 0.4046
+> 0.3727
+> 0.2501
+> 0.1527
+> 0.1290
+> 0.0533
+> -0.0492
+> -0.0451
+> 0.0412
+> 0.0409
+> -0.0244
+> -0.0207
+> IPL Test Error: 0.009627
+> Best Polynomial Degree s: 2.00
+> Num. of centers: 45.00
+
+Top 20 Feature Importance (by IPL) 
+
+(a) IPL (Ante-hoc) x7 
+
+> x8
+> x3·x4
+> x5
+> x4
+> x1·x2
+> x7·x8
+> x8^2
+> x3
+> x7^2
+> x2
+> x1
+> x6
+> x5·x7
+> x1·x7
+> x1^2
+> x5^2
+> x1·x8
+> x2^2
+> x2·x7
+
+0.00 
+
+0.05 
+
+0.10 
+
+0.15 
+
+0.20 
+
+0.25 
+
+> Absolute Coefficient Value
+> 0.2331
+> 0.1138
+> -0.1020
+> 0.0961
+> 0.0906
+> 0.0876
+> -0.0873
+> -0.0704
+> 0.0568
+> -0.0566
+> 0.0350
+> 0.0304
+> 0.0095
+> 0.0064
+> -0.0056
+> -0.0034
+> -0.0031
+> -0.0026
+> 0.0010
+> -0.0004
+> ARIMAX Test Error: 0.018339
+
+Top 20 Feature Importance (by ARIMAX) (b) ARIMAX (Ante-hoc) x1·x2 
+
+> x3·x4
+> x5·x7
+> x2^2
+> x5^2
+> x3
+> x8
+> x6
+> x4·x7
+> x2·x5
+> x7^2
+> x1^2
+> x2·x7
+> x4·x5
+> x8^2
+> x1·x4
+> x1·x3
+> x4^2
+> x2·x3
+> x1·x7
+
+0.00 
+
+0.01 
+
+0.02 
+
+0.03 
+
+0.04 
+
+0.05 
+
+> SHAP Value Importance
+> 0.0440
+> 0.0309
+> 0.0304
+> 0.0258
+> 0.0257
+> 0.0245
+> 0.0200
+> 0.0199
+> 0.0194
+> 0.0193
+> 0.0178
+> 0.0156
+> 0.0149
+> 0.0147
+> 0.0146
+> 0.0143
+> 0.0141
+> 0.0140
+> 0.0132
+> 0.0123
+> DNN Test Error: 0.028274
+
+Top 20 Feature Importance (by DNN + Shapley) 
+
+(c) DNN+SHAP (Post-hoc) x5·x7 
+
+> x7
+> x3·x7
+> x4·x7
+> x5
+> x1·x7
+> x5^2
+> x2·x7
+> x3·x8
+> x7·x8
+> x3·x4
+> x1·x5
+> x8^2
+> x3·x5
+> x1·x2
+> x8
+> x6
+> x4·x5
+> x7^2
+> x3
+
+0.0000 
+
+0.0002 
+
+0.0004 
+
+0.0006 
+
+0.0008 
+
+0.0010 
+
+0.0012 
+
+0.0014 
+
+0.0016 
+
+> Absolute LIME Contribution
+> 0.0014
+> 0.0008
+> 0.0007
+> 0.0007
+> 0.0007
+> 0.0006
+> 0.0006
+> 0.0005
+> -0.0004
+> -0.0004
+> -0.0003
+> 0.0003
+> 0.0003
+> 0.0003
+> -0.0002
+> -0.0002
+> 0.0002
+> 0.0002
+> -0.0002
+> -0.0002
+> KRR Test Error: 0.010805
+
+Top 20 Feature Importance (by KRR+LIME) (d) KRR+LIME (Post-hoc) Figure 3: Top important features identified by different interpretability methods (note: features shown on the horizontal axis that are present in the objective function are highlighted in red; red and blue bars in the chart represent negative and positive values, respectively). Table 2: Performance comparison of interpretability methods under different evaluation metrics 
+
+Metrics 
+
+Original input with three added input variables 
+
+x6, x 7, x 8 (Dimension = 8) Original input only (Dimension = 5) IPL SHAP LIME ARIMAX IPL SHAP LIME ARIMAX 
+
+Feature interpretability 
+
+Feature overlap ratio 0.7143 0.4286 0.1429 0.7143 1.0000 0.4286 0.7143 0.8571 
+
+Ranking similarity 1.0000 0.6699 0.7881 0.8929 1.0000 0.8571 0.6847 0.4324 
+
+Value similarity 0.9979 0.1734 0.4723 0.9835 0.9992 0.2759 0.2831 0.8487 
+
+Prediction accuracy (MSE) on top 10 features 
+
+Linear regression (LR) 0.0064 0.0073 0.0096 0.0064 0.0159 0.0168 0.0165 0.0158 
+
+Efficiency (runing time/trial) 1.81 sec 32.45 sec 32.50 min 20.57 sec 1.47 sec 20.55 sec 17.03 min 5.56 sec 
+
+Note : The best results for each metric are highlighted in color. Feature overlap ratio refers to the proportion of features from the target function that are also included in the method’s top-ten feature set. Ranking similarity is defined as ρ = 1 − (6 Pni=1 d2
+
+i )/(n(n2 − 1)) where di = Rmethod (i) − Rtarget (i) denotes the rank difference of the i-th feature between the method’s ranking Rmethod and the ground truth ranking Rtarget . Value similarity is defined as 
+
+a·b
+
+∥a∥∥ b∥ = ( Pni=1 aibi)/(
+
+qPni=1 a2
+
+i
+
+qPni=1 b2
+
+i ), where v = ( v1, . . . , v n) denotes the vector across n target features. “ sec ”denotes seconds and “ min ” denotes minutes. 
+
+We next conduct a comprehensive comparison of the different methods in terms of three key dimensions: feature interpretability, prediction accuracy, and computational efficiency. 17 As shown in Table 2, IPL consistently outperforms both SHAP and LIME in all evaluated aspects. Specifically, it provides more faithful interpretations by identifying features that closely align with the true feature importance defined in the objective function; it deliv-ers the best prediction accuracy when using its identified top-ten important features; and it requires the least running time during the testing phase. To visually summarize the strengths of IPL, we present a radar chart for the results in Table 2. As shown in Figure 4, IPL—represented by the red shaded region—occupies the largest area, clearly demon-strating its overall advantage in simultaneously achieving high interpretability, accuracy, and efficiency. Feature overlap       
+
+> Ranking similarity
+> Value similarity
+> Prediction
+> accuracy (LR)
+> Efficiency (Running time)
+> Original input with three added
+> input variables x6,x7,x8
+> Feature overlap
+> Ranking similarity
+> Value similarity
+> Prediction
+> accuracy (LR)
+> Efficiency (Running time)
+> Original input only
+> IPL SHAP LIME ARIMAX
+
+Figure 4: Radar charts comparing the performance of interpretability methods (closer proximity to the outer boundary indicates stronger capability in that dimension). 
+
+4.3. Perturbation analysis 
+
+We employed a perturbation analysis based on the same principle as the widely used permutation feature importance method [47] to validate the feature importance identified by different interpretability methods. A significant degradation in predictive performance after perturbation indicates that the feature is truly important, thereby validating the effectiveness of the corresponding interpretability method. Specifically, for each method’s most important feature, we add Gaussian noise ϵ ∼ N (0 , σ 2), where σ denotes the standard deviation of that feature, to perturb it while keeping all other features unchanged. We then compare the test MSE before and after perturbation over 10 trials, with linear regression consistently used as the estimator to ensure a fair comparison. 18 Original input variables + irrelevant variable       
+
+> 𝑥 !+ lagged target variables 𝑥 ",𝑥 #
+> Original input variables only ( 𝑥 $to 𝑥 %)
+> Performance degradation trend
+> Performance degradation at selected perturbation levels
+> Performance comparison at σ=0.5
+
+Figure 5: Perturbation analysis (the most important feature selected by each method is indicated in parentheses). 
+
+The results are shown in Figure 5, where the left shows the perturbation analysis on the original data and the right shows the perturbation analysis when one irrelevant input variable ( x6) and two lagged target variables ( x7 and x8) are added as input variables. To visually highlight both the trend and magnitude of performance changes, the results are presented using a combination of curves and a heatmap. We see that perturbing the most 19 important feature identified by IPL leads to the most significant performance degradation across all perturbation levels, demonstrating IPL’s advantage in feature interpretability. This advantage becomes even more pronounced after incorporating lagged target variables. We further compare the three methods using a bar chart at the perturbation level of 
+
+α = 0 .5. The results show that, after adding the lagged target variables, IPL exhibits a maximum performance degradation of 170.8%, significantly higher than the 31.5% observed for SHAP and the 0.6% for LIME. 
+
+5. Bitcoin historical price data analysis under the hinge loss 
+
+In financial time-series analysis, predicting the price movement patterns across different forecasting horizons is important, as it directly impacts trading decisions and profitabil-ity. In this study, we utilized Bitcoin historical price data spanning from January 1, 2024 to present 4. The dataset includes attributes such as opening price, highest price, lowest price, trading volume, and closing price. We used the opening price, highest price, low-est price, and trading volume as inputs, with the closing price as the output. To ensure computational efficiency while maintaining temporal continuity, we systematically sam-pled approximately 5,000 data points at regular intervals from the original high-frequency dataset, preserving the chronological order of observations. 0 200 400 600 800 1000  
+
+> Time Index
+> 10000
+> 11000
+> 12000
+> Price
+> Bitcoin Price Time Series
+> (Random Walk with Short-term Trends)
+> Down  Down
+> Up  Up
+> Down  Up
+> Up  Down
+> Direction Sequence
+> 0.0
+> 0.1
+> 0.2
+> 0.3
+> 0.4
+> Probability  0.312
+> 0.260
+> 0.215 0.214
+> Trend Persistence Analysis
+> (Short-term Momentum Patterns)
+> Random Baseline (0.25)
+
+Figure 6: Analysis of Bitcoin price dynamics 
+
+> 4
+
+https://www.kaggle.com/datasets/mczielinski/bitcoin-historical-data/data 
+
+20 We begin by examining the directional patterns of price changes. As shown in Figure 6, where “Up → Up” describes cases where an upward trend at one time point is followed by another upward trend at the next time point. The analysis shows that both “Up →
+
+Up” and “Down → Down” cases occur with probabilities significantly above the random baseline (0.25), suggesting the presence of short-term momentum—that is, prices tend to continue rising after prior increases and to keep falling after prior declines. Based on this observation, we formulate two binary classification tasks to model price movements over different forecasting horizons and employ the hinge loss function for model training. The target variables, labeled as Target kperiod , are defined for k ∈ { 3, 5}, where k denotes the prediction horizon. Each target encodes the price direction using a binary scheme: 1 indicates a price increase, while −1 denotes a price decrease after k temporal units. The target variables are mathematically defined as: Target kperiod = 
+
+
+
+1 if Pt+k > P t
+
+−1 otherwise (5) where Pt represents the closing price at time t.
+
+5.1. Importance of temporal dependencies in time series 
+
+Figure 7 shows that for both forecasting horizons, the mean AUC exhibits a rapid initial improvement followed by a very slight decline, confirming the value of historical price in-formation in classifying price directions. Notably, this improvement in accuracy is achieved without increasing computational cost, demonstrating the computational efficiency of IPL. 21 -x6 
+
+> -x7
+> -x8
+> -x9
+> -x10
+> -x11
+> -x12
+> -x13
+> -x14
+> -x15
+> -x16
+> -x17
+> -x18
+> -x19
+> -x20
+> 0.005
+> 0.010
+> 0.015
+> 0.020
+> 0.025
+> 0.030
+> Time (s)
+> Mean Training Time
+> -x6
+> -x7
+> -x8
+> -x9
+> -x10
+> -x11
+> -x12
+> -x13
+> -x14
+> -x15
+> -x16
+> -x17
+> -x18
+> -x19
+> -x20
+> 0.55
+> 0.60
+> 0.65
+> 0.70
+> 0.75
+> AUC
+> Mean AUC
+
+(a) Target 3period -x6 
+
+> -x7
+> -x8
+> -x9
+> -x10
+> -x11
+> -x12
+> -x13
+> -x14
+> -x15
+> -x16
+> -x17
+> -x18
+> -x19
+> -x20
+> 0.005
+> 0.010
+> 0.015
+> 0.020
+> 0.025
+> Time (s)
+> Mean Training Time
+> -x6
+> -x7
+> -x8
+> -x9
+> -x10
+> -x11
+> -x12
+> -x13
+> -x14
+> -x15
+> -x16
+> -x17
+> -x18
+> -x19
+> -x20
+> 0.55
+> 0.60
+> 0.65
+> 0.70
+> 0.75
+> 0.80
+> AUC
+> Mean AUC
+
+(b) Target 5period 
+
+Figure 7: Importance of the lagged time-related target variables Table 3: Classification performance comparison for Target 3period 
+
+Features Methods Class 1 Performance Accuracy Precision Recall F1-score 
+
+Top 3 LIME 0.73 0.51 0.60 0.64 SHAP 0.76 0.56 0.65 0.69 ARIMAX (2,0,2) 0.58 0.53 0.55 0.53 
+
+IPL 0.75 0.74 0.74 0.73 Top 1 LIME 0.72 0.71 0.71 0.70 SHAP 0.74 0.55 0.63 0.68 ARIMAX (2,0,2) 0.55 0.51 0.53 0.50 
+
+IPL 0.75 0.74 0.74 0.73 
+
+Note : Precision = T P T P +F P , Recall = T P T P +F N , F1-score = 2×Precision ×Recall Precision +Recall , and Accuracy 
+
+= T P +T N T P +F N +T N +F P , where T P , T N , F P , and F N denote true positive, true negative, false positive, and false negative, respectively. The best results are highlighted in color. 
+
+5.2. Advantages of IPL in identifying important features 
+
+Table 3 compares the performance of widely used interpretable decision tree models built on features identified by different interpretability methods, evaluated under common metrics on cryptocurrency price data [1]. The results show that models using IPL-identified 22 features consistently achieve higher accuracy than those using features identified by LIME, SHAP, or ARIMAX, regardless of whether the top three features or only the single most important feature is considered. These results indicate that IPL provides more reliable feature-level interpretability. 
+
+6. Field experiment: Antenna health management 
+
+Antenna maintenance personnel continuously monitor data from both the antenna sys-tem and environmental sensors to assess operational status and perform anomaly detec-tion for predictive maintenance. Consequently, it is essential to develop a machine learn-ing–based early warning mechanism that achieves high prediction accuracy while maintain-ing feature-level interpretability. The dataset used in this study consists of 5,437 samples collected from physical antenna equipment at the 39th Research Institute of China Elec-tronics Technology Group Corporation. The data are chronologically divided into training (3,437 samples), validation (1,000 samples), and test sets (1,000 samples), with the most recent samples assigned to the test set. A detailed description of the dataset variables is provided in Table 4. 
+
+Table 4: Description of the field-collected antenna data                                 
+
+> Variable Description Range / Note
+> x1Position angle value 0◦∼360 ◦, obtained by combining x4and x5
+> x2Speed 0∼2000 r/min, collected by tachometers
+> x3Current ratio 0∼100%, ratio of collected current to rated current
+> x4Coarse code value 0∼65535, 16-bit binary, resolver feedback
+> x5Fine code value 0∼65535, 16-bit binary, resolver feedback
+> x6Label −1 = normal, 1 = abnormal
+> Note : Given the circular nature of the angular variable x1, it was transformed into trigono-metric representations: x1sin = sin(2 πx 1) and x1cos = cos(2 πx 1).
+
+Figure 8 provides an initial visualization of the dataset, highlighting two key observa-tions. First, the anomaly labels exhibit distinct periodic patterns and tend to occur consec-utively over specific time intervals. Second, only the position angle and coarse code values demonstrate clear separability between normal and abnormal states. However, neither the 23 position angle nor the coarse code alone is sufficient for accurate early warning, and the lack of discriminability in other features highlights the necessity of analyzing higher-order feature interactions for better early warning. 0 1000 2000 3000                     
+
+> Time series index
+> -1
+> 1
+> Target label
+> Target labels over time
+> 01000 2000 3000
+> Time series index
+> 0
+> 100
+> 200
+> 300
+> x1 value
+> x1vs target labels
+> Normal (-1)
+> Anomaly (1)
+> 01000 2000 3000
+> Time series index
+> 8
+> 10
+> 12
+> 14
+> 16
+> x2 value
+> x2vs target labels
+> 01000 2000 3000
+> Time series index
+> 6
+> 8
+> 10
+> x3 value
+> x3vs target labels
+> 01000 2000 3000
+> Time series index
+> 0
+> 25000
+> 50000
+> 75000
+> 100000
+> x4 value
+> x4vs target labels
+> 01000 2000 3000
+> Time series index
+> 0
+> 20000
+> 40000
+> 60000
+> x5 value
+> x5vs target labels
+
+Figure 8: Distribution of target labels across different feature values 
+
+We conducted two sets of experiments under the hinge loss. First, we verify the effec-tiveness of IPL in providing feature interpretability by examining the relationship between feature sparsity and prediction accuracy. Second, we compare different interpretability methods in designing an early warning mechanism to demonstrate the advantages of IPL. For fair comparison, all interpretability methods are first tuned to achieve similarly high accuracy ( > 0.95). Given the similarity in setup and visualization to prior experiments, the corresponding feature importance rankings are included in the Appendix for reference. 
+
+6.1. Feature sparsity-accuracy analysis for evaluating interpretability 
+
+This experiment investigates the relationship between the number of top-ranked fea-tures selected by IPL and the resulting classification accuracy, to evaluate IPL’s effective-ness in providing feature interpretability. To ensure a fair comparison, a logistic regression classifier is used for prediction across all sparsity levels. The results are shown in Figure 9, which includes performance under two input conditions: using only the originally collected features, and adding time-related target variables as part of the input. 24 The light yellow region indicates the range of sparsity within which a reduced feature set maintains relatively high accuracy. Based on this region, we conclude that data collectors can achieve classification accuracy comparable to the full feature set by focusing on only 7 to 10 top-ranked features. Furthermore, the variation in AUC across different sparsity levels is minimal, with a maximum fluctuation of only 13.61%. These results confirm that IPL effectively provides feature interpretability by successfully identifying and ranking the most influential features. 3 4 5 6 7 8 10 12 14 16 18 20 25 27           
+
+> (all)
+> Number of most important features
+> 0.80
+> 0.85
+> 0.90
+> 0.95
+> 1.00
+> AUC score
+> 0.8475
+> 0.8590 0.8598 0.8598
+> 0.9819 0.9820 0.9832 0.9832 0.9835 0.9835 0.9837 0.9837 0.9835 0.9833
+> Performance impact: only 13.61% AUC variation
+> across 14 sparsity levels
+> Performance of logistic regression under different feature sparsity (data1, x1-x5)
+> AUC score (selected features)
+> Logistic regression with all features (AUC: 0.9833)
+> Acceptable sparsity region
+
+(a) Input using only the original variables 3 6 10 15 20 25 30 35 40 45 50 54             
+
+> Number of most important features
+> 0.96
+> 0.97
+> 0.98
+> 0.99
+> 1.00
+> AUC score
+> 0.9614
+> 0.9907
+> 0.9940 0.9954 0.9968 0.9968 0.9970 0.9968 0.9969 0.9970 0.9969 0.9969
+> Performance impact: only 3.56% AUC variation
+> across 12 sparsity levels
+> Performance of logistic regression under different feature sparsity (data1, x1-x8)
+> AUC score (selected features)
+> Logistic regression with all features (AUC: 0.997)
+> Acceptable sparsity region
+
+(b) Input with original variables and three lagged target labels Figure 9: Relationship between IPL based feature sparsity and prediction performance 
+
+6.2. Feature-interpretability-based early warning mechanism design 
+
+In this section, we design early warning mechanisms based on the feature importance derived from different interpretability methods. Given the binary classification nature of our problem, we adopt a binary tree structure to construct each early warning mechanism. Figure 10 ranks the features of each method in descending order of importance and presents the corresponding early warning mechanisms designed to achieve satisfactory per-formance (with each metric exceeding 0.96). In the figure, light-gray rectangles represent features that do not contribute effectively to early warning, meaning they lack a clear discriminant boundary between normal and abnormal states, while dark-gray rectangles denote the decision nodes that constitute the warning rules. Specific warning rules are displayed below each dark-gray node. Two main observations can be drawn. (1) The IPL-25 Metric Value     
+
+> Accuracy 0.9840
+> Precision 0.9804
+> Recall 0.9677
+> F1 score 0.9740
+
+IPL 𝑥 !𝑥 "
+
+𝑥 #      
+
+> or 𝑥 !𝑥 "=105
+> 𝑥 !𝑥 "∈74 ,79 ,
+
+𝑥 #   
+
+> 𝑥 #=−1
+> Y
+> NY
+> N
+> Y
+> N
+
+𝑥 $𝑥 # 𝑥 *
+
+> +
+
+LIME       
+
+> 𝑥 $𝑥 #∈−6000 ,0
+> or 𝑥 $𝑥 #<−36000
+
+𝑥 "𝑥 #
+
+𝑥 "𝑥 #   
+
+> Y
+> N
+> 𝑥 "𝑥 #∈−6.5,6.5
+> Y
+> N
+> Y
+> N
+
+𝑥 #
+
+𝑥 # Y
+
+> N
+> Y
+> N
+
+𝑥 #
+
+𝑥 #  
+
+> Y
+> N
+> Y
+> N
+> 𝑥 #=−1
+
+𝑥 "
+
+𝑥 $
+
+ARIMAX 𝑥 %
+
+𝑥 $          
+
+> 𝑥 "∈0,6.5
+> 𝑥 $∈0,15000
+> or 𝑥 $∈35000 ,120000
+
+𝑥 #
+
+𝑥 # Y
+
+> N
+> Y
+> N
+
+𝑥 #
+
+𝑥 #  
+
+> Y
+> N
+> Y
+> N
+> 𝑥 #=−1
+> Y
+> N
+> Y
+> N
+> Y
+> N
+
+𝑥 &'() 𝑥 &*+' 𝑥 &'() 𝑥 # 𝑥 &*+' 𝑥 # 𝑥 &'() 𝑥 " 𝑥 $𝑥 #SHAP 
+
+𝑥 #
+
+𝑥 # 
+
+> Y
+> NY
+> N
+> Y
+> N
+
+1 2 3 4 5 6  
+
+> 𝑥 #=−1
+> Normal
+> Anomaly
+> Not useful for early warning
+> Useful for early warning
+
+The final, attainable 
+
+early -warning outcome         
+
+> 𝑥 $𝑥 #∈−6000 ,0
+> or 𝑥 $𝑥 #<−36000
+> YMeets the rule
+> Does not meet N
+
+The top six important features identified by different methods 
+
+Warning rule Figure 10: Early-warning mechanisms designed using feature importance rankings derived from different methods 
+
+based warning mechanism is notably simpler and more efficient, requiring only two features, which are precisely the top two ranked in importance. This demonstrates IPL’s advan-tage in feature interpretability: it accurately identifies the features that contribute most to predictions. (2) The most important feature identified by IPL, x2x3, corresponds to the product of antenna rotational speed and current ratio. This interaction term effectively captures abnormal patterns because it approximates mechanical power, and anomalous states often manifest as power anomalies. Additionally, among the important interaction terms identified by LIME and SHAP, x6 is consistently present, reflecting the influence of past states on the current state. In antenna health management, beyond conventional metrics such as accuracy or pre-26 IPL 𝑥 !𝑥 "
+
+𝑥 #     
+
+> or 𝑥 !𝑥 "=105
+> 𝑥 !𝑥 "∈74 ,79 ,
+
+𝑥 #  
+
+> 𝑥 #=−1
+> Y
+> N
+
+𝑥 !
+
+𝑥 !  
+
+> 𝑥 !>14
+> Y
+> N
+> Y
+> N
+
+𝑥 !
+
+𝑥 ! Y               
+
+> N
+> Y
+> N
+> Y
+> N
+> Y
+> N
+> Single -level
+> alerting
+> Two -level
+> alerting
+> Three -level
+> alerting
+> Metric Value Value Value
+> Accuracy 0.3370 0.9840 0.4390
+> Precision 0.3186 0.9804 0.3559
+> Recall 1.0000 0.9677 1.0000
+> F1 score 0.4832 0.9740 0.5250
+
+1 2 3             
+
+> Single -level alerting
+> (tree depth 𝑘 =1)
+> Two -level alerting
+> (tree depth 𝑘 =2)
+> Three -level alerting
+> (tree depth 𝑘 =3)
+> Setting 𝒌 =3 yields higher recall, and 𝒌 =2 yields higher precision
+
+Figure 11: Early-warning results based on IPL with varying tree depths ( k)
+
+cision, greater emphasis is placed on the early detection of abnormal states—particularly the ability to trigger alerts during prolonged normal operation that signal potential future anomalies. Therefore, we provide a detailed illustration of the IPL-based early warning mechanism in Figure 11. Administrators may adopt a mechanism with tree depth k = 2 to achieve higher precision, or choose a deeper tree ( k = 3) to attain perfect recall (1.0). Although the latter slightly reduces overall precision, this trade-off is often acceptable in antenna maintenance, where missed anomalies incur high operational costs. While the k = 2 mechanism achieves a recall of 0.9677, this performance is partly attributable to the temporal continuity inherent in antenna operational states. Upon closer inspection of the test samples, we observe that all instances corresponding to transitions from normal to abnormal states are missed by the k = 2 mechanism but are successfully captured by the k = 3 mechanism. Several representative samples are provided in Table 5, which further demonstrate the mechanism’s ability to issue warnings across consecutive future time steps, highlighting its practical value for long-term state forecasting. 
+
+Table 5: Justification for setting k = 3: triggering alarms for anomalies during sustained normal operation 
+
+Sample index 
+
+Early warning features Labels at the current time t1 Labels at the next time t2
+
+Tn
+
+x2x3 x6 x2
+
+Predicted Predicted Ground Predicted Predicted Ground 
+
+(k = 2) (k = 3) truth (k = 2) (k = 3) truth 5034, 5048 91.0 -1 13.0 -1 1 1 -1 1 1 2
+
+5065, 5082 96.0 -1 12.0 -1 1 1 -1 1 1 10     
+
+> Note :Tnrepresents the number of consecutive future time steps that can be accurately predicted. kdenotes the tree depth of the early-warning mechanism.
+
+27 7. Conclusion 
+
+Time-series data play a critical role in practical applications by enabling the predic-tion of future system states based on historical observations. One of the most important application domains is early warning, such as predictive maintenance in engineering sys-tems and health monitoring in medical settings, where timely warnings can substantially reduce resource consumption and operational costs. Therefore, it is essential to develop high-precision early warning mechanisms that are interpretable by human operators and support direct intervention at the level of original observed variables. This motivates the need for time-series forecasting methods that can simultaneously achieve high prediction accuracy and feature-level interpretability. Existing intrinsically interpretable methods (e.g., ARIMAX) can provide feature-level explanations, but they generally suffer from limited prediction accuracy. Widely used post-hoc explanation techniques, such as LIME and SHAP, are also inadequate for inter-preting time-series data, as they often neglect the inherent temporal dependencies among observations. Although numerous deep learning–based methods have been proposed for interpretable time-series forecasting, they primarily focus on temporal importance rather than providing feature-level interpretability of the original input variables, making it diffi-cult to translate their explanations into actionable guidance for early warning. Moreover, such methods are often computationally intensive and difficult for non-experts to use. In summary, there remains a lack of time-series–specific forecasting methods that can si-multaneously achieve high prediction accuracy and feature-level interpretability to support early-warning applications. To address this gap, we propose the IPL method, which tightly couples features with the model through a polynomial structure, explicitly incorporating features from different time steps as well as their interaction terms into the model. IPL preserves the inherent temporal structure of time-series data and enables a flexible bal-ance between accuracy and interpretability by adjusting the polynomial order, allowing practitioners to select a model that maintains high prediction accuracy while ensuring 28 feature-level interpretability. We validate the advantages of IPL in terms of the accuracy–interpretability trade-off by comparing it with widely used interpretability methods, including LIME, SHAP, and ARI-MAX, on both simulated data and two real-world datasets. On the field-collected antenna dataset, we further compare early warning mechanisms constructed based on the feature importance identified by different methods. The results show that the interpretability provided by IPL enables the construction of a more streamlined early warning mechanism while achieving performance comparable to that of other methods. Moreover, based on the derived feature importance, the depth of the warning mechanism can be flexibly adjusted to meet different precision requirements. Our approach is applicable to a wide range of application domains. In finance, for ex-ample, IPL can help identify the key factors driving commodity price fluctuations, thereby enabling proactive risk management. In healthcare, it can provide medical staff with pre-cise and interpretable health alerts, supporting targeted interventions while mitigating alert fatigue. In engineering equipment management, IPL can assist managers in anticipating maintenance needs and scheduling inspections in advance, thereby addressing the growing demand for predictive maintenance. 
+
+References 
+
+[1] Q. Zhang, C. Xie, Z. Weng, D. Sornette, K. Wu, Generalized visible curvature: An indicator for bubble identification and price trend prediction in cryptocurrencies, Decision Support Systems 185 (2024) 114309. [2] S. B. Taieb, J. W. Taylor, R. J. Hyndman, Hierarchical probabilistic forecasting of electricity demand with smart meter data, Journal of the American Statistical Association 116 (2021) 27–43. [3] N. Bertani, S. T. Jensen, V. A. Satop¨ a¨ a, Joint bottom-up method for probabilistic forecasting of hierarchical time series, Operations Research (2025). 29 [4] U. Mori, A. Mendiburu, I. M. Miranda, J. A. Lozano, Early classification of time series using multi-objective optimization techniques, Information Sciences 492 (2019) 204–218. [5] T. Guo, I. R. Bardhan, Y. Ding, S. Zhang, An explainable artificial intelligence approach using graph learning to predict intensive care unit length of stay, Information Systems Research 36 (2025) 1478–1501. [6] S. Hochreiter, J. Schmidhuber, Long short-term memory, Neural Computation 9 (1997) 1735–1780. [7] A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, L. Kaiser, I. Polosukhin, Attention is all you need, Advances in Neural Information Processing Systems 30 (2017). [8] S. Bai, An empirical evaluation of generic convolutional and recurrent networks for sequence modeling, arXiv preprint arXiv:1803.01271 (2018). [9] D. Salinas, V. Flunkert, J. Gasthaus, T. Januschowski, Deepar: Probabilistic fore-casting with autoregressive recurrent networks, International Journal of Forecasting 36 (2020) 1181–1191. [10] B. Lim, S. Zohren, Time-series forecasting with deep learning: A survey, Philosophical Transactions of the Royal Society A 379 (2021) 20200209. [11] P. Kumar, D. Javeed, A. N. Islam, X. R. Luo, Deepsecure: A computational design science approach for interpretable threat hunting in cybersecurity decision making, Decision Support Systems 188 (2025) 114351. [12] J. Senoner, T. Netland, S. Feuerriegel, Using explainable artificial intelligence to improve process quality: Evidence from semiconductor manufacturing, Management Science 68 (2022) 5704–5723. 30 [13] S. Bouazizi, H. Ltifi, Enhancing accuracy and interpretability in EEG-based medical decision making using an explainable ensemble learning framework application for stroke prediction, Decision Support Systems 178 (2024) 114126. [14] B. Lim, S. ¨O. Arik, N. Loeff, T. Pfister, Temporal fusion transformers for interpretable multi-horizon time series forecasting, International Journal of Forecasting 37 (2021) 1748–1764. [15] S. Wang, J. Cao, S. Y. Philip, Deep learning for spatio-temporal data mining: Asurvey, IEEE Transactions on Knowledge and Data Engineering 34 (2020) 3681–3700. [16] B. Hen, N. Rabin, Spatio-temporal time series forecasting using an iterative kernel-based regression, INFORMS Journal on Data Science 4 (2025) 20–32. [17] K. Bauer, M. von Zahn, O. Hinz, Expl (AI) ned: The impact of explainable artificial intelligence on users’ information processing, Information Systems Research 34 (2023) 1582–1602. [18] K. Bauer, A. Gill, Mirror, mirror on the wall: Algorithmic assessments, transparency, and self-fulfilling prophecies, Information Systems Research 35 (2024) 226–248. [19] F. Oviedo, Z. Ren, S. Sun, C. Settens, Z. Liu, N. T. P. Hartono, S. Ramasamy, B. L. DeCost, S. I. Tian, G. Romano, et al., Fast and interpretable classification of small X-ray diffraction datasets using data augmentation and deep neural networks, npj Computational Materials 5 (2019) 60. [20] K. Kashiparekh, J. Narwariya, P. Malhotra, L. Vig, G. Shroff, Convtimenet: Apre-trained deep convolutional neural network for time series classification, in: 2019 International Joint Conference on Neural Networks (IJCNN), IEEE, 2019, pp. 1–8. [21] E. Choi, M. T. Bahadori, J. Sun, J. Kulas, A. Schuetz, W. Stewart, Retain: An interpretable predictive model for healthcare using reverse time attention mechanism, Advances in neural information processing systems 29 (2016). 31 [22] G. E. Box, G. M. Jenkins, G. C. Reinsel, G. M. Ljung, Time Series Analysis: Fore-casting and Control, John Wiley & Sons, 2015. [23] T. L. Nguyen, S. Gsponer, I. Ilie, G. Ifrim, Interpretable time series classification using all-subsequence learning and symbolic representations in time and frequency domains, arXiv preprint arXiv:1808.04022 (2018). [24] J. Wang, Z. Peng, X. Wang, C. Li, J. Wu, Deep fuzzy cognitive maps for interpretable multivariate time series prediction, IEEE Transactions on Fuzzy Systems 29 (2020) 2647–2660. [25] G. Li, B. Choi, J. Xu, S. S. Bhowmick, K.-P. Chun, G. L.-H. Wong, Shapenet: A shapelet-neural network approach for multivariate time series classification, in: Proceedings of the AAAI Conference on Artificial Intelligence, volume 35, 2021, pp. 8375–8383. [26] Z. Zhao, Y. Shi, S. Wu, F. Yang, W. Song, N. Liu, Interpretation of time-series deep models: A survey, arXiv preprint arXiv:2305.14582 (2023). [27] Z. Sun, S.-B. Lin, Distributed learning with dependent samples, IEEE Transactions on Information Theory 68 (2022) 6003–6020. [28] M. T. Ribeiro, S. Singh, C. Guestrin, “Why should I trust you?” Explaining the predictions of any classifier, in: Proceedings of the 22nd ACM SIGKDD International Conference on Knowledge Discovery and Data Mining, 2016, pp. 1135–1144. [29] S. M. Lundberg, S.-I. Lee, A unified approach to interpreting model predictions, Advances in Neural Information Processing Systems 30 (2017). [30] B. Mohammadi, N. Malik, T. Derdenger, K. Srinivasan, Regulating explainable arti-ficial intelligence (XAI) may harm consumers, Marketing Science 44 (2025) 711–724. 32 [31] M. Mueller-Peltzer, S. Feuerriegel, A. M. Nielsen, A. Kongsted, W. Vach, D. Neumann, Longitudinal healthcare analytics for disease management: Empirical demonstration for low back pain, Decision Support Systems 132 (2020) 113271. [32] Z. Shao, X. Yao, F. Chen, Z. Wang, J. Gao, Revisiting time-varying dynamics in stock market forecasting: A multi-source sentiment analysis approach with large language model, Decision Support Systems 190 (2025) 114362. [33] U. A. Victor-Edema, I. D. Essi, Autoregressive integrated moving average with ex-ogenous variable (ARIMAX) model for nigerian non-oil export, European Journal of Business and Management 8 (2016) 29–34. [34] J. H. Stock, M. W. Watson, Vector autoregressions, Journal of Economic Perspectives 15 (2001) 101–115. [35] T. Sivill, P. Flach, Limesegment: Meaningful, realistic time series explanations, in: International Conference on Artificial Intelligence and Statistics, PMLR, 2022, pp. 3418–3433. [36] J. Eun Choi, J. Won Shin, D. Wan Shin, Vector shap values for machine learning time series forecasting, Journal of Forecasting 44 (2025) 635–645. [37] J. Crabb´ e, M. Van Der Schaar, Explaining time series predictions with dynamic masks, in: International Conference on Machine Learning, PMLR, 2021, pp. 2166–2177. [38] S. M. Jankovi´ c, A. V. Pejˇ ci´ c, M. N. Milosavljevi´ c, V. D. Opanˇ cina, N. V. Peˇ si´ c, T. T. Nedeljkovi´ c, G. M. Babi´ c, Risk factors for potential drug-drug interactions in intensive care unit patients, Journal of Critical Care 43 (2018) 1–6. [39] C.-P. Tsai, C.-K. Yeh, P. Ravikumar, Faith-shap: The faithful shapley interaction index, Journal of Machine Learning Research 24 (2023) 1–42. 33 [40] M. Sundararajan, K. Dhamdhere, A. Agarwal, The shapley taylor interaction index, in: International Conference on Machine Learning, PMLR, 2020, pp. 9259–9268. [41] C.-H. Chang, R. Caruana, A. Goldenberg, NODE-GAM: Neural generalized additive model for interpretable deep learning, arXiv preprint arXiv:2106.01613 (2021). [42] J. D. Janizek, P. Sturmfels, S.-I. Lee, Explaining explanations: Axiomatic feature interactions for deep networks, Journal of Machine Learning Research 22 (2021) 1–54. [43] H. Wendland, Scattered Data Approximation, volume 17, Cambridge university press, 2004. [44] S. Lin, J. Zeng, Fast learning with polynomial kernels, IEEE Transactions on Cyber-netics 49 (2018) 3780–3792. [45] J. Zeng, M. Wu, S.-B. Lin, D.-X. Zhou, Fast polynomial kernel classification for massive data, arXiv preprint arXiv:1911.10558 (2019). [46] R. F. Bass, K. Gr¨ ochenig, Random sampling of multivariate trigonometric polynomi-als, SIAM Journal on Mathematical Analysis 36 (2005) 773–795. [47] Y. Guo, Y. Li, D. Liu, S. X. Xu, Measuring service quality based on customer emotion: An explainable ai approach, Decision Support Systems 176 (2024) 114051. 34
