@@ -1,5 +1,11 @@
 * [首页](/)
 * Daily Papers
+  * 2026-03-06 <!--dpr-date:20260306-->
+    * 精读区
+      * <a class="dpr-sidebar-item-link" href="#/202603/06/2603.05201v1-towards-a-data-scale-independent-regulariser-for-robust-sparse-identification-of-non-linear-dynamics"><div class="dpr-sidebar-title">Towards a data-scale independent regulariser for robust sparse identification of non-linear dynamics</div><div class="dpr-sidebar-tags"><span class="dpr-sidebar-tag dpr-sidebar-tag-score"><span class="dpr-stars" title="评分：9.0/10（4.5/5）" aria-label="4.5 out of 5"><span class="dpr-stars-bg">☆☆☆☆☆</span><span class="dpr-stars-fill" style="width:90%">★★★★★</span></span></span> <span class="dpr-sidebar-tag dpr-sidebar-tag-keyword">SR</span> <span class="dpr-sidebar-tag dpr-sidebar-tag-query">SR</span></div></a>
+    * 速读区
+      * <a class="dpr-sidebar-item-link" href="#/202603/06/2603.04528v1-discovering-mathematical-concepts-through-a-multi-agent-system"><div class="dpr-sidebar-title">Discovering mathematical concepts through a multi-agent system</div><div class="dpr-sidebar-tags"><span class="dpr-sidebar-tag dpr-sidebar-tag-score"><span class="dpr-stars" title="评分：6.0/10（3.0/5）" aria-label="3.0 out of 5"><span class="dpr-stars-bg">☆☆☆☆☆</span><span class="dpr-stars-fill" style="width:60%">★★★★★</span></span></span> <span class="dpr-sidebar-tag dpr-sidebar-tag-keyword">SR</span> <span class="dpr-sidebar-tag dpr-sidebar-tag-query">SR</span></div></a>
+      * <a class="dpr-sidebar-item-link" href="#/202603/06/2603.04735v1-solving-an-open-problem-in-theoretical-physics-using-ai-assisted-discovery"><div class="dpr-sidebar-title">Solving an Open Problem in Theoretical Physics using AI-Assisted Discovery</div><div class="dpr-sidebar-tags"><span class="dpr-sidebar-tag dpr-sidebar-tag-score"><span class="dpr-stars" title="评分：6.0/10（3.0/5）" aria-label="3.0 out of 5"><span class="dpr-stars-bg">☆☆☆☆☆</span><span class="dpr-stars-fill" style="width:60%">★★★★★</span></span></span> <span class="dpr-sidebar-tag dpr-sidebar-tag-keyword">SR</span> <span class="dpr-sidebar-tag dpr-sidebar-tag-query">SR</span></div></a>
   * 2026-03-05 <!--dpr-date:20260305-->
     * 精读区
     * 速读区

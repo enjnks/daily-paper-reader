@@ -1,0 +1,117 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-03-06T04:23:17.162371+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 1,
+    "deep_cap": 6,
+    "deep_selected": 1,
+    "quick_candidates": 2,
+    "quick_skim_target": 11,
+    "quick_selected": 2
+  },
+  "deep_dive": [
+    {
+      "id": "2603.05201v1",
+      "title": "Towards a data-scale independent regulariser for robust sparse identification of non-linear dynamics",
+      "abstract": "Data normalisation, a common and often necessary preprocessing step in engineering and scientific applications, can severely distort the discovery of governing equations by magnitudebased sparse regression methods. This issue is particularly acute for the Sparse Identification of Nonlinear Dynamics (SINDy) framework, where the core assumption of sparsity is undermined by the interaction between data scaling and measurement noise. The resulting discovered models can be dense, uninterpretable, and physically incorrect. To address this critical vulnerability, we introduce the Sequential Thresholding of Coefficient of Variation (STCV), a novel, computationally efficient sparse regression algorithm that is inherently robust to data scaling. STCV replaces conventional magnitude-based thresholding with a dimensionless statistical metric, the Coefficient Presence (CP), which assesses the statistical validity and consistency of candidate terms in the model library. This shift from magnitude to statistical significance makes the discovery process invariant to arbitrary data scaling. Through comprehensive benchmarking on canonical dynamical systems and practical engineering problems, including a physical mass-spring-damper experiment, we demonstrate that STCV consistently and significantly outperforms standard Sequential Thresholding Least Squares (STLSQ) and Ensemble-SINDy (E-SINDy) on normalised, noisy datasets. The results show that STCV-based methods can successfully identify the correct, sparse physical laws even when other methods fail. By mitigating the distorting effects of normalisation, STCV makes sparse system identification a more reliable and automated tool for real-world applications, thereby enhancing model interpretability and trustworthiness.",
+      "authors": [
+        "Jay Raut",
+        "Daniel N. Wilke",
+        "Stephan Schmidt"
+      ],
+      "primary_category": "cs.LG",
+      "categories": [
+        "cs.LG",
+        "stat.ML"
+      ],
+      "published": "2026-03-05 14:11:22+00:00",
+      "link": "https://arxiv.org/pdf/2603.05201v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Novel sparse regression algorithm for discovering governing equations in non-linear dynamics",
+      "llm_evidence_cn": "用于发现非线性动力学控制方程的新型稀疏回归算法",
+      "llm_evidence": "用于发现非线性动力学控制方程的新型稀疏回归算法",
+      "llm_tldr_en": "Introduces STCV, a robust sparse regression method for identifying physical laws from noisy, scaled data.",
+      "llm_tldr_cn": "引入STCV算法，一种鲁棒的稀疏回归方法，用于从噪声数据中识别物理定律。",
+      "llm_tldr": "引入STCV算法，一种鲁棒的稀疏回归方法，用于从噪声数据中识别物理定律。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2603.04528v1",
+      "title": "Discovering mathematical concepts through a multi-agent system",
+      "abstract": "Mathematical concepts emerge through an interplay of processes, including experimentation, efforts at proof, and counterexamples. In this paper, we present a new multi-agent model for computational mathematical discovery based on this observation. Our system, conceived with research in mind, poses its own conjectures and then attempts to prove them, making decisions informed by this feedback and an evolving data distribution. Inspired by the history of Euler's conjecture for polyhedra and an open challenge in the literature, we benchmark with the task of autonomously recovering the concept of homology from polyhedral data and knowledge of linear algebra. Our system completes this learning problem. Most importantly, the experiments are ablations, statistically testing the value of the complete dynamic and controlling for experimental setup. They support our main claim: that the optimisation of the right combination of local processes can lead to surprisingly well-aligned notions of mathematical interestingness.",
+      "authors": [
+        "Daattavya Aggarwal",
+        "Oisin Kim",
+        "Carl Henrik Ek",
+        "Challenger Mishra"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "math.HO"
+      ],
+      "published": "2026-03-04 19:13:36+00:00",
+      "link": "https://arxiv.org/pdf/2603.04528v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "computational mathematical discovery and autonomous concept recovery",
+      "llm_evidence_cn": "计算数学发现与自主概念恢复",
+      "llm_evidence": "计算数学发现与自主概念恢复",
+      "llm_tldr_en": "A multi-agent system that discovers mathematical concepts like homology through conjectures and proofs.",
+      "llm_tldr_cn": "一种通过猜想和证明发现同调等数学概念的多智能体系统。",
+      "llm_tldr": "一种通过猜想和证明发现同调等数学概念的多智能体系统。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    },
+    {
+      "id": "2603.04735v1",
+      "title": "Solving an Open Problem in Theoretical Physics using AI-Assisted Discovery",
+      "abstract": "This paper demonstrates that artificial intelligence can accelerate mathematical discovery by autonomously solving an open problem in theoretical physics. We present a neuro-symbolic system, combining the Gemini Deep Think large language model with a systematic Tree Search (TS) framework and automated numerical feedback, that successfully derived novel, exact analytical solutions for the power spectrum of gravitational radiation emitted by cosmic strings. Specifically, the agent evaluated the core integral $I(N,α)$ for arbitrary loop geometries, directly improving upon recent AI-assisted attempts \\cite{BCE+25} that only yielded partial asymptotic solutions. To substantiate our methodological claims regarding AI-accelerated discovery and to ensure transparency, we detail system prompts, search constraints, and intermittent feedback loops that guided the model. The agent identified a suite of 6 different analytical methods, the most elegant of which expands the kernel in Gegenbauer polynomials $C_l^{(3/2)}$ to naturally absorb the integrand's singularities. The methods lead to an asymptotic result for $I(N,α)$ at large $N$ that both agrees with numerical results and also connects to the continuous Feynman parameterization of Quantum Field Theory. We detail both the algorithmic methodology that enabled this discovery and the resulting mathematical derivations.",
+      "authors": [
+        "Michael P. Brenner",
+        "Vincent Cohen-Addad",
+        "David Woodruff"
+      ],
+      "primary_category": "cs.AI",
+      "categories": [
+        "cs.AI",
+        "cs.CL"
+      ],
+      "published": "2026-03-05 02:15:04+00:00",
+      "link": "https://arxiv.org/pdf/2603.04735v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Neuro-symbolic system for analytical solutions in physics",
+      "llm_evidence_cn": "用于物理学解析解的神经符号系统",
+      "llm_evidence": "用于物理学解析解的神经符号系统",
+      "llm_tldr_en": "A neuro-symbolic AI system derives novel analytical solutions for gravitational radiation in theoretical physics.",
+      "llm_tldr_cn": "一种神经符号AI系统推导出了理论物理中引力辐射的新型解析解。",
+      "llm_tldr": "一种神经符号AI系统推导出了理论物理中引力辐射的新型解析解。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    }
+  ]
+}

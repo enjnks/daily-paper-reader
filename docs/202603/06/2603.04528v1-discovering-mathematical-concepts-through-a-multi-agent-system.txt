@@ -1,0 +1,593 @@
+Title: Discovering mathematical concepts through a multi-agent system
+
+URL Source: https://arxiv.org/pdf/2603.04528v1
+
+Published Time: Fri, 06 Mar 2026 01:07:43 GMT
+
+Number of Pages: 30
+
+Markdown Content:
+# Discovering mathematical concepts through a multi-agent system 
+
+Daattavya Aggarwal 1* †, Oisin Kim 1* †, Carl Henrik Ek 1 and Challenger Mishra 1
+
+> 1*
+
+Department of Computer Science and Technology, University of Cambridge. *Corresponding author(s). E-mail(s): da579@cam.ac.uk; osmk3@cam.ac.uk; 
+
+> †
+
+Equal main authors 
+
+Abstract 
+
+Mathematical concepts emerge through an interplay of processes, including experimentation, efforts at proof, and counterexamples. In this paper, we present a new multi-agent model for computational mathematical discovery based on this observation. Our system, conceived with research in mind, poses its own conjectures and then attempts to prove them, making decisions informed by this feedback and an evolving data distribution. Inspired by the history of Euler’s conjecture for polyhedra and an open challenge in the literature, we benchmark with the task of autonomously recovering the concept of homology from polyhe-dral data and knowledge of linear algebra. Our system completes this learning problem. Most importantly, the experiments are ablations, statistically test-ing the value of the complete dynamic and controlling for experimental setup. They support our main claim: that the optimisation of the right combination of local processes can lead to surprisingly well-aligned notions of mathematical interestingness. 
+
+# Contents 
+
+1 Main 2
+
+1.1 Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 21.2 Euler’s conjecture for polyhedra . . . . . . . . . . . . . . . . . . . . . . 31.3 Mathematics and AI . . . . . . . . . . . . . . . . . . . . . . . . . . . . 51
+
+> arXiv:2603.04528v1 [cs.AI] 4 Mar 2026
+
+1.4 Current limitations of AI for maths . . . . . . . . . . . . . . . . . . . . 61.5 Human mathematical practice . . . . . . . . . . . . . . . . . . . . . . . 61.6 Euler’s conjecture from a statistical perspective . . . . . . . . . . . . . 71.7 Learning problem and mathematical background . . . . . . . . . . . . 81.8 Reinforcement learning . . . . . . . . . . . . . . . . . . . . . . . . . . . 10 1.9 Introducing the system . . . . . . . . . . . . . . . . . . . . . . . . . . . 11 1.10 Conjecturing agent . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 11 1.11 Skeptical agent . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14 1.12 Environment and provability . . . . . . . . . . . . . . . . . . . . . . . 14 1.13 Summary and optimisation . . . . . . . . . . . . . . . . . . . . . . . . 15 
+
+2 Results 16 
+
+2.1 Premises and data . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17 2.2 Different models . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18 2.3 D0 results . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18 2.4 Varying Di results . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20 
+
+3 Discussion 22 A Collection of statements 28 B Formal translation 29 
+
+# 1 Main 
+
+1.1 Introduction 
+
+Mathematicians often emphasise the holistic nature of their subject, shaped by the interplay of questioning, concept formation, and answering. According to Alexander Grothendieck, ‘the decisive thing is often to see the question that had not been seen ... it does not matter whether the proof is trivial or not, which is entirely incidental, or even whether a hasty and provisional proof turns out to be false’. Indeed, ‘the simple act of writing, naming, and describing ... always precedes the proofs and gives us the means to prove’ [1]. These quotes underscore the creative power of mathematical questions and concepts, including their ability to unlock a solution. Conversely, it is common for attempts at proof to feed back into our choices of questions and definitions, since one constantly revises them based on this experience. We think of mathematics as a dynamic, dialectical process. At a given moment, new concepts, formalised as definitions, are created to address existing problems, and good answers, in the form of proofs, open up new fields of inquiry. This is a continuous evolution; for David Hilbert, ‘every age has its own problems, which the following age either solves or casts aside as profitless and replaces by new ones’ [2]. The purpose of these quotes is not to invoke timeless authority, but to re-examine the human practice of mathematics in the context of the AI-led case. We consider human mathematical research to improve the artificial one, which is advancing rapidly (§1.3). Despite tremendous progress, it is still unclear whether current approaches can 2‘research autonomously’ ( §1.4), often requiring the formulation of new and humanly interesting ideas. This paper studies this ambitious computational problem, inspired by existing accounts of the subject ( §1.5) 1.Our main contribution is a new multi-agent AI system for mathematical discovery modelling the discipline as a holistic process. Conjectures produced through the anal-ysis of data are constrained by their provability, a framework capturing the dynamic interplay of mathematical questioning and answering ( §1.8 - 1.13). Although demon-strating the feasibility of combining the components is a major result of this paper, our central claim is that it is the nature of this interaction that is most important in the emergence of novel concepts. To test this, we conduct experiments, designed to check whether our system can recover interesting notions from data and elementary knowledge. The benchmark is to autonomously formulate and meaningfully relate two definitions of the Euler char-acteristic . In order to emulate historical conditions, the AI must do this by observing polyhedral data, and may only possess ‘knowledge’ of linear algebra ( §1.6 - 1.7). Our system completes this task, suggesting the ‘rediscovery’ of the idea of homology , within certain limits ( §2 - 3). Crucially, the results are ablation studies (2.2). This means removing parts of the model to measure the value of the full interaction and to contextualise the idea of ‘rediscovery’ 2. A great challenge of assessing mathematical ‘interestingness’ is that it can be very hard to spot and impossible to define, especially for new ideas ( §1.4). The chosen problem avoids this difficulty. Furthermore, a very similar open challenge already existed in the literature ( §1.6) [3]. The value of proofs goes beyond checking the truth of propositions; mathematical questions often evolve in the course of attempting proofs. These ideas, also inspiring the design of our system, are shown elegantly in our first and main case study. 
+
+1.2 Euler’s conjecture for polyhedra 
+
+One of the most fascinating stories of mathematical discovery surrounds Euler’s con-jecture on polyhedra, once dramatised by Imre Lakatos [4–8]. At its centre are the concepts of homology and the Euler characteristic (denoted χ). These topological 
+
+invariants , or signatures that encode information about shape, changed the study of spaces by allowing the use of new algebraic methods. Mathematicians now apply χ and homology in many ways, whilst outside the subject, they are used in fields such as data science and physics [9, 10]. But the Euler characteristic has surprisingly humble beginnings, in the study of polyhedra. During the 19 th century, the quantity χ := V − E + F , where V , E and F denote the numbers of vertices, edges and faces, began to be studied seriously for the first time. It may seem surprising that despite thousands of years of interest in these surfaces, it took so long to define this. In 1758, Euler conjectured χ = 2 for all polyhedra, testing his claim in a variety of cases. However, his thesis was soon refuted by many counterexamples, for example the picture frame (Figure 1). The problem was that another term was needed to 
+
+> 1To be clear, our goal is to use existing descriptions of mathematical practice to improve the AI-led case.
+> 2For example, by controlling for the innate capability of the regressor.
+
+3account for ‘holes’, since for ordinary polyhedra, the correct statement turned out to be χ = 2 − 2g. Here, g denotes the genus, or number of ‘holes’, which was eventually defined independently using algebra applied to combinatorial constructions. In modern terms, this was homology 3.In 1895, this revised equality was proven by Poincar´ e, when he showed that surfaces deformable to each other must possess the same χ [11]. Looking forward, this will prove to be an exemplary case of the story outlined in §1.5, with χ and homology the concepts influenced by proof attempts. What was perhaps unusual within mathematics was the centrality of a pattern detected from data, V − E + F = 2. It has been argued that Euler used largely inductive reasoning to arrive at this expression, making it a natural candidate for computational investigation [7]. ∼=
+
+> 
+> 
+
+# ∼=
+
+Fig. 1 : The picture-frame (introduced by L’Huilier) is topologically the same as the torus, but not the icosahedron, which has no hole. In modern language, the symbols denote homeomorphisms , a precise notion of topological equivalence.  
+
+> 3We will treat this more carefully in §1.7.
+
+41.3 Mathematics and AI 
+
+The case of Euler demonstrates that thoughtful calculation has always played a cru-cial role in the subject 4. New forms of computation continue this tradition, through symbolic and statistical approaches [13]. AI is being applied in mathematical question-posing and answering; these activities are sometimes formalised as conjecturing and proving. However, such tools have very rarely, if ever, been applied to these areas together, in a combined, iterative approach. A line is often drawn connecting past uses of machines in mathematics, such as the classification of finite simple groups, the four colour theorem, and the Kepler conjecture [14, 15]. Whatever the value of this historically, computers are now clearly indispensable to the subject. For example, symbolic computing such as Mathematica has assumed a key role since its invention, across a wide range of areas 5. Within the scope of ‘answering’, proof assistants have led to the resurgence in interest in formal logic, in adjudicating the correctness of certain arguments and definitions, even in indisputably deep areas of maths [16]. Statistical tools can also assist mathematicians. They can conduct literature searches, as suggested by several recent cases of LLMs providing helpful but obscure theorems 6.Machine learning has been particularly useful for constructing mathematical objects with certain properties, when there is a direct way of measuring success. This lies, for instance, behind the FunSearch and AlphaEvolve algorithms, which uses genetic programming to evolve LLM-generated objects, such as sets or functions, into new versions with higher fitness scores [18, 19]. In many such cases, it is clear a priori that these problems can be posed as optimisation tasks; this should not downplay the ingenuity necessary to develop the techniques in any way. Advances in computation have changed mathematics and its values throughout history, even on an aesthetic level. The progress summarised above will likely accelerate this [20, 21]. With an AI perspective, these developments naturally lead us to the prospects of a ‘general mathematical intelligence’, capable of researching (somewhat) independently. Belief in this is partly based on an old idea: that the subject is a form of serious game, with participants using creative strategies to navigate rule-based systems [22]. AI, especially reinforcement learning (RL), has proven to be very successful in such contexts. In 2018, DeepMind released AlphaZero, an RL approach to games like Go and chess [23]. Most interestingly, it performed best when trained on its own trajectories, enabling the efficient exploration of the immensely large space of all possible games. Systems built on this approach have since produced impressive results in mathematics, e.g. AlphaProof, which gave a silver medal performance at the 2024 International Mathematical Olympiad (IMO) [24, 25]. Here, DeepMind adapted their ideas to formal mathematics, modifying the system for symbolic expressions written in Lean and ruthlessly pruning proof trees of failures. Similar methods have also recently been used by Harmonic and ByteDance [26, 27]. 
+
+> 4Including the most ancient cultures [12].
+> 5From number theory to mathematical physics.
+> 6These approaches can go very far [17].
+
+5The utility of computers as tools is indisputable; this perspective will continue to serve practising mathematicians well. However, there are difficulties arising from more ambitious applications, already hinted at by those that we have considered here. 
+
+1.4 Current limitations of AI for maths 
+
+All machine learning needs objectives to optimise. It is unclear whether the qualities humans value in their mathematics can be generally formulated in this way, beyond restricted cases. Whilst an analogy with chess is compelling, discovery is difficult to formulate as a similar two-player game, having both competitive and collaborative aspects [28, 29]. More broadly, applying AI requires encouraging the right behaviour. In the case of ‘questioning’ activities, such as conjecture generation, a key aim is for the posed state-ments to be ‘interesting’, as judged by mathematicians. But it is hard to directly encourage interestingness, and so far, the main approach has been for experts to pro-vide considerable problem-specific intuition, for instance in low-dimensional topology or group theory [30]. Naturally, this compromises generality. Others have suggested information-theoretic or geometric definitions, but these are currently at a purely theoretical or rudimentary level [31, 32]. In the case of ‘proving’ activities, the search space is enormous, whilst basic results assert that the general decision problem is undecidable. When RL is applied, rewards are extremely sparse, since a single wrong step can totally derail an attempt [25, 33]. Work on automated formal provers is partly motivated by the belief that they can contribute to mathematical research [34]. Where formalisation is already doing this, such tools can certainly help, for example by facilitating large collaborative projects [35]. Yet we do not believe that provers, considered on their own, qualify as autonomous mathematical intelligences. In competition mathematics, the computer is only required to produce a single proof of a fixed question within a predefined, narrow area. In contrast, research is inherently fluid, requiring the repeated non-trivial reformula-tion of questions. This frequently needs the creation of humanly interesting concepts, combining ideas from seemingly different mathematical areas, all in dialogue with proof. There has been enormous recent progress in AI for various aspects of mathematics, especially considered separately. The problems highlighted here stem from the same fundamental question: to what extent can optimisation, narrowly defined, produce ‘human’ outcomes? 
+
+1.5 Human mathematical practice 
+
+We briefly consider the human practice of generating mathematical ideas. One picture of the subject is a tree, with axioms sitting at the base. Theorems are deduced by rules of inference, creating infinitely many branches. Of course, the overwhelming majority of true statements will not be interesting to humans; we can think of those that are as forming a very thin, branching connected path. Motivated by our interest in automation, we hope to better understand the local processes by which this subset is chosen. 6Firstly, we believe that ‘interestingness’ is conditioned on history, depending on which parts have already been explored. Concepts such as group or manifold are often data-compressing abstractions unifying previously disparate phenomena. Created to solve specific problems and clarified through applications, they become central through use and interaction. We are not claiming that mathematical concepts are solely shaped this way but that it plays a considerable role 7. Closely linked to this is the choice of questions, judged best when they open up new areas. Many case studies support this narrative, making it almost hard to single out any in particular. For important concepts first invented to tackle particular problems, consider the Abel-Ruffini theorem, following centuries of attempts to generalise the quadratic formula to higher degrees. The proof required a sequence of new definitions: of a group acting on roots, of the splitting field of the polynomial, and of the automor-phism group of a field [36]. Perhaps more consequential than the theorem itself were these innovations, which introduced a new level of abstraction. For the right choice of the question opening vistas, consider Hilbert’s tenth problem, on the existence of an algorithm for determining whether an arbitrary Dio-phantine equation possesses integer solutions. A simple shift of emphasis - rather than seeking such an algorithm, proving that it cannot exist - spurred considerable devel-opment in number theory, logic, and their intersection, leading to the solution and beyond 8 [37]. It is striking that such a seemingly subtle change of perspective could prove to be so fruitful. Although these examples have had historical importance, playing out over decades and centuries, we also believe that similar dynamics exist in small-scale problem solv-ing such as the proving of a lemma. Naturally, documenting evidence is much harder to find in such cases. To summarise, good mathematical ideas emerge from an interplay of local processes, some of which have been highlighted here. Our central view is that mathe-matical value, like many other human practices, is best understood within a complex network of pressures - such as proof, experimentation, and refutation - making it difficult to directly quantify or optimise for in isolation 9.
+
+1.6 Euler’s conjecture from a statistical perspective 
+
+In §1.2 we introduced Euler’s conjecture, which fits neatly with the above. The question passed through many stages, evolving through the alternating pressures of counterex-amples and proof. With an ML perspective, it can also be thought of as a learning problem. The ‘datapoints’ of surfaces gave Euler statistical evidence for the conjec-ture χ = 2, then reshaped through the process of §1.5 into a theorem containing deep definitions. We will therefore treat the reformulation of the concept of homology as a test for an AI system. It should do this with knowledge that was available at the time of its discovery, to the extent possible. It is also notable that χ = 2 was first detected in the restricted case of surfaces homeomorphic to the sphere. 
+
+> 7Such a view would be particularly reductive in mathematical physics or complexity theory, where external factors are particularly important.
+> 8Of course, this took place against the background of wider developments in algorithms and logic.
+> 9Similar ideas to what we have discussed in this section have been mentioned by many others [38–40].
+
+7The Euler characteristic formula has many mathematical subtleties. For example, it is only if written as an alternating sum, i.e. V − E + F = 2, rather than V + F =
+
+E + 2, that it truly suggests its topological aspect 10 . It is likely harder to imagine giving a careful definition of homology exclusively through statistics. One of the most challenging aspects of detecting χ and homology this way is their ‘local to global’ nature; they measure global features of the space from local information (connections between vertices and edges). A recent essay by the arithmetic geometer Michael Harris states the following challenge: ‘Give AlphaGeometry 2.0 the list of [Euclidean] axioms and let it generate its own constructions for as long as it takes. Then wait to see whether it rediscovers the Euler characteristic’, simply ‘by analyzing the statistical correlations’, as part of a list of questions for a new mathematical AI [3]. We did not know about this open challenge when we conducted the experiments in this paper, but were delighted to find it whilst writing. To state the goal and setup precisely will require modern concepts, presented in 
+
+§1.7 without much explanation. See [42–44] for further details and proofs (the last is understandable with just linear algebra). 
+
+1.7 Learning problem and mathematical background 
+
+The experimental data will be a collection of matrices, each containing information about a surface. This is similar in spirit to Euler’s analysis of polyhedra, but with more examples and a somewhat modern presentation 11 .More precisely, we use incidence matrices associated to a collection of simplicial complexes (SCs). These are sets of triangles, edges and vertices (simplices) glued together ‘nicely’. For a basic picture of a 2-dimensional simplicial complex, think of a polyhedron with triangular faces. Our choice of data is justified by the fact that all closed surfaces (two-dimensional manifolds without a boundary) admit a triangula-tion 12 , and that topological properties are invariant to this choice. For the remainder of this paper we specialise to this setting. Consider the vector space over a field k (with characteristic ̸ = 2) freely generated by the i-simplices (simplices of dimension i); denote this space by Ci. We define the maps ∂i : Ci → Ci−1 by sending a simplex to the sum of simplices on its boundary, where the coefficients ±1 respect orientations. It is easy to show that these maps satisfy ∂i−1 ◦ ∂i = 0, an important property for the definitions that follow 13 .Given a triangulated surface, the topological information is encoded in a pair of 
+
+incidence matrices , corresponding to the non-trivial ∂i (i.e. ∂1, ∂ 2). The vector spaces above fit into the sequence: 0 → C2
+
+> ∂2
+
+−→ C1
+
+> ∂1
+
+−→ C0
+
+> ∂0
+
+−→ 0. (1) After we have triangulated a polyhedron, the numbers V , E and F become equal to dim( C0), dim( C1), and dim( C2). It is easy to show that during this process V − E + F
+
+remains unchanged.  
+
+> 10 This was even missed by Euler [41].
+> 11 We discuss the implications of this and the other choices of this section in §3.
+> 12 This means dividing the whole surface ‘nicely’ into connected triangles.
+> 13 ‘The boundary of a boundary is zero’ [45].
+
+8This is the remarkable part: in modern terms, the (simplicial) homology is defined as the quotient spaces Hi := Ker( ∂i)/Im( ∂i+1 ). 14 The k-dimension of Hi is denoted 
+
+bi, and is called the ith Betti number (with respect to the field k). We use the following very standard results [42]: 
+
+Proposition 1.1. b0 counts the number of connected components. 
+
+Proposition 1.2. For a connected surface, b2 is 1 if and only if the surface is orientable. 
+
+It turns out that the other Betti number, b1, is equal to twice the genus, or number of geometric ‘holes’. Our common-sense idea of a ‘hole’ is ambiguous, which caused difficulties in mathematics until both it and ‘polyhedra’ were sharpened by being incorporated into the framework described here [4, 46]. We can now capitalise on this work. Euler first defined χ as the alternating sum of the vertices, edges and faces of a polyhedron. Now we extend this to all surfaces: 
+
+Definition 1.3. Given a triangulation of a compact surface, the Euler characteristic is defined as χ := dim( C0) − dim( C1) + dim( C2) = V − E + F .
+
+A crucial discovery was the following alternative: 
+
+Definition 1.4. Given a triangulation of a compact surface, the Euler characteristic can also be defined as χ := b0 − b1 + b2.
+
+A priori, it is not clear that these different formulations are equivalent. Proving that they are was a major breakthrough, generally credited to Poincar´ e. Although the older definition 1.3 may make the topological invariance of χ seem rather mysterious, if we know that the bi are themselves invariants 15 , the new definition makes this clear. It pointed the way forward for modern topology by giving old concepts a novel algebraic interpretation. Returning to Euler’s conjecture, we have the following immediate corollary: 
+
+Theorem 1.5. For a closed surface, if b0 = 1 , b1 = 0 , and b2 = 1 , then χ := 
+
+V − E + F = 2 .
+
+This leads to the main benchmark task of this paper. 
+
+Learning Problem 1 Can an AI system recover the definitions and relationship between 1.3 and 1.4 from data and knowledge of linear algebra, without being explicitly coached to do so?   
+
+> 14 This ignores singular homology , which was developed later and shown to be equivalent [42]. Both forms of homology count the number of bounding cycles , though we do not carefully define this.
+> 15 It is likely that Poincar´ e did not know this to a modern standard of rigour; the proof is most natural with singular homology.
+
+9In our dataset, V , E, and F correspond to heights and widths of matrices, and 
+
+bi can be expressed in terms of ranks and nullities. So it should be possible for a well-designed system to succeed without any prior direct encoding of the concepts. A relationship between definitions 1.3 and 1.4 must be generated without the expressions for bi or χ being provided in any way. For example, recovering Theorem 1.5 would complete the challenge, which is essentially what happened historically. The relevant information is contained in the incidence matrices, but only implicitly. In order for an AI to produce a statement of the required form, it will be necessary for it to come up with the relevant concepts in parallel. In contrast to many of the situations of §1.3, there is no clear way of posing this as an optimisation problem. As in the examples of §1.5, the system should learn to identify the value of the concepts for itself. The types of surfaces used were ( i) triangulated spheres ( ii ) triangulated tori (iii ) triangulated Klein bottles ( iv ) disjoint unions of the previous (in this case, we have block diagonal incidence matrices). We constructed the data using Delaunay triangulations and gluing, available as a published repository 16 . The code samples random triangulations of these surfaces, and also supports higher genera and non-orientable spaces. 
+
+1.8 Reinforcement learning 
+
+Drawing inspiration from the previous discussion, we present a new multi-agent AI system for mathematical discovery. Reinforcement learning provided a plausible frame-work within which the pursuit of simple goals can produce rich behaviour through exploration and competition. For more background, see [47]. The formal setup is an environment , modelling a real situation as a tuple M =(S, A, R, P ). This is a state space, action space, rewards, and transition probabilities, collectively known as a Markov Decision Process (MDP). In the finite case, one can think of a graph of nodes corresponding to states, with edges labelled by probabilities and rewards. The fundamental loop involves an agent choosing an action a in a state s, which transitions it to a new state s′ via the probability p(s′|s, a ), resulting in a reward 
+
+r(s, a, s ′)17 . All of this is strictly determined by M . For example, in chess S is nat-urally taken to be the space of board positions and A individual moves. Then P is deterministic and R is only allocated at the end of games. Given an MDP, the sequence 
+
+{s0, s 1, .. } is a Markov process. We call the position within this the timestep t.Starting from s0, the agent aims to maximise its reward P∞ 
+
+> t=0
+
+γtr(st, a t, s t+1 ), where γ ∈ (0 , 1) is a discount factor (assigning less weight to future rewards). It can do this by choosing the right policy , a distribution π : S → A. There is often a distinguished sT ∈ S, called the termination state, which, if it is reached, ends the whole process. A full run {t0, ..., t N } is called an episode .MDPs find applications in economics and other areas. Under certain assumptions 18 ,one can compute optimal policies with linear programming, assuming full knowledge 
+
+> 16 https://github.com/daattavya98/surface triangulations
+> 17 This can also be probabilistic.
+> 18 For example, finite state and action spaces and bounded rewards.
+
+10 of the MDP. However, in complex settings, where transitions are unknown and the S
+
+and A may be infinite or continuous, data-driven approximation techniques become necessary. This is really what is referred to as reinforcement learning. For instance, one can parameterise policies and expectations of future reward using neural networks. During training, the agent samples through many possible actions and states, learn-ing a policy that approximately maximises its accumulated reward. Next, actions are sampled exclusively from this in a final episode, called the execution . In multi-agent reinforcement learning (MARL), multiple actors act within the same MDP, introducing new challenges [48]. It is perhaps surprising that such a simple formalism has achieved so much in recent years. 
+
+1.9 Introducing the system 
+
+Our system uses two agents, called the Conjecturing and Skeptical agents ( CA and 
+
+SA ), to model the feedback loop between mathematical questioning and answering. The main goal of the CA is to produce a statement that is ‘provable enough’; the goal of the SA is to prevent this. The CA ’s statements are drawn from S, denoting the space of all statements producible with a set of variables and operators 19 . The environment, MathWorld , models the objects and proofs encountered in a particular phase of research. Concretely, this is a set of mathematical data D = {di} and a way of measuring provability ρ : S → R.During an episode, the CA generates a sequence of statements by analysing the data. Meanwhile, the SA controls which parts of D the CA is allowed to see. Each statement is scored according to ρ. If one exceeds a provability threshold, the episode ends, with the CA receiving its largest reward and the SA receiving an equally large negative reward. The system must typically go through many false conjectures to reach this point. The CA also receives a small reward for longer statements, a deliberately simple proxy for complexity. Finally, if t reaches fifty, the episode terminates anyway. 
+
+1.10 Conjecturing agent 
+
+The role of the Conjecturing agent is to model mathematical questioning activities, producing a series of candidate statements. These should be mathematically inter-pretable - this can be non-trivial - and generated by analysing data, ideally in a manner that encourages the local exploration of diverse features. The canonical example of a mathematical question is the conjecture , often codifying a long-standing open problem. These may drive entire research programs, requiring significant innovation for their solutions. We use the idea of ‘conjecture’ more loosely, in line with the AI literature. The important thing is that CA poses its own questions, basing this choice on past experience. We found that a custom symbolic regression (SR) algorithm largely fulfilled these requirements. SR detects structure in a dataset by fitting analytic expressions to it, and is particularly useful with preexisting knowledge about what form this is likely to take. In our system, the CA controls regressors, producing statements s by minimising 
+
+> 19 This includes false or even ill-formed examples.
+
+11 a ‘loss’ from S to R+:
+
+L(s) ∝ exp 
+
+
+
+LD(s) − X
+
+> k
+
+pk
+
+
+
+, (2) where LD is a ‘data loss’ and the pk are priors, all of which will be described below 20 .In summary, this expression trades off fidelity to the data against inductive biases on the functional form. In all SR, preexisting knowledge is incorporated by selecting its symbols: features and operators. As alluded to in §1.7, in our experiments these will be: 1. Operators: arithmetic binaries (+ , −, ×, =) and generic logicals ( ∧, =⇒ , ¬)21 .2. Variables: the ranks, nullities, and dimensions of pairs of incidence matrices, each corresponding to a simplicial complex. Note that whilst bi and χ can be expressed in terms of these, they are not provided to the SR . To be spotted by the system, they must be formulated through regression. The choice of variables and operators is domain dependent; for example, in number theory one could use the number of prime divisors or arithmetic functions such as the totient or M¨ obius functions. In general, we imagine that most datasets impose a fairly natural choice for these. In a particular constructed expression there is no need for all of the symbols to be used. With this setup, SR explores S by parameterising statements as trees, whose nodes are operators with one or two children, or features with none. Given a candidate expression, e.g. ˜s := {height (∂1) − width (∂1) + width (∂2) = 2 }, (3) we first consider the data-dependent term LD. The expression is true or false on a datapoint di, so ˜ s(di) is a Boolean quantity. For example, Eq. 3 will evaluate to 1 on topological spheres and 0 on topological tori. The weighted accuracy and full data-dependent terms are: 
+
+WD(˜ s) = 
+
+P 
+
+> i
+
+λi ˜s(di)
+
+P λi
+
+, LD(˜ s) ∝ exp( α(1 − W D(˜ s))) , (4) where the λi control attention given to each datapoint (we will return to this), and 
+
+α is a hyperparameter. The (positive or negative) priors, pk, in Eq. 2 encourage or discourage the use of operators or features, as well as ways of composing them 22 .For the actual statements, we use a two-step process, intended to reflect the struc-ture of mathematical expressions. The first stage makes multiple atomic formulae (informally, features), each produced by a separate regressor. We call these first regres-sors the ‘Feature spotters’, which learn from a specific local patch of the data U ⊂ D ,parameterised by coefficients λUi 23 . Note that Eq. 3 could be produced from a patch  
+
+> 20 Note that the exponent accentuates selection pressures and preserves positivity.
+> 21 These were chosen to form a complete basis in the sense of propositional logic.
+> 22 For example, to penalise particular errors.
+> 23 We will often suppress the patch notation in the λi
+
+12 highly weighted towards topological spheres. The atomic formulae are then treated as variables by a final regressor, called the ‘Scaffolder’, generating a full logical expres-sion. This decomposition simplifies the search space, encouraging the exploration of features which are combined into a global structure. The state space of the CA consists of the weights λi, priors pk, and the number of features to generate. At each timestep, the CA updates these control parameters, delib-erately biasing regression towards statements with a certain form. This is summarised in Figure 2. We used PySR to implement it [49], an SR package designed for scien-tific applications. Its main advantage was considerable flexibility in defining custom operators, constraints, and objective terms. Data                     
+
+> λi0.81.00.41.52.3
+> Data
+> λi2.80.91.53.1
+> =
+> +
+> r(∂2)2
+> n(∂1)
+> Operators: {+,−,×,=}
+> Feature spotter
+> =
+> +
+> w(∂1)0
+> +
+> h(∂1)w(∂2)
+> Operators: {+,−,×,=}
+> Feature spotter
+
+# . . .              
+
+> =⇒
+> b1= 2 χ= 0
+> Operators: {=⇒,∧,¬}
+> Scaffolder
+> Conjecturing agent
+> h(∂1)−w(∂1) + w(∂2) = 0
+> =⇒
+> (rank (∂1)−null (∂2) = 2)
+> Sent to environment
+
+Fig. 2 : Summary of the Conjecturing agent. At each timestep, it picks its priors and chooses the number of features, then runs the first round of regression. This produces atomic formulae over patches of data, each governed by λi. In the second round of regression, these are combined by the scaffolder into a global statement. The variables and operators used are tailored to the application; a successful instance of learning is shown in the box on the right, with the heights and widths corresponding to the dimensions of vector spaces. Once in the environment, the statement gets translated into Lean. Quantifiers are implicitly added during the translation; the regression only has the variables and propositional symbols in its vocabulary. The Conjecturing agent cannot access the Lean statement. For further details, see §Appendix B. 13 1.11 Skeptical agent 
+
+Beyond revising questions and using proof feedback, another process is useful for our system to capture. In mathematics, partial attention to ‘data’ can enable the discovery of patterns. 
+
+χ = 2 was first spotted for polyhedra homeomorphic to spheres, with tori only noticed as counterexamples afterwards. Another case is the Riemann-Roch theorem, which expresses the dimension of the space of meromorphic functions on a complex surface in terms of topological information. Riemann initially proved this result for the canonical bundle 24 . It was only later, working with others, that he allowed singularities, giving the statement for all ‘datapoints’ of Riemann surfaces [50, 51]. This is not just highlighting generalisation. Instead, restricting focus to a portion of mathematical data can make patterns easier to detect, which may then be reinter-preted and extended to a wider collection of objects. In the context of AI, we may think of this as an evolving data distribution .We model this through the λi coefficients (see Eq. 4), changed dynamically by the Skeptical agent. Each feature spotter has its own set of these, and the scaffolder sees a union of datapoints across patches (taking the maximum λUi if the same di is visible to multiple). At each t, the SA chooses a subset of the λi to update, within fixed bounds. One can imagine it turning on a collection of counterexamples to the 
+
+CA ’s first conjecture as learned behaviour. At the beginning of an episode, a fraction are initialised randomly, and the remainder are set to 0 25 .The goal of the SA is the opposite of the CA ’s. This competitive game produced good results and reflects aspects of mathematical practice. A partially cooperative variant may be more true to life, and could easily be implemented with the setup that will be discussed next. However, in reality, the discount factor γ dampens the 
+
+SA ’s opposition as an episode progresses. Since many episodes produce proven results (following training), we think of the SA as preventing an early and trivial statement terminating an episode too soon. 
+
+1.12 Environment and provability 
+
+MathWorld contains ( i) mathematical data D and ( ii ) a provability measure ρ : S → R.A good dataset, chosen by the user, should contain a partially unknown and poten-tially interesting mathematical structure. We mean something somewhat specific by this: in the case of Euler, tables of V, E, and F arranged appropriately, or in the mod-ern case of the BSD conjecture, tables of local and global invariants of elliptic curves 26 
+
+[41, 53]. The provability score models the proving side of mathematics, assigning ρ(s) to measure how close s is to being ‘provable’ with the system’s knowledge. In general this may not be well defined, but we can consider simple approximations. Given an automated prover A, let:  
+
+> 24 More specifically, he showed that the number of holomorphic 1 −forms is equal to the genus.
+> 25 Recall that no tori were initially ‘visible’ to Euler.
+> 26 This narrative has been mentioned many times in the context of computers and maths. Naturally, in a typical application, the structure may be much less significant than BSD or χ. [52]
+
+14 ρ(s) := 
+
+(
+
+1, if A finds a proof for s before timeout ,
+
+0, else . (5) In most of our experiments we used this discrete metric. One choice for A is an LLM prover, e.g. Lean Copilot [54]. This attempts to prove the posed statements using a set of relevant theorems as background, such as the rank-nullity theorems for the Ci. For translation into Lean, we used a handcrafted code, with a header and premise set containing what we wanted A to ‘know’; this prevented any hallucination effects caused by autoformalisation [55]. Since our experiments mostly took place within linear algebra, we were also able to prove any correct statements with a prewritten proof, in which case the system is LLM free 27 . The tests produced the same qualitative results with either approach. We also tried some simple alternatives to A, discussed further in §2.2. For a statement to obtain any reward or trigger termination, it must pass simple non-degeneracy checks. As an example, we discourage formulas that are true on all of 
+
+D, adding those that are noticed to the premises 28 . These are somewhat discretionary choices, but the relationship between the knowledge of A and the data should have a large impact on performance. It is important that even a score of zero informs subsequent questioning. Unlike RL-based formal provers such as AlphaProof, we do not treat the prover as an agent, having it instead as part of the environment. 
+
+1.13 Summary and optimisation 
+
+Figure 3 summarises the system and shows the flow of information during an episode. Although components may be changed in a particular application, the overall structure should be domain invariant. Optimisation was through multi-agent deep deterministic policy gradient (MAD-DPG) [56]. The central challenge of many agents is that, from the perspective of one, the environment also contains all the others, violating stationarity. MADDPG addresses this with centralised training and decentralised execution. During training, each agent can see the states and actions of others and estimates their value functions 29 
+
+using this knowledge. This recovers the MDP formalism 30 . In execution, agents act independently. The learned policies should be empirically ‘robust’ to the opponents’ actions, but in such complex games guarantees of reaching equilibria rarely exist [48].    
+
+> 27 This was done through a combination of tactics including grind and ring .
+> 28 Such as the rank-nullity theorems.
+> 29 This is the estimate of the accumulated reward given a policy and state.
+> 30 Importantly, this allows the use of the policy gradient theorem [56, 57].
+
+15 Data    
+
+> Conjecturing agent
+> Scaffolder
+> Feature spotters
+> Features
+> Skeptical agent
+> Provability
+> Translate with premises
+> Lean Copilot
+> Lean4
+> Data stream Statement
+> Provability score ρ
+> Provability score ρUpdates data distribution
+
+Fig. 3 : Summary of the full system. The Conjecturing agent produces statements until one crosses the provability threshold whilst passing simple checks, at which point the episode terminates and it receives its greatest reward. At intermediate steps, it receives a smaller reward for longer statements, measured in terms of tree size. The Skeptical agent modifies the data distribution. The colour blue is used for the agents and the flow of information, whilst green is used for elements that are in the environment. 
+
+Orange represents components that should be tailored to an application. Although the game is competitive, it is not zero-sum. 
+
+# 2 Results 
+
+Recall that our benchmark task was to formulate and relate two definitions of the Euler characteristic from knowledge of linear algebra and data. Ultimately, we would like to apply this system in new areas, and the modularity of the components was designed with this in mind. The advantage of a known problem is that we already know what the ‘interesting’ concepts are, allowing easy interpretation of the results and a proof-of-concept. Given an interesting statement in S, we can reasonably assume that a collection of neighbours express the same meaningful content (with slight variations). So we pose our problem as recovering a relation between two definitions of χ, rather than a particular example of this, such as Theorem 1.5. 16 2.1 Premises and data 
+
+Having chosen CA as a regressor, it must learn the right symbolic expressions. But the exploration of the combinatorially growing space S poses many challenges 31 .Creating a statement with χ given through Betti numbers requires the system to notice these. For example: 
+
+{b0 = 1 } ∧ { b2 = 1 } ∧ { b1 = 0 } =⇒ { V − E + F = 2 }, (6) can only be sensibly found if b0 and b2 sufficiently vary over D.To test in a variety of settings, we use the following datasets (and associated premise sets, P) for different experiments: 1. D0: {spheres, tori } with P0: {rank-nullity theorems }, P1 : {b0 = 1} and 
+
+P2 : {b2 = 1 },2. D1: {spheres, tori, Klein bottle } with P = {P 0, P1},
+
+3. D2: {spheres, tori, disjoint unions of previous } with P = {P 0},
+
+4. D3: {spheres, tori, Klein bottle, disjoint unions of previous } with P = {P 0}.
+
+These surfaces are some of the basic building blocks in topology, combined in equal numbers (50 − 200 of each over different experiments) to ensure balance. The 
+
+classification theorem says that any connected, compact surface without boundary is homeomorphic to a sphere or a connected sum of tori or projective planes [43]. The names are up to homeomorphism, so different tori or spheres may have considerable variation in V , E and F . Our construction method meant that the distributions of these were approximately normal. For D0 we include b0 = 1 and b2 = 1 (representing connectedness and orientability) in P, and just search for statements like {b1 = 0 =⇒ χ = 2 }. For D2 the only premises are rank-nullity theorems, so we may hope for a conjecture similar to Eq. 6. Even if premises involving bi are used by A, the only effect is through ρ feedback. In a new problem, finding an appropriate relationship between P and D may require experimentation. We say that a model has noticed χ and/or bi if the CA makes a statement with an atomic formula containing either 32 :
+
+χ : dim( C0) − dim( C1) + dim( C2),bi : null( ∂i) − rank( ∂i+1 ) i ∈ { 0, 1, 2}.
+
+Proven conjectures with χ and/or bi are a weaker proxy for using the concepts than statements which clearly relate them meaningfully. This is useful to analyse. We standardise our experiments, fixing the total number of steps during train-ing and fifteen episodes during evaluation. All training and evaluation experiments 
+
+> 31 We will later demonstrate this by running experiments with only the regressor.
+> 32 Up to allowed substitutions from the premise set.
+
+17 were conducted on an ordinary laptop, an Apple M-series ARM64 CPU without any dedicated hardware. 
+
+2.2 Different models 
+
+To measure the difficulty of the Learning problem and the impact of each part of the system, we frame most of our experiments as ablation studies. This means compar-ing the performances of different system versions, each with a different component removed, against each other, and crucially against the full case [58]. Ablations test our main claim: the importance of a full dynamic for generating valuable mathematical concepts. The models used are: 
+
+• Only CA : Just the Conjecturing agent. Without the SA , every datapoint has a fixed weight of λi = 1. The point is to study the intrinsic difficulty of the Learning prob-lem; since this has been posed as finding the right symbolic expression, we think of this as ‘controlling for’ the regressor. The CA ’s loss parameters are chosen from exactly the same space as the full system, but with no RL, they are randomised at each step, and a full 50 steps are run in each episode. 
+
+• M0 - Full System: The system with all agents and environmental components. In M0 : CA + SA +Provability, we use the usual automated prover A that assigns the discrete score ρ(s) (Eq. 5). In M0+Noise : CA + SA +Noisy Provability, we use a stochastic variant, adding Gaussian noise to ρ(s) and reducing the provability threshold. This is a basic test for how the system performs in a more uncertain, general setting. 
+
+• M1 - CA + SA : This model has both agents and RL, so attention to the datapoints varies dynamically. However, there is no reward for provability, to assess its value. We still compute ρ(s) to check for early terminations but it is not passed to the agents, who try to maximise their smaller, intermediate rewards. 
+
+• M2 - CA +Provability: This uses just the Conjecturing agent and the usual prov-ability score, whilst fixing the weights λi = 1 for all datapoints, to study the impact of the Skeptical agent. 
+
+2.3 D0 results 
+
+We first consider experiments with D0, the situation most similar to Euler’s own. Note that the percentage of statements with b1 is the relevant metric for weakly noticing homology. In this case, the full system completes Learning problem 1 , and is the only model to do so . We believe this is clearly a non-trivial use of the concepts and provides a partial fulfilment of the challenge outlined in §1.6. To better understand this, we examine the performance of each model in noticing and using χ and b1 in Table 1. This shows several patterns. Firstly, the ‘Only CA ’model never spots χ or b1, strongly suggesting that the exploration of S is infeasible 18 Model Unique atomic formulae (Total statements) χ % b1 % % Proven w/ χ or b1                      
+
+> Only CA 723 (750) 000
+> M0522 (410) 2.47 [1.07, 4.1] 5.67 [4.5, 7.22] 12.72 [9.83, 16.83]
+> M0+ Noise 760 (750) 1.15 [0.51, 1.78] 1.99 [1.19, 2.93] 7.84 [1.85, 16.22]
+> M1861 (750) 2.44 [1.62, 3.34] 3.24 [2.28, 4.26] 7.02 [5.23, 8.86]
+> M2278 (389) 2.39 [0.81, 4.21] 4.63 [3.07, 6.18] 5.90 [3.52, 8.87]
+
+Table 1 : Comparison of all models on D0. The second column shows the number of different atomic formulae and the total number of statements produced during evalu-ation. In columns three through five, entries in bold show the model that performed the best with respect to the metric. The proportions of statements with χ, b1 and proven statements with χ or b1 are shown as 95% confidence intervals, computed via ‘cluster bootstrap’ over evaluation episodes (10,000 resamples). Each resample con-tains a randomized selection of episodes; we report the range containing 95% of the observed percentages. Although each episode is independent, within a given episode the statements are highly related, conditioned on the policies learned by the agents during training. without deliberate strategies. Despite using the exact same loss as all other models (drawing from the same space of priors), symbolic regression on its own entirely fails at the learning task. With the introduction of RL, models M0 − M 2 produce the interesting concepts 
+
+χ and b1 at small but non-trivial rates. We argue that these concepts are helping the agents to achieve their goals, without direct encouragement. This is most true for the full system, with the highest rates in all categories. In the second column, models with the SA explore many more unique blocks per statement, as a dynamic data distribution improves the efficiency of exploration. Although finding χ and b1 is evidently hard, the superior performance of M0
+
+suggests the importance of the full approach. To properly test this we present an ablation study in Figure 4, showing the relative metrics between models. Note that we are now distinguishing the ability to notice and use χ and homology individually. 19 M0 M1 M0+Noise M2                                                                                      
+
+> M0–1.01 (0 .1σ)2.14 (1 .57 σ)1.03 (0 .08 σ)
+> M10.99 ( −0.01 σ)–2.12 (2.09 σ)1.02 (0 .12 σ)
+> M0+Noise 0.47 ( −1.59 σ)0.47 (−2.35 σ)–0.48 ( −1.35 σ)
+> M20.97 ( −0.07 σ)0.98 ( −0.07 σ)2.07 (1 .39 σ)–
+> (a) χ
+> M0M1M0+Noise M2
+> M0–0.97 ( −0.06 σ) 1 .72 (0 .76 σ)1.8 (1 .25 σ)
+> M11.03 (0 .07 σ)–1.77 (0 .77 σ)1.85 (1 .02 σ)
+> M0+Noise 0.58 ( −0.75 σ) 0 .57 ( −0.81 σ)–1.04 ( −0.04 σ)
+> M20.56 ( −1.24 σ) 0 .54 ( −1.61 σ) 0 .96 (0 .05 σ)–
+> (b) Proven with χ
+> M0M1M0+Noise M2
+> M0–1.75 (3.12 σ)2.84 (≥5σ)1.22 (1 .04 σ)
+> M10.57 (−3.1σ)–1.62 (1 .77 σ)0.7 ( −1.49 σ)
+> M0+Noise 0.35 (≤ − 5σ)0.62 ( −1.8σ)–0.43 (−2.88 σ)
+> M20.82 ( −1.04 σ)1.43 (1 .48 σ)2.32 (2.73 σ)–
+> (c) b1
+> M0M1M0+Noise M2
+> M0–2.06 (≥5σ)1.68 (1 .05 σ)2.45 (≥5σ)
+> M10.49 (−3.72 σ)–0.81 (0 .17 σ)1.2 (0 .61 σ)
+> M0+Noise 0.6 ( −1.05 σ)1.23 (0 .29 σ)–1.46 (0 .52 σ)
+> M20.41 (≤ − 5σ) 0 .84 ( −0.56 σ) 0 .68 ( −0.51 σ)–
+> (d) Proven with b1
+
+Fig. 4 : These tables show the pairwise performance ratios, i/j , for models in row i and column j on the dataset D0, with respect to all metrics. Again, we use cluster bootstrap (10,000 resamples). We compute a one-sided effective σ by mapping the bootstrapped probability that model i outperforms model j to the corresponding normal distribution. This gives an interpretable measure of the confidence in the direction of the effect, standard practice when the underlying statistic is not Gaussian [59]. Entries in bold mean that the ratio is empirically significant (i.e. ≥ 2σ), but in many cases the effect is stronger. ≥ 5σ
+
+(≤ 5σ resp.) means that the effect is at least 5 σ under our resampling resolution. It is now clear that the full system significantly outperforms its ablated counter-parts. Also notable is the large difference in the rates of noticing the two interesting features, with M0 using b1 much more than χ. This is an intriguing parallel with the history of §1.2 and §1.6, supporting our belief that b1 is much more difficult to notice through naive pattern detection. Historically, this was a proof-formed con-cept, developed to explain the variation of χ. It is gratifying to see a similar story in our experiments, implying that the system genuinely captures feedback between questioning and answering. The model with noisy provability underperforms others with another missing com-ponent ( M1 in finding χ and M2 in finding b1). Clearly, the choice of ρ has a meaningful effect. But recall that in Table 1, M0 + Noise is still successful at noticing 
+
+χ and b1, and is incomparably better than regression alone. 
+
+2.4 Varying Di results 
+
+For our final experiments, we vary the dataset over all the options of §2.1. Most importantly, in the case of D2 the full system completes Learning prob-lem 1 , producing a statement containing all of the relevant concepts. Since P2 only contains the rank-nullity theorems, we believe that this essentially fulfils the open challenge described in §1.6. To better understand the relationship between data and premises and its impact on learning, we study ( i) M0 vs M1 on D2 and ( ii ) how M0 performs on varying Di.20 D0 D1 D2 D3                                                                                                                      
+
+> D0–1.07 (0 .17 σ)0.38 (−2.72 σ)1.1 (0 .27 σ)
+> D10.94 ( −0.18 σ)–0.35 (−2.82 σ)1.03 (0 .03 σ)
+> D22.64 (2.65 σ)2.82 (2.97 σ)–2.91 (≥5σ)
+> D30.91 ( −0.25 σ) 0 .97 ( −0.06 σ)0.34 (≤ − 5σ)–
+> (b) χ
+> D0D1D2D3
+> D0–0.27 (≤ − 5σ)1.17 (0 .92 σ)0.46 (−3.72 σ)
+> D13.67 (≥5σ)–4.31 (≥5σ)1.68 (2.33 σ)
+> D20.85 ( −0.95 σ)0.23 (≤ − 5σ)–0.39 (≤ − 5σ)
+> D32.18 (3.35 σ)0.59 (−2.35 σ)2.56 (≥5σ)–
+> (c) bi
+> D0D1D2D3
+> D0–0.14 ( −1.8σ)0.42 (−2.33 σ)0.3 ( −0.35 σ)
+> D17.4 (1 .8σ)–3.14 (1 .35 σ)2.25 (0 .79 σ)
+> D22.36 (2.28 σ) 0 .32 ( −1.35 σ)–0.72 ( −0.18 σ)
+> D33.29 (0 .38 σ)0.44 ( −0.89 σ)1.34 (0 .2σ)–
+> (d) Proven with χ
+> D0D1D2D3
+> D0–0.12 (≤ − 5σ)1.36 (1 .4σ)0.18 (−2.64 σ)
+> D18.44 (≥5σ)–11 .5(≥5σ)1.5 (1 .35 σ)
+> D20.73 ( −1.45 σ)0.09 (≤ − 5σ)–0.13 (−2.77 σ)
+> D35.63 (2.7σ)0.67 ( −1.41 σ)7.67 (2.82 σ)–
+> (e) Proven with bi
+> χbiProven w/ χProven w/ bi
+> M0
+> M1
+> 2.38 (2.73 σ)1.57 (1 .83 σ)2.02 (2.08 σ)1.04 (0 .2σ)
+> (a) Impact of provability on the larger dataset D2.
+
+Fig. 5 : Table (a) gives the performance ratios of M0 vs M1 on dataset D2. The tables in (b) - (e) again show the pairwise performance ratios, i/j for row i and column j, but we are now varying the data and premises rather than the model, and each entry uses the full system (i.e. CA + SA +Provability). These ablations capture the changing nature of the learning problem as more diverse triangulations are added. We again use cluster bootstrap for sampling (with 10,000 resamples) and compute a one-sided effective σ, with σ ≥ 2being empirically significant. Finally, ≥ 5σ (≤ 5σ resp.) still indicates that the effect is at least 5 σ under our resampling resolution. Firstly, Figure 5(a) shows that provability still improves performance in most cases. Secondly, subfigures 5(b) - (e) contain several patterns. Introducing the Klein bottle (in D1) leads to a very large improvement in noticing Betti numbers, compared to D0
+
+and D2. This is probably because the system can notice b2 without b0 also changing 33 ,as happens in the disconnected D2 case. We see this further supported by the absence of a comparable improvement in D2 vs D0. Lastly, although the largest dataset D3
+
+still outperforms D0 on some metrics, the slightly smaller effect size is perhaps due to its now significant diversity and size. Taken together, the final results strongly suggest a link between the mathematical structure encoded in the data and the performance of the system. The statements that completed the Learning problem are included in Appendix A, with a collection of others. These use both definitions of χ, and sometimes the Betti numbers alone, in a variety of suggestive ways. 
+
+> 33
+
+Relative to spheres and tori. 
+
+21 3 Discussion 
+
+The main theme of this paper has been the inseparable links between conjecturing, proving, and concept-formation in the creation of ideas with mathematical value. In 
+
+§1.4 we argued that AI systems will struggle to create their own interesting results without accommodating this in some way. Their ability to solve set problems will likely continue to improve, producing more striking outcomes [60, 61]. But if the goal is machine mathematical intelligence, there are different challenges. In this work, we presented a new model for computation-driven mathematical discovery, based on the evolution of conjectures and data through proof feedback. The benchmark was Learning problem 1, thought of as ‘rediscovering’ the concept of homology. This required an AI to detect and meaningfully combine the Betti numbers and χ. Our full system completed this task. The history of Euler’s conjecture was a natural test for a mathematical AI. How-ever, the realisation that simplicial complexes and the algebra of chain vector spaces encode topology was a breakthrough 34 , perhaps hard to entirely control for in our experiments. We consider possible objections. Our dataset was essentially a large collection of diverse polyhedra; this was neces-sary for using modern statistical tools. We believe that presenting these as incidence matrices, preprocessed with standard functions, was the most natural way to present the problem today. Secondly, although the translation ‘interprets’ these as linear maps, the system may only know this through the very coarse-grained proof score. Lastly, the task involved simplicial homology, not other types. But this was the first and crucial definition. Past work suggests that mathematically significant objects may lie in very small portions of parameter space [33]. In §2.3 the intrinsic difficulty of detecting χ and bi
+
+was demonstrated by the ‘regression only’ trial, which did not produce them. This used the same regressor (as the full system) which, though carefully designed, we needed to control for. Important ideas can seem obvious in hindsight. The Euler characteristic - ‘the paradigmatic local-global principle in mathematics’ - sharpens the intuitive idea of a hole by counting ‘building blocks’ [3]. In geometry, the proof of the Gauss-Bonnet theorem, relating local curvature to global topology, can be thought of as a continuous limit [63]. Euler’s ideas have now developed into the abstract Index theorems, which cover Riemann-Roch as a special case [64]. The ablations make a strong argument for the full dynamic. Spotting χ and bi
+
+helped produce long and provable statements. The evolving attention to data encour-aged efficient exploration. Valuable notions emerged through the interplay of local optimisation, a suggestive computational analogue to §1.5. It is important that the ablations showing this stand on their own, assuming choices made in the environment and agents. Details of the system could be changed whilst maintaining the overall flow. It is believed that the sequential ordering of data points impacts learning in ML [65], focused on increasing difficulty. The Skeptical agent uses a similar idea to encourage 
+
+> 34 The first mathematician to strongly emphasise the algebraic perspective was probably Noether [62].
+
+22 constrained exploration, but could be implemented differently. The regression was adapted from a package designed for natural science and was still not optimal for mathematical expressions [49]. Finally, we used a fairly rudimentary prover and direct translation [54]. Using auto-formalisation, is it is plausible that the system would try linear algebra arguments independently. Given the nature of our collaboration, a proof of principle was a natural first step. But we hope that a version of our dynamic could be applied in research, perhaps by using a revised or enriched notion of ‘provability’. The history of Euler’s conjecture shows that deep conceptual structure can have roots in activities as concrete as the counting of faces, vertices and edges. Our results demonstrate that even the most straightforward proof feedback 35 can transform outcomes. In a 1947 lecture Turing made many predictions about computers 36 [66]. He anticipated that they would develop unpredictable behaviour, ‘learn(ing) through experience’ to become good at games like chess. In mathematics, they would do ‘more and more themselves’, such as the ‘manipulations of mathematical formulae’. How-ever, truly intelligent behaviour would require integration with existing knowledge and judgments of value. Speaking specifically about mathematics applications, he argued that ‘the machine must be allowed to have contact with human beings in order that it may adapt itself to their standards.’ We interpret him as meaning that what makes a good machine mathematician is much the same as what makes a good human mathematician; that was the basis of this paper. 
+
+Acknowledgements The authors thank Minhyong Kim for many helpful discus-sions. Daattavya Aggarwal also thanks Anand Rao Tadipatri for suggestions on using Lean. Oisin Kim was supported by the Accelerate Programme for Scientific Discovery. 
+
+# References 
+
+[1] Grothendieck, A.: R´ ecoltes et Semailles: R´ eflexions et T´ emoignage sur Un Pass´ ede Math´ ematicien. Tel. ´Editions Gallimard, Paris (2022). English translation by Tong Zhou:. https://tongchow.github.io/ 
+
+[2] Hilbert, D.: Mathematical problems. Bulletin of the American Mathematical Society 8(10), 437–479 (1902) [3] Harris, M.: Is AlphaGeometry a dead end? (2024). https://siliconreckoner. substack.com/p/is-alphageometry-a-dead-end [4] Lakatos, I.: Proofs and Refutations: The Logic of Mathematical Discovery. Cambridge University Press, Cambridge (1976) [5] Cromwell, P.R.: Polyhedra. Cambridge University Press, Cambridge (1997) [6] Richeson, D.S.: Euler’s Gem: the Polyhedron Formula and the Birth of Topology. Princeton university press, Princeton (2008) 
+
+> 35 Just a yes or no score.
+> 36 Lecture to the London Mathematical Society, 20 February 1947.
+
+23 [7] Polya, G.: Mathematics and Plausible Reasoning, Volume 1: Induction and Analogy in Mathematics. Princeton University Press, Princeton (1954). 
+
+http://www.jstor.org/stable/j.ctv14164db 
+
+[8] Alama, J.: Formal proofs and refutations. Doctoral dissertation, Stanford University (2009). https://www.proquest.com/openview/ edb2c4352c2d778f7a421c6a357f080d/1?pq-origsite=gscholar&cbl=18750 [9] Carlsson, G.: Topology and data. Bulletin of the American Mathematical Society 
+
+46 (2), 255–308 (2009) https://doi.org/10.1090/S0273-0979-09-01249-X [10] Green, M.B., Witten, E., Schwarz, J.H.: Superstring Theory: Volume 1: Intro-duction, 25th anniversary edition edn. Cambridge monographs on mathematical physics. Cambridge University Press, Cambridge (2012) [11] Poincar´ e, H.: Papers on Topology. History of Mathematics, vol. 37. American Mathematical Society, Providence, Rhode Island (2010). https://doi.org/10.1090/ hmath/037 [12] Chemla, K.: The History of Mathematical Proof in Ancient Traditions. Cambridge university press, Cambridge (2015) [13] Hales, T.C.: In: Downey, R. (ed.) Mathematics in the age of the Turing machine. Lecture Notes in Logic, pp. 253–298. Cambridge University Press, Cambridge (2014) [14] Appel, K., Haken, W.: Every planar map is four colorable part I: Discharging1. Illinois Journal of Mathematics 21 (3), 429–490 (1977) https://doi.org/10.1215/ ijm/1256049011 [15] Appel, K., Haken, W., Koch, J.: Every planar map is four colorable part II: Reducibility1. Illinois Journal of Mathematics 21 (3), 491–567 (1977) https://doi. org/10.1215/ijm/1256049012 [16] Commelin, J., Topaz, A., et al.: Liquid Tensor Experiment. https://github.com/ leanprover-community/lean-liquid (2022) [17] OpenAI: How GPT-5 helped mathematician Ernest Ryu solve a 40-year-old open problem (2025). https://openai.com/index/gpt-5-mathematical-discovery/ [18] Romera-Paredes, B., Barekatain, M., Novikov, A., et al. : Mathematical discoveries from program search with large language models. Nature 625 (7995), 468–475 (2024) https://doi.org/10.1038/s41586-023-06924-6 [19] Novikov, A., V˜ u, N., Eisenberger, M., et al. : AlphaEvolve: A coding agent for scientific and algorithmic discovery (2025). https://arxiv.org/abs/2506.13131 [20] Avigad, J.: Varieties of mathematical understanding. Bulletin of the American 24 Mathematical Society 59 (1), 99–117 (2021) https://doi.org/10.1090/bull/1726 [21] Venkatesh, A.: Some thoughts on automation and mathematical research. Bulletin of the American Mathematical Society 61 (2), 203–210 (2024) https://doi.org/10. 1090/bull/1834 [22] Neumann, J.V.: The formalist foundations of mathematics. In: Putnam, P.B.H. (ed.) Philosophy of Mathematics. Prentice-Hall, New Jersey, US (1964) [23] Silver, D., Hubert, T., Schrittwieser, J., et al. : A general reinforcement learning algorithm that masters chess, shogi, and Go through self-play. Science 362 (6419), 1140–1144 (2018) https://doi.org/10.1126/science.aar6404 [24] Deepmind: Ai achieves silver-medal standard solving international mathematical olympiad problems. Technical report, Google (2024). https://deepmind.google/ blog/ai-solves-imo-problems-at-silver-medal-level/ [25] Hubert, T., Mehta, R., Sartran, L., et al. : Olympiad-level formal mathematical reasoning with reinforcement learning. Nature (2025) https://doi.org/10.1038/ s41586-025-09833-y [26] Achim, T., Best, A., Bietti, A., et al. : Aristotle: IMO-level Automated Theorem Proving (2025). https://doi.org/10.48550/arXiv.2510.01346 [27] Chen, L., Gu, J., Huang, L., et al. : Seed-Prover: Deep and Broad Reasoning for Automated Theorem Proving (2025). https://doi.org/10.48550/arXiv.2507. 23726 [28] Dutilh Novaes, C.: The Dialogical Roots of Deduction: Historical, Cognitive, and Philosophical Perspectives on Reasoning, 1st edn. Cambridge University Press, Cambridge (2020). https://doi.org/10.1017/9781108800792 [29] Thurston, W.P.: On Proof and Progress in Mathematics. arXiv (1994). https: //doi.org/10.48550/arXiv.math/9404236 [30] Davies, A., Veliˇ ckovi´ c, P., Buesing, L., et al. : Advancing mathematics by guiding human intuition with AI. Nature 600 (7887), 70–74 (2021) https://doi.org/10. 1038/s41586-021-04086-x [31] Mishra, C., Moulik, S.R., Sarkar, R.: Mathematical conjecture generation using machine intelligence. arXiv. arXiv:2306.07277 (2023). https://doi.org/10.48550/ arXiv.2403.04571 [32] Bengio, Y., Malkin, N.: Machine learning and information theory concepts towards an AI Mathematician. arXiv (2024). https://doi.org/10.48550/arXiv. 2403.04571 [33] Shehper, A., Medina-Mardones, A.M., Lewandowski, B., et al. : What makes math 25 problems hard for reinforcement learning: a case study. arXiv (2024). https://doi. org/10.48550/arXiv.2408.15332 [34] Avigad, J.: Mathematics and the formal turn. Bulletin of the American Mathe-matical Society 61 (2), 225–240 (2024) https://doi.org/10.1090/bull/1832 [35] Bolan, M., Breitner, J., Brox, J., et al. : The Equational Theories Project: Advancing Collaborative Mathematical Research at Scale. arXiv (2025). https: //doi.org/10.48550/arXiv.2512.07087 [36] Edwards, H.M.: Galois Theory, Corr. 3. printing edn. Graduate texts in mathe-matics, vol. 101. Springer, New York Heidelberg (1998) [37] Matijaseviˇ c, J.V.: Enumerable sets are diophantine. In: Mathematical Logic in the 20th Century, pp. 269–273. https://doi.org/10.1142/9789812564894 0013 [38] Gowers, W.T.: How can it be feasible to find proofs? (2022). https: //drive.google.com/file/d/1-FFa6nMVg18m1zPtoAQrFalwpx2YaGK4/view? usp=embed facebook [39] Freedman, M.: Millennium Prize Problems Lecture – Michael Freedman: The Poincar´ e Conjecture and Mathematical Discovery. YouTube video. https://www. youtube.com/watch?v=60X5M1FhmUc [40] Tao, T.: What is good mathematics? Bulletin of the American Mathematical Society 44 (4), 623–634 (2007) https://doi.org/10.1090/S0273-0979-07-01168-8 [41] Euler, L.: Elementa doctrinae solidorum. Novi Commentarii academiae scien-tiarum Petropolitanae 4, 109–140 (1758) [42] Hatcher, A.: Algebraic Topology. Cambridge university press, New York (2001) [43] Gallier, J., Xu, D.: A Guide to the Classification Theorem for Compact Surfaces. Geometry and Computing, vol. 9. Springer, Berlin, Heidelberg (2013). https:// doi.org/10.1007/978-3-642-34364-3 [44] Dean, J.: Homology using linear algebra. Undergraduate research project, avail-able at https://osebje.famnit.upr.si/ russ.woodroofe/joshua-dean.pdf (2014) [45] Wheeler, J.A.: Information, physics, quantum: The search for links. In: Archibald, W.J. (ed.) Proceedings III International Symposium on Foundations of Quantum Mechanics, pp. 354–358 (1989) [46] Lewis, D., Lewis, S.: Holes. Australasian Journal of Philosophy 48 (2), 206–212 (1970) https://doi.org/10.1080/00048407012341181 [47] Sutton, R.S., Barto, A.: Reinforcement Learning: An Introduction, Second edition edn. Adaptive Computation and Machine Learning. The MIT Press, Cambridge, 26 Massachusetts London, England (2020) [48] Albrecht, S.V., Christianos, F., Sch¨ afer, L.: Multi-Agent Reinforcement Learn-ing: Foundations and Modern Approaches. MIT Press, Cambridge, MA (2024). 
+
+https://www.marl-book.com 
+
+[49] Cranmer, M.: Interpretable Machine Learning for Science with PySR and Sym-bolicRegression.Jl. arXiv (2023). https://doi.org/10.48550/arXiv.2305.01582 [50] Riemann, B.: Theorie der Abel’schen Functionen. 1857 (54), 115–155 (1857) https://doi.org/10.1515/crll.1857.54.115 . Chap. Journal f¨ ur die reine und ange-wandte Mathematik [51] Roch, G.: Ueber die Anzahl der willk¨ urlichen Constanten in algebraischen Func-tionen. Journal f¨ ur die reine und angewandte Mathematik 1865 (64), 372–376 (1865) https://doi.org/10.1515/crll.1865.64.372 [52] Kevin Buzzard: “Can AI do Mathematics”. Talk. https://www.youtube.com/ watch?v=O0F6EFyDA58 [53] Birch, B.J., Swinnerton-Dyer, H.P.F.: Notes on elliptic curves. II. crll 1965 (218), 79–108 (1965) https://doi.org/10.1515/crll.1965.218.79 [54] Song, P., Yang, K., Anandkumar, A.: Lean Copilot: Large Language Models as Copilots for Theorem Proving in Lean. arXiv. arXiv:2404.12534 (2025). https: //doi.org/10.48550/arXiv.2404.12534 [55] Wu, Y., Jiang, A.Q., Li, W., et al. : Autoformalization with large language models. In: Oh, A.H., Agarwal, A., Belgrave, D., Cho, K. (eds.) Advances in Neural Infor-mation Processing Systems (2022). https://openreview.net/forum?id=IUikebJ1Bf0 
+
+[56] Lowe, R., Wu, Y., Tamar, A., et al. : Multi-agent actor-critic for mixed cooperative-competitive environments. In: Proceedings of the 31st International Conference on Neural Information Processing Systems. NIPS’17, pp. 6382–6393. Curran Associates Inc., Red Hook, NY, USA (2017) [57] Sutton, R.S., McAllester, D., Singh, S., Mansour, Y.: Policy gradient methods for reinforcement learning with function approximation. In: Solla, S., Leen, T., M¨ uller, K. (eds.) Advances in Neural Information Processing Systems, vol. 12. MIT Press, Cambridge, MA (1999) [58] Meyes, R., Lu, M., Puiseau, C.W.d., Meisen, T.: Ablation Studies in Artificial Neural Networks. arXiv (2019). https://doi.org/10.48550/arXiv.1901.08644 [59] Cowan, G., Cranmer, K., Gross, E., Vitells, O.: Asymptotic formulae for likelihood-based tests of new physics. The European Physical Journal C 71 (2), 1554 (2011) https://doi.org/10.1140/epjc/s10052-011-1554-0 27 [60] Feng, T., Trinh, T., Bingham, G., et al. : Semi-Autonomous Mathematics Dis-covery with Gemini: A Case Study on the Erd˝ os Problems. arXiv (2026). https: //doi.org/10.48550/arXiv.2601.22401 [61] Feng, T.: Eigenweights for arithmetic Hirzebruch Proportionality. arXiv (2026). https://doi.org/10.48550/arXiv.2601.23245 [62] Hilton, P.: A Brief, Subjective History of Homology and Homotopy Theory in This Century. Mathematics Magazine 61 (5), 282–291 (1988) https://doi.org/10. 1080/0025570X.1988.11977391 [63] Bott, R., Tu, L.W.: Differential Forms in Algebraic Topology, 4. print edn. Graduate texts in mathematics, vol. 82. Springer, New York (2008) [64] Gilkey, P.B., Krantz, S.G.: Invariance Theory: The Heat Equation and the Atiyah-Singer Index Theorem, 2nd ed edn. Studies in Advanced Mathematics Ser, vol. v.16. Chapman and Hall/CRC, Boca Raton (2018) [65] Polu, S., Han, J.M., Zheng, K., et al. : Formal mathematics statement curricu-lum learning. In: International Conference on Learning Representations (ICLR) (2023). https://openreview.net/forum?id=-P7G-8dmSh4 
+
+[66] Turing, A.M.: Lecture to the london mathematical society on 20 february 1947. In: Carpenter, B.E., Doran, R.W. (eds.) A.M. Turing’s ACE Report of 1946 and Other Papers. Charles Babbage Institute Reprint Series for the History of Computing, vol. 10, pp. 86–105. MIT Press, Cambridge, Massachusetts (1986). 
+
+https://www.vordenker.de/downloads/turing-vorlesung.pdf 
+
+[67] Community, T.m.: The Lean mathematical library. In: Proceedings of the 9th ACM SIGPLAN International Conference on Certified Programs and Proofs, pp. 367–381 (2020). https://doi.org/10.1145/3372885.3373824 
+
+# Appendix A Collection of statements 
+
+Table A1 contains some notable statements found with a range of models and datasets. Statements with essentially the same mathematical meaning occurred many times in different symbolic forms; this shows a sample. On average, each statement corresponds to one execution run. 
+
+Notation Key: For a boundary map ∂i:
+
+n(∂i) = nullity( ∂i), r(∂i) = rank( ∂i), h(∂i) = height( ∂i), w(∂i) = width( ∂i).
+
+Learning problem 1 is completed by statements (1) - (4), which find and combine both definitions of the Euler characteristic. Although the interpretations of (2) and (3) are the same, the forms found by the system are different. Statements (5) and (6) 28 No. Dataset Statement Interpretation Proof Feedback 
+
+(1) M0 D2
+
+r(∂2)̸ = n(∂1) − h(∂1) + r(∂1)=⇒ n(∂2) + h(∂2)̸ = h(∂1) + w(∂2) V − E + F = b2 =⇒ b0 = b1 1(2) M0 D0
+
+n(∂1) + 1 = w(∂2)=⇒ h(∂1) − w(∂1) + w(∂2)̸ = 0 
+
+{b0 = 1 } ∧ b1 = 0 ∧ { b2 = 1 }
+
+=⇒ V − E + F̸ = 0 1(3) M0 D0
+
+r(∂1) = w(∂1) − r(∂2)=⇒ w(∂1) − n(∂2)̸ = r(∂2) + h(∂1)
+
+{b0 = 1 } ∧ b1 = 0 ∧ { b2 = 1 }
+
+=⇒ V − E + F̸ = 0 1(4) M0 D1
+
+n(∂1) = r(∂2) ∧ n(∂2) ∗ w(∂2) = n(∂2)=⇒ w(∂1)̸ = h(∂1) + n(∂2) + r(∂2)
+
+{b0 = 1 } ∧ b1 = 0 
+
+∧ b2 ∗ dim( C2) = b2
+
+=⇒ V − E + F̸ = 0 1(5) M2 D2
+
+n(∂1) = r(∂2) ∧ n(∂2) = 1 =⇒ n(∂2) = h(∂1) − r(∂1)
+
+b1 = 0 ∧ b2 = 1 =⇒ b0 = b2
+
+1(6) M2 D2
+
+n(∂1) = r(∂2) ∧ n(∂2) = 1 =⇒ h(∂1) − r(∂1) = 1 
+
+b1 = 0 ∧ b2 = 1 =⇒ b0 = 1 1(7) M0 D0
+
+(w(∂2) = n(∂1) − n(∂2)) ∧ (r(∂2) = n(∂1)) =⇒ (w(∂1) + 1 − h(∂1) = r(∂2)) 
+
+∧ (n(∂1) = w(∂2) + 1) 
+
+{b0 = 1 } ∧ b1 = 0 ∧
+
+b1 = 2 ∧ { b2 = 1 }
+
+=⇒ V − E + F = 2 ∧ b1 = 2 Trivially 1 (8) M0 D0 n(∂1) = r(∂1) − h(∂1) + w(∂2) b2 − 1 = b1 0(9) M0 D2 h(∂1) − r(∂1) = n(∂2) b0 = b2 0
+
+Table A1 : A collection of statements, showing the raw symbolic form, a mathematical interpretation, and the model and dataset that produced it. In the fifth column, 0/1 represents whether the statement was proven/not proven in Lean. In the Interpretation column, atomic formulae contained in curly braces {.} were in the premise set for that experiment. We also allow minor rewrites (i.e. substitutions) from the premise set corresponding to the execution. During a run, the system will typically pass through many false statements, and some may even receive reward, such as (8) and (9). Number (8) is true on spheres but false on tori. Recall both χ := V −E +F and χ := b0 −b1 +b2.are also somewhat noteworthy, without using χ. Finally, although (1) - (7) are proven by the system using linear algebra, some may be best (and easily) understood using the Classification theorem and/or Poincar´ e duality [42, 43]. 
+
+# Appendix B Formal translation 
+
+This section summarises the proving part of the environment. Statements output by the Conjecturing agent are initially translated into Lean4 language. Firstly, this adds boilerplate code to define the relevant variables, e.g. defining vector spaces and linear maps in a way that is standard in mathlib [67]. Secondly, the symbolic statement 29 is translated into a Lean theorem, with the experiment’s premise set becoming the hypotheses. With this formulation, proving a given true statement becomes an algebraic manipulation of the relevant ranks of modules. Figure B1 shows all the parts of the translation code, as well as the full proving process for statement (1) in Table A1. I. Header & Premises 
+
+II. Example Workflow 
+
+import Mathlib 
+
+import LeanCopilot 
+
+variable {R} [DivisionRing R] [AddCommGroup V0][Module R V0] [AddCommGroup V1][Module R V1] [AddCommGroup V2][Module R V2] (D1:V1 →`[R] V0) (D2:V2 →`[R] V1) 
+
+1. Header 
+
+_0, _1, _2 → (0: Z), (1: Z), (2: Z)width_D1, width_D2 → (Module.finrank R V1: Z), (Module.finrank R V2: Z)height_D1, height_D2 → (Module.finrank R V0: Z), (Module.finrank R V1: Z)rank_D1, rank_D2 → (Module.finrank R (LinearMap.range D1): Z), (Module.finrank R (LinearMap.range D2): Z)nullity_D1, nullity_D2 → (Module.finrank R (LinearMap.ker D1): Z), (Module.finrank R (LinearMap.ker D2): Z)
+
+2. Symbol translation 
+
+(p1:(Module.finrank R(LinearMap.range D1): Z) + (Module.finrank R(LinearMap.ker D1): Z) = (Module.finrank R V1: Z)) (p2:(Module.finrank R(LinearMap.range D2): Z) + (Module.finrank R(LinearMap.ker D2): Z) = (Module.finrank R V2: Z)) (p3:(Module.finrank R(LinearMap.ker D2): Z) = ( 1 : Z)) (p4:(Module.finrank R(LinearMap.range D1): Z) = (Module.finrank R V0: Z - ( 1 : Z))) 
+
+3. Premises 
+
+Outputted Conjecture (Over D2): r(∂2) 6 = n(∂1) − h(∂1) + r(∂1) = ⇒ n(∂2) + h(∂2) 6 = h(∂1) + w(∂2)
+
+1. Symbolic Statement 
+
+theorem statement8 Definitions p1 p2 (h1: ¬((Module.finrank R(LinearMap.range D2): Z) = ((Module.finrank R (LinearMap.ker D1): Z) - (Module.finrank R V0: Z) + (Module.finrank R(LinearMap.range D1): Z)))): 
+
+¬(((Module.finrank R(LinearMap.ker D2): Z) + (Module.finrank R V1: Z)) = ((Module.finrank R V0: Z) + (Module.finrank R V2: Z))) := by 
+
+2. Lean Translation 
+
+search_proof <; >
+
+simp_all <; >
+
+ring_nf at ∗ <; >
+
+grind 
+
+3. Proof attempts 
+
+Translation 
+
+Pass to Prover 
+
+Fig. B1 : In Subfigure I, the header code defines V0 , V1 and V2 as R-modules over a division ring R, and ∂is (represented via D1 and D2 ) as R-linear maps. p1 -p4 are the rank-nullities, orientability and connectedness premises. The workflow in Subfigure II shows the translation in action for statement (1) over dataset D2, picking out just p1 
+
+and p2 , the rank-nullities. Step 3 shows the two provers we tried: on the left, Lean Copilot’s search proof , and on the right, the pre-written proof using grind and ring ,tactics that are suited to algebra. In our experiments we saw no qualitative difference between these provers. 30

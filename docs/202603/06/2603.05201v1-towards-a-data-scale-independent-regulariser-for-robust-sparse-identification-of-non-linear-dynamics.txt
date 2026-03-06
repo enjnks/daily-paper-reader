@@ -1,0 +1,516 @@
+Title: Towards a data-scale independent regulariser for robust sparse identification of non-linear dynamics
+
+URL Source: https://arxiv.org/pdf/2603.05201v1
+
+Published Time: Fri, 06 Mar 2026 02:03:54 GMT
+
+Number of Pages: 21
+
+Markdown Content:
+# Towards a data-scale independent regulariser for robust sparse identification of non-linear dynamics 
+
+Jay Raut a, Daniel N. Wilke a,b,* , and Stephan Schmidt aaDepartment of Mechanical and Aeronautical Engineering, University of Pretoria, Pretoria, South Africa 
+
+> b
+
+School of Mechanical, Industrial and Aeronautical Engineering, University of the Witwatersrand, Johannesburg, South Africa 
+
+> *
+
+Corresponding author: daniel.wilke@wits.ac.za 
+
+Abstract 
+
+Data normalisation, a common and often necessary preprocessing step in engineering and scientific applications, can severely distort the discovery of governing equations by magnitude-based sparse regression methods. This issue is particularly acute for the Sparse Identification of Nonlinear Dynamics (SINDy) framework, where the core assumption of sparsity is undermined by the interaction between data scaling and measurement noise. The resulting discovered models can be dense, uninterpretable, and physically incorrect. To address this critical vulnerability, we introduce the Sequential Thresholding of Coefficient of Variation (STCV), a novel, computation-ally efficient sparse regression algorithm that is inherently robust to data scaling. STCV replaces conventional magnitude-based thresholding with a dimensionless statistical metric, the Coeffi-cient Presence (CP), which assesses the statistical validity and consistency of candidate terms in the model library. This shift from magnitude to statistical significance makes the discovery process invariant to arbitrary data scaling. Through comprehensive benchmarking on canonical dynamical systems and practical engineering problems, including a physical mass-spring-damper experiment, we demonstrate that STCV consistently and significantly outperforms standard Se-quential Thresholding Least Squares (STLSQ) and Ensemble-SINDy (E-SINDy) on normalised, noisy datasets. The results show that STCV-based methods can successfully identify the cor-rect, sparse physical laws even when other methods fail. By mitigating the distorting effects of normalisation, STCV makes sparse system identification a more reliable and automated tool for real-world applications, thereby enhancing model interpretability and trustworthiness. 
+
+Keywords: Sparse regression, Sparse identification of nonlinear dynamics, Data normalisation, Bayesian linear regression, System identification, Dynamical systems 
+
+# 1 Introduction 
+
+The data-driven discovery of governing physical laws has emerged as a transformative paradigm in science and engineering, promising to automate the modeling of complex systems directly from measurement data. Among the various techniques developed for this purpose, the Sparse Identi-fication of Nonlinear Dynamics (SINDy) framework has become a cornerstone method. SINDy’s power lies in the core premise that the dynamics of many physical systems, when viewed in an appropriate coordinate system, are governed by only a few key interaction terms. This allows the governing Ordinary Differential Equations (ODEs) to be represented as a sparse linear combination of candidate functions from a predefined library. By leveraging sparse regression, SINDy produces 1
+
+> arXiv:2603.05201v1 [cs.LG] 5 Mar 2026
+
+parsimonious and interpretable models that naturally balance complexity and accuracy, thereby avoiding the challenge of overfitting, common to many black-box machine learning models [1]. Despite its success, the practical application of SINDy is hindered by a fundamental reliance on magnitude-based sparse regression. The most common SINDy optimiser, Sequential Threshold-ing Least Squares (STLSQ) [1], iteratively prunes terms from the candidate library based on the magnitude of their fitted coefficients. However, in numerous scientific and engineering contexts, measurements of different state variables can span vastly different scales. It is standard practice to normalise this data to a uniform range (e.g., [-1, 1]) to improve the numerical conditioning of the regression problem. While beneficial for numerical stability, this normalisation arbitrarily rescales the coefficients of the true underlying ODE. This distortion of the coefficient landscape directly undermines the logic of magnitude-based thresholding. The problem is further compounded by measurement noise, which can cause spurious, overfitted terms to acquire large magnitudes after normalisation, often exceeding those of the true, physically relevant terms. This challenge has motivated research aimed at improving the robustness of the SINDy frame-work. These efforts can be broadly categorised into two main thrusts. The first focuses on robus-tifying the calculation of time derivatives from noisy data, which is a critical input to the SINDy regression problem. Significant research has been conducted on this front, often involving various data preprocessing [2] [3]. A prominent approach in this area is the weak-formulation of SINDy (WSINDy) [4] [5] [6], which recasts the differential equation in an integral form, thereby avoiding direct numerical differentiation and providing orders-of-magnitude improvements in noise resilience, but sacrifices the computational benefits of using gradients. Another strategy involves using tools such as neural networks to learn a smooth, implicit representation of the data, from which clean derivatives can be obtained via automatic differentiation [7] [8]. The second research thrust targets the sparse regression algorithm itself. This includes the de-velopment of more advanced optimisers, such as Sparse Relaxed Regularized Regression (SR3) and Stepwise Sparse Regression (SSR) [9] or Ensemble-SINDy (E-SINDy) [10], which offer al-ternative pathways to a sparse solution but often still incorporate magnitude-based penalties in implementation [11]. Bayesian frameworks provide a more fundamental alternative, replacing de-terministic thresholding with a probabilistic approach to term selection [12] [13]. By employing sparsity-promoting priors, such as spike-and-slab distributions, these methods can provide not only a sparse model but also a full posterior distribution for uncertainty quantification, albeit typically at a higher computational cost [14] [15]. Other recent work has explored group sparsity methods, which leverage structural similarities across multiple datasets to enhance identification, particularly for parametric systems [16] [17] [18], and even more brute force methods [19]. While these advancements have significantly enhanced SINDy’s robustness to noise, the specific, practical problem of sensitivity to data normalisation during the regression step remains largely unaddressed. Existing methods either tackle the inputs to the regression (derivatives) or replace the optimiser with more complex machinery. Still, they do not directly confront the failure mechanism induced by the interaction of normalisation, noise, and magnitude-based term selection. This paper introduces a direct, computationally efficient, and intuitive solution to this problem. The primary contributions of this work are: 1. A rigorous demonstration of how data normalisation fundamentally distorts the coefficient landscape in noisy SINDy problems, rendering magnitude-based thresholding unreliable. 2. The proposal of the Sequential Thresholding of Coefficient of Variation (STCV), a novel magnitude-free sparse regression algorithm that bases term selection on statistical validity rather than absolute magnitude. 23. Comprehensive benchmarking of STCV against established methods (STLSQ and E-SINDy), demonstrating its superior performance and reliability on normalised data across a suite of numerical simulations and a physical spring-mass-damper experiment. This work focuses on using SINDy and related methods to recover the correct model form rather than the exact parameters or coefficients, because (1) identifying the proper model form in itself improves the problem conditioning boosting the performance of any regression method used, and (2) the model form is still useful in applications such as anomaly detection (e.g., the model could be used to potentially detect and determine the source of anomalies). This paper is structured as follows: Section 2 presents evidence that using SINDy with the STLSQ optimiser on normalised data distorts the estimated sparsity structure. To address this issue, Section 3 introduces the proposed STCV method, which uses a dimensionality property for sparsity identification. The performance benchmarks of STCV against established methods are provided in Section 4. The results and future outlook are presented in Section 5 and the paper is concluded in Section 6. 
+
+# 2 The Distortion of Sparsity Structure by Data Normalisation 
+
+The standard SINDy framework seeks to identify a dynamical system of the form ˙x = f (x), where 
+
+x(t) ∈ Rn×1 is the state of the system at time t, and f : Rn×1 7 → Rn×1. Given time-series data of the state, X ∈ Rb×n, and its derivatives, ˙X ∈ Rb×n, where b is the number of equidistant time points, the mapping is formulated as a linear system in the parameters: 
+
+˙X = Θ(X)Ξ (1) Here, Θ : Rb×n 7 → Rb×q constructs a library matrix of q candidate nonlinear functions over all b
+
+time points. More specifically, each column of Θ(X) is a candidate nonlinear function of the state variables (e.g., polynomials terms like x1, x 21, x 1x2) for all b time points, and Ξ ∈ Rq×n is a matrix of coefficients, with its element ξij indicating the contribution of the jth candidate term to the ith equation. The objective of SINDy is to produce a sparse coefficient matrix Ξ through the use of a sparse regression strategy. The challenge arises when data normalisation is applied as a preprocessing step. Normalisation, defined here as scaling a signal so that its maximum absolute value is unitary, is a common practice to prevent numerical instability when state variables have disparate scales [20]. Note that this differs from the commonly used mean-centred normalisation, which would additionally distort the model form itself. To illustrate its effect, we consider the canonical Lorenz system: 
+
+˙x = −10 x + 10 y
+
+˙y = 28 x − y − xz 
+
+˙z = − 83 z + xy 
+
+(2) In a noise-free scenario, normalizing the trajectory data (X) is relatively benign. The process rescales the true coefficients in Ξ while perfectly preserving the correct sparsity structure, meaning the correct terms are identified, albeit with different numerical values. The situation changes dramatically with the introduction of measurement noise. The process of normalisation, which depends on the specific data trajectory (e.g., the maximum value attained), acts as an implicit, uncontrolled hyperparameter that can catastrophically alter the outcome of 3the discovery process. This makes the algorithm’s output dependent on an arbitrary preprocessing choice, fundamentally undermining the reliability and reproducibility of the scientific discovery. To demonstrate this mechanism of failure, we add 0.1% uniformly distributed noise to the Lorenz system trajectories and perform a non-sparse least-squares fit on both the original (unscaled) and normalised data using STLSQ. For the unscaled data, the mean values of the true coefficients remain large, whereas those of the spurious, overfitted coefficients are comparatively small. Their standard deviations are also low, making them easy to distinguish and prune with a magnitude-based threshold. However, for the normalised data, the landscape is completely distorted. The mean magnitudes of the overfitted coefficients become comparable to, and in some cases larger than, the true co-efficients. Furthermore, their standard deviations increase significantly. This means that, in any single realisation of noisy data, a spurious term is highly likely to have a larger coefficient than a true term, making it impossible for a magnitude-based method like STLSQ to correctly identify the model structure.                     
+
+> (a) 3.0 2.7 2.4 2.1 1.8 1.5 1.2 0.9 0.6 0.3
+> sampling duration (periods) (b)
+> (c) 567910 11 13 14 15 17
+> sampling rate (log 2(samples/period))
+> 3.0 2.7 2.4 2.1 1.8 1.5 1.2 0.9 0.6 0.3
+> sampling duration (periods) (d) 567910 11 13 14 15 17
+> sampling rate (log 2(samples/period))
+
+Figure 1: Experiment demonstrating the degradation of SINDy sampling requirements for the Lorenz system in Equation (2) when data is unscaled and normalised. The top and bottom rows respectively show noiseless data and data with 0.1% uniformly distributed noise added. The left and right columns, respectively, show the results of SINDy on unnormalised and normalised data. White indicates a 100% success rate in identifying the correct model sparsity, while black indicates a 0% success rate. The practical consequence of this distortion is the complete failure of the discovery algorithm. 4Figure 1 shows the success rate of STLSQ in identifying the correct Lorenz system equations as a function of data sampling rate and duration. For noiseless data, the success rate is lower when applying STLSQ to normalised data (top right) than to unscaled data (top left). This experiment is based on a benchmarking procedure found in Ref. [21]; refer to Appendix B for additional information on the data generation procedure. On unscaled noisy data (bottom left), STLSQ performs well across a wide range of sampling parameters. In stark contrast, on normalised noisy data (bottom right), STLSQ achieves a 0% success rate across the entire tested parameter space. The algorithm terminates prematurely, retaining a dense set of incorrect terms because the spurious coefficients exceed the threshold and cannot be pruned. This provides incontrovertible evidence that a new, magnitude-free approach is required for robust system identification from normalised data. 
+
+# 3 STCV: A Magnitude-Free Sparse Regression Framework 
+
+To overcome the limitations of magnitude-based thresholding, we propose a sparse regression frame-work that relies on a dimensionless statistical metric. The central hypothesis is that while the abso-lute magnitudes of coefficients are easily distorted by data scaling, their statistical consistency is a more robust indicator of physical relevance. Coefficients corresponding to true terms in the govern-ing equations should be estimated consistently across different subsets of noisy data. In contrast, spurious coefficients, which are merely artifacts of noise, should vary erratically. The notion of using a dimensionless, statistical parameter to label true underlying model terms is not novel, and has been previously explored in E-SINDy and UQ-SINDy [10] [14]. E-SINDy is a bootstrap aggregating (bagging) variant of STLSQ that significantly improves the sparsification accuracy. It achieves this by subsampling the data and/or library and fitting multiple sparse SINDy models. The inclusion probability across these models is used to label true terms. UQ-SINDy, on the other hand, performs Bayesian regression with specialised, non-Gaussian sparsity-inducing priors that help highlight the true underlying terms from the library, using the modal sharpness of the posterior distributions. UQ-SINDy employs the use of MCMC [22] to obtain posterior distri-butions of model coefficients. However, these methods possess limitations regarding robustness and computational efficiency. An alternative, robust statistical feature that is computationally efficient to evaluate is proposed. 
+
+3.1 A Dimensionless Property for Sparsity Identification 
+
+To quantify this statistical consistency, we employ the Coefficient of Variation (CV) [23], a standard dimensionless measure of dispersion. For a given coefficient ξij , the CV is defined as the ratio of its standard deviation σξij to its mean μξij , estimated over multiple model fits: 
+
+CV ij = σξij 
+
+μξij 
+
+(3) A low CV indicates high consistency (low relative variance), suggesting the term is physically significant. Conversely, a high CV indicates the term is an inconsistent artifact of noise. To create a metric that is directly proportional to a term’s likelihood of being present and easier to interpret, we define the Coefficient Presence (CP) as a scaled reciprocal of the CV: 
+
+CP ij =
+
+√m · μξij 
+
+σξij 
+
+(4) where m is the number of data points used in the regression. This scaling makes the CP value inde-pendent of the sample size, ensuring that results are comparable across experiments with different 5data lengths. A high absolute CP value provides strong evidence that a term is present in the true underlying model. This trend is also observed in the UQ-SINDy study [14], and we corroborated this in simple preliminary experiments. The CP has a strong analogy to the inclusion-probability hyperparameter in the E-SINDy al-gorithm. E-SINDy’s inclusion probability is an MC method of evaluating the probability of a coefficient being non-zero by bootstrap aggregating the STLSQ method. On the other hand, the CP value indicates the likelihood that the coefficient is non-zero and is computed via closed-form BLR estimation with a Gaussian prior. 
+
+3.2 The Sequential Thresholding of Coefficient of Variation (STCV) Algorithm 
+
+The CP metric serves as the core of our proposed algorithm, Sequential Thresholding of Coefficient of Variation (STCV). STCV is an iterative refinement process that progressively sparsifies the candidate library based on the statistical validity of its terms. For computational efficiency, the required mean and standard deviation of each coefficient are not estimated via expensive Monte Carlo bootstrapping. Instead, we use Bayesian Linear Regression (BLR) [22] with a weak prior. This provides a closed-form analytical solution for the posterior mean and covariance of the coefficients, from which the CP values can be calculated directly and efficiently. The iterative process is detailed in Table 1. While benchmarking the different methods, we noted that STCV sometimes fails by incorrectly retaining false terms and seldomly due to the incorrect elimination of true terms. Because the STCV and STLSQ methods are independent, STCV can be used as a pre-sparsification method for STLSQ, where STCV may partially sparsify the library, improving the problem’s condition, and STLSQ can then complete the sparse regression to identify the final model form. This cascaded STCV-STLSQ could yield improved results and is additionally included in the performance benchmarking. The STCV-STLSQ method is performed as follows: The STCV is performed with a strong ridge penalty, and the resulting sparser library is used as an initial library for STLSQ. The strong ridge penalty makes the sparsification process of STCV very conservative, ensuring that a true term is not falsely eliminated. Subsequently, STLSQ is used to obtain the final terms. The precise code implementations of the methods are provided in Appendix A. 
+
+3.3 The Role of Regularization and Hyperparameter Selection 
+
+In the STCV framework, the ridge penalty ( γ) plays a nuanced role. It is not primarily used for regularization in the traditional sense of preventing overfitting by shrinking coefficients. Instead, its main purpose is to condition the least-squares problem, which stabilises the variance estimates that are critical for calculating reliable CP values. A large enough ridge penalty will overstabilise the problem such that many false terms possess CP values in comparable ranges to true terms. The STCV algorithm employs a linear hyperparameter ramping strategy, akin to simulated annealing. This is necessary due to the hard-thresholding nature of the algorithm, where, upon eliminating a certain model term, it may no longer be recovered in subsequent iterations. It begins with a relatively high ridge penalty and a low CP threshold. This encourages a stable, conservative initial model. As the algorithm iterates and the library is refined, the ridge penalty is gradually decreased while the CP threshold is increased. This process gently guides the solution towards a sparse final model by parallelly reducing a stabilising prior while enforcing stricter statistical validity criteria at each step. Ideally, the ridge penalty should be ramped to zero since its role here is anti-sparsifying. However, in practice, a small ridge penalty may be necessary for numerical stability. 6Table 1: The Sequential Thresholding of Coefficient of Variation (STCV) Algorithm 
+
+Algorithm 1: Sequential Thresholding of Coefficient of Variation (STCV) Inputs: Design matrix Θ, derivative data ˙X, STLSQ threshold λ, initial and final ridge penalties γ0, γ f , initial and final CP thresholds λCP, 0, λ CP,f , and number of steps nsteps .
+
+Output: Sparse coefficient matrix Ξ.
+
+Procedure: 
+
+1. Precondition data for numerical stability. 2. Initialise: a. Perform an initial model fit using STLSQ with a near-zero threshold, λ, and initial ridge penalty, γ0, to get an initial coefficient matrix, Ξ0.b. Use BLR to estimate the standard deviation σξij for each coefficient in Ξ0.c. Calculate the CP value for each coefficient, CP ij = μξij /σ ξij .d. Apply an initial threshold: eliminate terms where |CP ij | < λ CP, 0
+
+a. Create ramped schedules for the ridge penalty (from γ1 to γnsteps = γf ) and the CP threshold (from λCP, 1 to λCP,n steps = λCP,f ). 3. Iterative Refinement: b. For each step k, from 1 to nsteps :i. Set current ridge penalty, γk, and CP threshold, λCP,k .ii. Inner Loop: While the model sparsity is changing: 
+
+∗ Fit a new model, Ξk, using STLSQ on the currently active terms with ridge penalty γk.
+
+∗ Estimate coefficient standard deviations using BLR. 
+
+∗ Calculate CP values for all active terms. 
+
+∗ Eliminate terms where |CP ij | < λ CP,k 
+
+∗ Check for convergence (i.e., if the set of active terms has changed). 4. Return Ξ = Ξnsteps .Like the thresholding hyperparameter of STLSQ and the inclusion probability threshold hyperpa-rameter of E-SINDy, the CP thresholding hyperparameter of STCV is the main sparsity-promoting hyperparameter, such that a high CP threshold yields a sparser model, which requires manual tun-ing to produce models of the desired sparsity. In this study, we employ a grid search method to find the CP threshold that yields the correct model sparsity. A distinct advantage of the CP threshold is that the value can be precisely tuned to control the exact number of active coefficients in the resulting model. Unlike the hyperparameters of STLSQ and E-SINDy, the CP threshold does not possess a finite logical range. The logical range of the STLSQ threshold is from 0 to the smallest coefficient of the underlying model, and the inclusion probability is from 0% to 100%. For STLSQ, this introduces a limitation: a false term cannot be eliminated if its coefficient exceeds the smallest true coefficient. In the case of E-SINDy, many terms may have an inclusion probability of exactly 0% or 100%, and partial elimination of this group is 7not possible. 
+
+# 4 Performance Benchmarking and Analysis 
+
+To validate the efficacy of STCV, we conducted a series of benchmarking tests comparing its per-formance with that of STLSQ and E-SINDy, with the data bagging option. The objective of this benchmark is to perform a hyperparameter grid search for each algortihm to identify whether there exists a set of hyperparameters that yields the correct underlying model form given measured dy-namical data. The primary metric for comparison is the success rate, defined as the fraction of many trials (each with a unique noise realisation) in which an algorithm correctly identifies the exact sparsity structure of the underlying dynamical system. This is performed for increasing noise levels to evaluate the degradation of the various methods as a function of noise. Additionally, for each problem, the data are normalised to assess each algorithm’s sensitivity to data scaling. The general benchmarking procedure is as follows. Data are generated for each problem by numerically integrating the governing ODE over a specified time interval. The variable trajectories of the simulated system are injected with multiple instances and levels of noise, where the noise level is a percentage value of the recorded maximum absolute value of the variable trajectory. This produces multiple noisy datasets at varying noise levels. To produce a normalised dataset, the individual trajectories of each dataset are scaled such that the maximum absolute value is unity. The exact details of the data generation procedure for each problem (ODE, solver, simulation sampling rate and duration, etc., used) are listed in Appendix B. For each noisy data instance, each algorithm is used to perform sparse regression with varying hyperparameters, and any instance that correctly identifies the underlying model form is recorded as a success, corresponding to that data. For each noise level, this modelling success is evaluated on each noisy data instance to produce a success rate. This benchmark presents the success rate of each method as noise levels increase. Each method is given the best chance of success by analysing the widest possible hyperparameter range. The exact algorithmic setup and range and distribution of hyperparameters used for each algorithm, for each problem, are listed in Appendix C. 
+
+4.1 Canonical Dynamical Systems 
+
+We first tested the algorithms on four canonical systems commonly used in the SINDy literature: the Lorenz, Rössler, Van der Pol, and Duffing oscillators (Figures 2a, 2b, 2c, and 2d). The results from our investigations consistently demonstrated a clear pattern. For unscaled (original) data, the performance of STCV was generally comparable to that of STLSQ and E-SINDy. However, when the trajectory data were normalised, the performance of STLSQ and E-SINDy deteriorated dramatically as noise levels increased. In contrast, STCV’s performance remained significantly more robust, often maintaining a high success rate in noise regimes where the other methods failed. This directly validates our central hypothesis that a magnitude-free approach improves performance for normalised datasets. A key observation is the shared point of absolute failure for the STLSQ and E-SINDy methods. This is due to the internal use of STLSQ in E-SINDy and highlights how bootstrap aggregating improves upon STLSQ while inheriting a fundamental limitation of STLSQ. One observed anomaly was the occasional failure of STCV on noise-free normalised data for some systems. This is an artifact of the numerical integration schemes used, which can inject dynamically consistent numerical errors. Without the randomizing effect of noise, these spurious terms can overfit to these numerical errors with high consistency (i.e., have very low variance), 8making them indistinguishable from true terms for a purely statistical method. The addition of some noise is seemingly sufficient to break these near-perfect correlations and resolve the issue. 
+
+(a) Lorenz 0.00 0.02 0.04 
+
+Noise level  
+
+> STLSQ (RD) E-SINDy (RD) STCV (RD) STCV-STLSQ (RD) STLSQ (SD) E-SINDy (SD) STCV (SD) STCV-STLSQ (SD)
+> 0.00.20.40.60.81.0
+> Success rate
+
+(b) Rössler 0.00 0.02 0.04 
+
+Noise level 
+
+> STLSQ (RD) E-SINDy (RD) STCV (RD) STCV-STLSQ (RD) STLSQ (SD) E-SINDy (SD) STCV (SD) STCV-STLSQ (SD)
+> 0.00.20.40.60.81.0
+> Success rate
+
+(c) Van der Pol 0.00 0.02 0.04 
+
+Noise level  
+
+> STLSQ (RD) E-SINDy (RD) STCV (RD) STCV-STLSQ (RD) STLSQ (SD) E-SINDy (SD) STCV (SD) STCV-STLSQ (SD)
+> 0.00.20.40.60.81.0
+> Success rate
+
+(d) Duffing 0.00 0.02 0.04 
+
+Noise level 
+
+> STLSQ (RD) E-SINDy (RD) STCV (RD) STCV-STLSQ (RD) STLSQ (SD) E-SINDy (SD) STCV (SD) STCV-STLSQ (SD)
+> 0.00.20.40.60.81.0
+> Success rate
+
+Figure 2: Success rate results from the Lorenz, Rössler, Van der Pol, and Duffing oscillator models on the Raw Data (RD) and the Scaled Data (SD). The model form and the parameters used may be found in Appendix B. 
+
+4.2 Application to Engineering Systems: Where Normalisation is a Necessity 
+
+While canonical systems provide a useful baseline, the true test of STCV lies in practical engineering problems where data normalisation is not merely an option but a necessity for numerical stability. 
+
+4.2.1 Damaged Bearing Simulation 
+
+To test the algorithms on a system where normalisation is a numerical necessity, we set up a damped mass-spring-damper system with forcing, designed to mimic the dynamics of a damaged bearing housing. The governing equations for the system are given as 9˙s(t) = v(t)˙v(t) = −10 6s(t) − 2 · 10 3v(t) + F (t) (5) where s and v represent the system displacement and velocity, respectively, and F (t) is a step function of initial amplitude 0.5 N/kg and width 200 μs, followed by an amplitude of 0 N/kg thereafter. This forcing accelerates the system to simulate a rolling element passing over a defect, which momentarily changes the load on the bearing housing. The parameters in Equation (10) have been tuned to match the response recorded on the housing of bearing 1 from the IMS dataset [24], ensuring the model provides a realistic response. However, the exact forcing step size does not matter for this investigation as the data is necessarily normalised. This high-stiffness system (note the 10 6 coefficient for s) yields displacement signals that are orders of magnitude smaller than the velocity signals (a scale difference of approximately 30,000 times), rendering the unscaled regression problem numerically ill-posed and necessitating normali-sation. The results of the different methods (shown in Figure 3) demonstrate that STCV and a com-bined STCV-STLSQ approach significantly outperformed STLSQ and E-SINDy, maintaining a high success rate at noise levels where the other methods were ineffective. 0.00 0.02 0.04 
+
+> Noise level
+> STLSQ (RD) E-SINDy (RD) STCV (RD) STCV-STLSQ (RD) STLSQ (SD) E-SINDy (SD) STCV (SD) STCV-STLSQ (SD)
+> 0.00.20.40.60.81.0
+> Success rate
+
+Figure 3: The success rate of various sparse regression algorithms for SINDy on noisy (scaled only, as unscaled cannot be modelled due to numerical limitations) linear oscillator data representing a damaged bearing housing during operation. 
+
+4.2.2 Half-Car Models 
+
+We further tested the algorithms on linear and nonlinear half-car models, which represent higher-dimensional engineering systems. The linear and nonlinear half-car models and their respective parameters are detailed in Appendix B. These eight-state models create a large candidate library, posing a more challenging sparse regression problem. Again, the results in Figures 4a and 4b showed that, for both unscaled and normalised data, STCV-based methods consistently provided the most robust performance, correctly identifying the model sparsity far into higher-noise regimes than STLSQ or E-SINDy. We can see that in all these engineering examples, only STCV or the sequential approach of STCV and STLSQ can correctly identify model sparsity beyond certain noise levels. While E-SINDy improves on STLSQ, the shared point of absolute failure is again observed. Upon further 10 (a) Linear half-car model 0.00 0.02 0.04  
+
+> Noise level
+> STLSQ (RD) E-SINDy (RD) STCV (RD) STCV-STLSQ (RD) STLSQ (SD) E-SINDy (SD) STCV (SD) STCV-STLSQ (SD)
+> 0.00.20.40.60.81.0
+> Success rate
+
+(b) Nonlinear half-car model 0.00 0.02 0.04 
+
+> Noise level
+> STLSQ (RD) E-SINDy (RD) STCV (RD) STCV-STLSQ (RD) STLSQ (SD) E-SINDy (SD) STCV (SD) STCV-STLSQ (SD)
+> 0.00.20.40.60.81.0
+> Success rate
+
+Figure 4: The success rate of various sparse regression algorithms for SINDy on noisy data from the simulated linear and nonlinear half-car models investigation, it was also noted that in many high-noise cases, STCV failed to converge with only one or two additional terms. The lack of improvement when using STCV-STLSQ sequentially shows that the overfit terms are unlikely to regress to small coefficients, even with a fairly small library for STLSQ to sparsify, indicating that the problem is fundamentally difficult to solve at higher noise levels. More interestingly, we can also observe that for these practical problems and the 2D toy problems with Newtonian-like physics (Van der Pol and Duffing oscillators), the success rate of STCV seems invariant to data scaling (note the shared x-axis scaling for noise levels), except for the bearing system, where normalising was necessary. Additionally, for these Newtonian problems, STCV-based methods consistently outperform E-SINDy and STLSQ. 
+
+4.3 Experimental Validation: Physical Mass-Spring-Damper System 
+
+To complete the investigation, the method was benchmarked using experimental data. This serves as an important demonstration of the necessity of techniques such as the proposed STCV. Unlike the previous benchmarks, only a single noise level could be produced; therefore, the focus is on the model forms recovered. The experimental setup, shown in Figure 5, consists of an oscillating mass. The mass is allowed to oscillate on a linear guide rod with linear bearings, positioned between two end plates. It is connected to the end plates by coiled springs and magnets on both sides. The springs and magnets were arranged such that the system is in static equilibrium when the mass is centred. The setup was designed to have a natural frequency between 1 Hz and 25 Hz, typical of many mechanical machineries such as vehicle suspensions [25], with the stiffnesses selected to ensure an underdamped response. In the experimental setup, an LSM6DS3 IMU [26] was used to obtain single-axis acceleration data, sampled at approximately 1.3 kHz using an Arduino Pro Mini (ATmega32u4). The accelerom-eter was mounted on the oscillating mass and connected with AWG 30 wires, which introduced negligible external dynamics. The LSM6DS3 sensors typically exhibit very low noise levels ( < 1% ). However, tolerances and mechanical play between connected moving components introduce most of 11 Figure 5: Experimental setup of physical linear/nonlinear mass-spring-damper system. Component list: 1) IMU wiring guide rod, 2) Linear springs, 3) Guide rod for oscillating mass, 4) Nonlinear magnetic springs simulated by stacked magnets on guide rods, 5) Rods securing end plates, 6) End plates holding springs and guide rod, 7) IMU glued to mass, 8) Oscillating mass, 9) Arduino logger. the stochastic behaviour observed in the setup. The measured accelerations, as well as the integrated velocity and displacement responses, are shown in Figure 6 for both the linear and nonlinear systems. The linear system was obtained by removing the magnets, so that only the springs contributed to the system’s stiffness. In contrast, the nonlinear system was obtained by removing the springs and using only the magnets to provide stiffness. The response of the linear system in Figure 6(left) exhibits the characteristic behaviour of a linear single degree-of-freedom system, while the nonlinear system’s response in Figure 6(right) shows more complex dynamics. The region of data in which the signal-to-noise ratio was deemed high enough for well-conditioned modelling was selected and cropped, as highlighted. 
+
+Figure 6: Measured and integrated data of the physical linear (left) and nonlinear (right) oscillating system. The data are modelled using STLSQ, E-SINDy, and STCV. The hyperparameters used in the algorithms are detailed in Appendix C. The results obtained using the STLSQ, E-SINDy, and 12 STCV methods are summarised in Table 2. The hyperparameters used for STLSQ and E-SINDy to produce the results shown are on the absolute limits of the logical range ( 0.9 and 0. ˙9), and the models cannot be sparsified further without eliminating desired terms. For the linear system, whose model form was determined using an electronic scale for mass, the logarithmic decrement for damping, and a static load test for stiffness, only the STCV method successfully recovered the correct form. In contrast, the STLSQ and E-SINDy algorithms produced models containing dominant spurious terms. For the nonlinear system, the exact model form is unknown. Therefore, the recovered model forms were interrogated. All identified models include nonlinear stiffness terms (e.g., s3) and an increase in damping. However, the STLSQ and E-SINDy models contain more terms than the STCV model, including some that are physically implausible for the system (e.g., 
+
+s2v). Hence, it is concluded that the STCV’s performance is validated by experimental data as well. Table 2: Comparison of resulting sparse models for the linear and nonlinear experimental data. 
+
+Method Linear system Nonlinear system 
+
+Expected ˙s = +1 .0v
+
+˙v = −1642 s − 0.143 v Unknown STLSQ 
+
+˙s = +1 .0v
+
+˙v = −1519 .43 s − 2.53 v − 363 .36 s2 + 4 .75 sv 
+
+− 218332 .31 s3 − 191 .22 s2v − 228 .92 sv 2
+
++ 2 .99 v3
+
+˙s = +1 .0v
+
+˙v = −17 .541 − 1653 .2s − 20 .92 v − 41718 .39 s2
+
++ 309 .9sv − 12 .02 v2 − 218332 .31 s3
+
++ 12314 .87 s2v + 949 .39 sv 2 + 64 .41 v3
+
+E-SINDy 
+
+˙s = +1 .0v
+
+˙v = −1519 .43 s − 2.53 v − 363 .36 s2
+
+− 218332 .31 s3 + 191 .22 s2v − 228 .92 sv 2
+
++ 2 .99 v3
+
+˙s = +1 .0v
+
+˙v = −17 .461 − 1567 .36 s − 20 .69 v − 39480 .1s2
+
+− 9.45 v2 − 429447 .2s3 + 5187 .76 s2v
+
++ 742 .63 sv 2 + 50 .02 v3
+
+STCV ˙s = +1 .0v
+
+˙v = −1564 .26 s − 1.93 v
+
+˙s = +1 .0v
+
+˙v = −17 .651 − 1360 .26 s − 9.16 v − 33094 .72 s2
+
+− 371947 .09 s3
+
+STCV -STSLQ ˙s = +1 .0v
+
+˙v = −1564 .26 s − 1.93 v
+
+˙s = +1 .0v
+
+˙v = −17 .651 − 1360 .26 s − 9.16 v − 33094 .72 s2
+
+− 371947 .09 s3
+
+To verify the fidelity of the answers, the statically measured stiffness is compared against the nonlinear returning force. The cubic function returned by STCV, as well as the STSLQ and E-SINDy estimates obtained by setting v = 0 , are used in this comparison, with the results shown in Figure 7. The STLSQ and E-SINDy methods predict a stiffer system than the measured one, while the STCV method yields a lower stiffness. Since the final regression scheme for the model coefficients is identical for all methods, this difference arises for the model form identified. It is possible that static measurements of stiffness overestimate the stiffness of such a system due to static friction. 13 0.000 0.005 0.010 0.015 0.020 0.025 
+
+> Displacement (m)
+> 0250 500 750
+> Mass (g)
+> Statically measured STLSQ estimate E-SINDy estimate STCV estimate
+
+Figure 7: Stiffness of nonlinear setup, statically measured vs. dynamically estimated by STCV, STLSQ, and E-SINDy. 
+
+4.4 Analysis of Model Selection Characteristics 
+
+To better understand the behaviour of STCV, we conducted a bias test on a system with competing linear ( k1s) and cubic ( k2s3) stiffness terms using the following nonlinear oscillator 
+
+˙s = v
+
+˙v = −10 v − k1s − k2s3 (6) where k1 and k2 are the linear and cubic stiffness coefficients. We set k1 = 300 and k2 = 1000 to yield similar natural frequencies, thereby isolating selection bias from sampling-rate effects. We test 100 combinations, ramping k1 from 300 down to 0 while concurrently ramping k2 from 0 up to 1000. For each combination, 1000 noisy datasets (1% noise, refer to Appendix B for data generation procedure) are generated, normalised, and modelled using STCV with a CP threshold of 0.3. Figure 8 plots the identification rate for linear-only, nonlinear-only, and mixed linear-nonlinear models across this parameter sweep. k1=300 
+
+> k2=0
+> k1=267
+> k2=111
+> k1=233
+> k2=222
+> k1=200
+> k2=333
+> k1=167
+> k2=444
+> k1=133
+> k2=556
+> k1=100
+> k2=667
+> k1=67
+> k2=778
+> k1=33
+> k2=889
+> k1=0
+> k2=1000
+
+Model parameters 
+
+> 0.00.51.0
+> Identification rate
+> linear nonlinear linear-nonlinear
+
+Figure 8: STCV nonlinearity bias test. 100 different models based on Equation (6), with varying values of k1 and k2, are produced. The values of k1 and k2 are ramped inversely, so the underlying model transitions from being strongly linear to strongly nonlinear. For each model, 1000 noisy datasets are produced and modelled using STCV. The model identification rate is the success rate at which STCV fits either a linear model (only k1 present), a linear-nonlinear model (both k1 and 
+
+k2 present), or a nonlinear model (only k2 present). k1 and k2 are tuned to have similar induced natural frequencies, and this experiment should help determine whether STCV is biased toward fitting linear or nonlinear models. The results in Figure 8 show STCV is effective at finding the correct model form, though it 14 misclassifies some edge cases where coefficients are very small. This is a consequence of the STCV mechanism, which requires a minimum term strength (coefficient magnitude) for detection. Figure 9 shows the average Coefficient Presence (CP) values. The CP, although dimensionless, is clearly dependent on the magnitude of the coefficient and its contribution to the dynamics. The method exhibits a desirable "snapping" behaviour as would be expected of an L0-based method. As one term’s strength increases, its CP value rises sharply, while the CP value of the weaker term drops rapidly to zero. This allows the model to snap cleanly between forms rather than transitioning smoothly. The CP plots do not intersect perfectly at the midpoint, which is attributed to the imperfect scaling of the k1 and k2 effects, rather than to an inherent bias. The results show no conclusive evidence of STCV bias towards or against nonlinear terms. k1=300 
+
+> k2=0
+> k1=267
+> k2=111
+> k1=233
+> k2=222
+> k1=200
+> k2=333
+> k1=167
+> k2=444
+> k1=133
+> k2=556
+> k1=100
+> k2=667
+> k1=67
+> k2=778
+> k1=33
+> k2=889
+> k1=0
+> k2=1000
+> Model parameters
+> 0510
+> Coefficient presence
+> of linear term of nonlinear term
+
+Figure 9: Average coefficient presence (CP) values of the linear and nonlinear terms from the STCV bias test. 
+
+# 5 Discussion and Future Outlook 
+
+The benchmarks demonstrate that STCV successfully addresses a critical limitation of SINDy. Replacing magnitude-based thresholding with a statistical validity check provides robust model identification from normalised data, a common necessity in practice. STCV is therefore a crucial component in the robust data-driven discovery ecosystem. A key area for future work is combining STCV with other robust methods. One option could be the natural extension of SR3 from STLSQ, where the algorithm is redefined as an objective function that can be minimised, making the method modular. STCV and weak-form SINDy (WSINDy) are not mutually exclusive, as they address orthogonal failure modes: WSINDy robustifies derivative estimation, while STCV robustifies the regression against scaling issues. A combined WSINDy-STCV pipeline could offer unparalleled robustness. Compared to Bayesian SINDy frameworks [14] [12], STCV offers a significant computational advantage. Its use of an efficient, closed-form BLR calculation avoids expensive MCMC sampling, making it suitable for large-scale applications. Current limitations include underperformance on perfectly noise-free data (mitigated by injecting small amounts of noise) and the need for manual hyperparameter selection ( λCP , γ ). Future work should focus on automated, data-driven methods for hyperparameter tuning, perhaps adapting techniques from ADAM-SINDy [27]. Further research could also integrate STCV with frameworks such as constrained SINDy [28] or extend its statistical foundation to improve uncertainty quantification (UQ). Combining STCV’s robust selection with the rigorous, distribution-free guarantees of Conformal Prediction [29] is a promising direction for safety-critical applications. 15 6 Conclusion 
+
+The sensitivity of sparse identification methods to routine data preprocessing steps, such as nor-malisation, poses a significant barrier to their reliable and automated application. This work has demonstrated that the interaction between data scaling and measurement noise can systematically distort the coefficient landscape of a dynamical system, causing magnitude-based regression algo-rithms like STLSQ to fail by selecting dense, physically incorrect models. We have introduced and validated the Sequential Thresholding of Coefficient of Variation (STCV) algorithm as a direct and effective solution to this problem. By employing a dimensionless, sta-tistically grounded metric, the Coefficient Presence-STCV approach selects model terms based on their consistency and statistical significance rather than their magnitude. This makes the discovery process largely invariant to data scaling. Through extensive testing across numerical and physical systems, we have shown that STCV consistently outperforms standard SINDy approaches on nor-malised, noisy data, successfully identifying parsimonious, interpretable models in regimes where other methods fail, whilst being computationally efficient. The successful identification of the cor-rect governing equation from a real-world physical experiment underscores its practical utility. By providing a magnitude-free regression framework, STCV makes SINDy a more robust, reliable, and practical tool for discovering knowledge from real-world scientific and engineering data, thereby advancing the overarching goal of automated scientific discovery. Being a general-purpose sparse regression algorithm, it also contributes to the general field of regression. 
+
+# A Code Repository 
+
+The code and models used to generate the data in this paper are available here: https://github. com/RautJ/STCV .
+
+# B Experimental Data Generation 
+
+Multiple numerical experiments were conducted to demonstrate the performance of various regres-sion schemes for SINDy. Large datasets were generated for these experiments. This appendix provides additional details on the data generation procedure for each experiment. Firstly, noise-free data are generated for the dynamical systems by numerically integrating their governing ODEs as an Initial Value Problem using SciPy’s solve_ivp function. The bearing and half-car models are special, as instead of an unsteady initial condition, an initial excitation is applied. Only post-excitation data is measured. Refer to the system discussions for details of these initial conditions. The ODEs, alongside integrator setup are listed in Table 3. Upon generating time signals for each problem’s state variables, we apply measurement noise. For each problem, the time signals for each variable are normalised (i.e., scaled so that the maximum absolute value is unity). On these normalised signals, Gaussian white noise is added. The intent is to simulate a percentage noise-floor. To simulate this, a 1% noise-floor is considered to be N (0 , 0.005) 
+
+(i.e., the 95th percentile is set to be a value of 1%. This noisy, normalised signal is scaled back to the raw scales to produce a noisy, raw signal. This process is repeated 1000 times, with unique noise realisations at each noise level. To conduct SINDy, Equation 1, gradient data is required as well. This is numerically inferred from the noisy time signals through second-order numerical differentiation. Additionally, a set of basis functions must be selected, and the trajectory data must be passed through them to generate the design matrix. In this study, a polynomial pool of order 3 is used for all experiments. 16 Table 3: Numerical integration parameters for dynamical systems. 
+
+System ODE Integrator Initial value Sampling rate Period Tolerance 
+
+Lorenz Ref. [21 ] RK 45 [0 , 1, 20] 100 Hz 10 s 10 −12 
+
+Rössler Ref. [21 ] RK 45 [14 , 8, 0] 1kHz 10 s 10 −12 
+
+van der Pol Ref. [21 ] LSODA [2 , 0] 100 Hz 30 s def ault 
+
+Duffing Ref. [21 ] LSODA [1 , 0] 100 Hz 10 s def ault 
+
+Bearing Equation 5 RK 45 [0 , 0] 1M Hz 5μs 10 −12 
+
+Linear HC Ref. [30 ] Radau [0 , ..., 0] 5kHz 2.12 s 10 −12 
+
+Non-Linear HC Ref. [31 ] Radau [0 , ..., 0] 5kHz 2.12 s 10 −12 
+
+Oscillator Equation 6 RK 45 [0 .15 , 9.89] 100 Hz 5s 10 −12 
+
+Special Note: Half-car models are treated uniquely. Since the governing ODE is presented in a factorised form, we preserve this form in the SINDy-returned model by measuring the relative dis-placements and velocities between the system’s lumped masses rather than the direct displacements and velocities of the lumped masses. 
+
+# C Regressor Setups 
+
+Multiple numerical experiments were conducted to demonstrate the performance of various re-gression schemes for SINDy. Appendix B details the generation of SINDy-ready data for these experiments. This appendix details how the various regressors (STLSQ, E-SIND, STCV) were set up and the hyperparameters used in the benchmarking experiments. The STLSQ implementation used in this study is identical to that in PySINDy [11], except for 2 additional steps. These steps are the following. Once the linear problem is defined, we solve the normal equations of the linear system instead of solving the system directly. Secondly, we use a direct linear solver from NumPy instead of an adaptive solver. These modifications have been noted to insignificantly alter the performance of STLSQ as compared to the implementation in PySINDy. E-SINDy has many flavours, and in this study, we explore only the data-bagging variant with fixed subsampling parameters (100 subsamples, 63.2% overlap). The intent is to provide a bench-mark that may be used to compare the results of E-SINDy presented in this paper to those in the original E-SINDy study. The STCV implementation is as described in Algorithm 1. The benchmarking experiment compares the performance of the various methods under increas-ing noise and explores their potential to recover the correct underlying model form from data. This is done by performing a grid search on the sparsifying hyperparameter and checking whether the correct model form was ever recovered. STLSQ offers 1 main sparsifying hyperparameter - the threshold value, λ. All methods use STLSQ internally. E-SINDy further adds a sparsifying hyperparameter - the inclusion probability threshold. Our STCV method uses the CP threshold as the primary sparsifying hyperparameter. All methods have an optional ridge penalty hyperparameter; however, this is set to a fixed value of 10 −16 . 10 internal ramping steps are used in the STCV method for the benchmark. For the additional STCV-STLSQ method, the ridge penalty (both final and initial; see Algorithm 1) is 17 raised to a large power. The ranges of the sparsifying hyperparameters of STLSQ and E-SINDy are logically bound. For STLSQ, we perform a grid search over linearly spaced threshold values from 1% to 90% of the smallest model coefficient value; for the Lorenz problem, this ranges from 0.01 to 0.9 since the smallest model coefficient is 1. For E-SINDy, we scan for an inclusion threshold from 10% to 90%. The STLSQ threshold to be defined within E-SINDy is set to the value that achieved the highest modelling success rate. The intent is to provide each method with the best possible chance of success while limiting the dimensionality of the grid search. When STLSQ yields no successes, choosing the optimal threshold is not defined but is inconsequential, as E-SINDy has no successes for these problems regardless of the STLSQ threshold value. With STCV, the CP threshold does not have a logical, bounded range. We manually identify a range for each problem through trial and error, which yields good results. The ranges used in the benchmarking analysis for each problem are listed in Table 4. Note that the CP ranges are scanned with geometric spacing, yet with 10 steps as with the other algorithms. When using STLSQ within STCV, we set the STLSQ threshold to the lowest value in the range used by the STLSQ grid search (e.g., for the Lorenz system, this is 0.01). Additionally, in Table 4, we provide the ridge penalty used in the STCV-STLSQ method pursued. In this method, for each step in the CP threshold scan, the STLSQ method is run internally as a nested scan. The ridge penalty is applied only to the STCV method when STLSQ is used internally. Table 4: STCV hyperparameters used for the benchmarking experiment. 
+
+System CP threshold range Ridge penalty (STCV-STLSQ) 
+
+Lorenz [0 .001 , 1] 10 −1
+
+Lorenz (normalised) [0 .001 , 3] 10 −1
+
+Rössler [0 .001 , 0.8] 10 −1
+
+Rössler (normalised) [0 .1, 1.2] 10 −5
+
+van der Pol [0 .001 , 0.2] 10 −1
+
+van der Pol (normalised) [0 .001 , 0.2] 10 −1
+
+Duffing [0 .001 , 0.2] 10 2
+
+Duffing (normalised) [0 .001 , 0.2] 10 2
+
+Bearing (normalised) [0 .001 , 0.03] 10 0
+
+Linear HC [0 .11 , 0.14] 10 −16 
+
+Linear HC (normalised) [0 .11 , 0.14] 10 −16 
+
+Non-Linear HC [0 .03 , 0.05] 10 −4
+
+Non-Linear HC (normalised) [0 .03 , 0.05] 10 −4
+
+A physical experiment is conducted to analyse the potential real-world performance of the three algorithms. The values of the modelling hyperparameters used to produce the results are shown in Table 5. Take special note of the STLSQ and E-SINDy thresholding, as they are set to a value on the edge of their logical ranges. 18 Table 5: Comparison of modelling hyperparameters used for the linear and nonlinear experimental data. 
+
+Method Linear system Nonlinear system 
+
+STLSQ γ = 10 −16 
+
+λ = 0 .9
+
+γ = 10 −16 
+
+λ = 0 .9
+
+E-SINDy 
+
+γ = 10 −16 
+
+λ = 0 .9
+
+Incl.thres. = (1 − 10 −16 )
+
+γ = 10 −16 
+
+λ = 0 .9
+
+Incl.thres. = (1 − 10 −16 )
+
+STCV 
+
+γ0 = 10 −16 
+
+γf = 10 −16 
+
+λ = 0 .01 
+
+CP = 0 .3
+
+γ0 = 10 −16 
+
+γf = 10 −16 
+
+λ = 0 .01 
+
+CP = 0 .4
+
+# Declaration of generative AI and AI-assisted technologies in the manuscript preparation process 
+
+During the preparation of this work, the author(s) used generative artificial intelligence tools for language editing and for assisting with phrasing and clarity of presentation. After using this tool/service, the author(s) reviewed and edited the content as needed and take(s) full responsi-bility for the content of the published article. 
+
+# References 
+
+[1] S. L. Brunton, J. L. Proctor, and J. N. Kutz, "Discovering Governing Equations from Data by Sparse Identification of Nonlinear Dynamical Systems," Proc. Natl. Acad. Sci. U.S.A. , vol. 113, no. 15, pp. 3932–3937, 2016. https://doi.org/10.1073/pnas.1517384113 
+
+[2] C. B. Delahunt and J. N. Kutz, “A Toolkit for Data-Driven Discovery of Governing Equations in High-Noise Regimes,” IEEE Access, vol. 10, pp. 31210-31234, 2022. https://doi.org/10. 1109/ACCESS.2022.3159335 
+
+[3] J. Yao, L. Mitchell, J. Maclean, and H. Saratchandran, "Data Denoising and Derivative Estimation for Data-Driven Modeling of Nonlinear Dynamical Systems," arXiv preprint arXiv:2509.14219v1 , 2025. https://arxiv.org/abs/2509.14219v1 
+
+[4] D. A. Messenger and D. M. Bortz, "Weak SINDy for Partial Differential Equations," J. Comput. Phys. , vol. 443, p. 110525, 2021. https://doi.org/10.1016/j.jcp.2021.110525 
+
+[5] "Weak/Integral SINDy Feature Overview," pysindy 2.0.0 documentation . [Online]. Available: 
+
+https://pysindy.readthedocs.io/en/stable/examples/12_weakform_SINDy_examples/ example.html 
+
+[6] A. Tran, X. He, D. A. Messenger, Y. Choi, D. M. Bortz, "Weak-Form Latent Space Dynamics Identification", Comput. Methods Appl. Mech. Eng. , vol. 427, pp.116998, 2024. https://doi. org/10.1016/j.cma.2024.116998 
+
+19 [7] S. H. Rudy, J. N. Kutz and S. L. Brunton, “Deep Learning of Dynamics and Signal-Noise Decomposition with Time-Stepping Constraints,” J. Comput. Phys. , vol. 396, pp. 483-506, 2019. https://doi.org/10.1016/j.jcp.2019.06.056 
+
+[8] K. Kaheman, S. L. Brunton and J. N. Kutz, "Automatic Differentiation to Simultaneously Identify Nonlinear Dynamics and Extract Noise Probability Distributions from Data," Mach. Learn.: Sci. Technol. , vol. 3, no. 1, pp. 015031, 2022. https://doi.org/10.1088/2632-2153/ ac567a 
+
+[9] K. Champion, P. Zheng, A. Y. Aravkin, S. L. Brunton and J. N. Kutz, “A Unified Sparse Optimization Framework to Learn Parsimonious Physics-Informed Models From Data,” IEEE Access , vol. 8, pp. 169259-169271, 2020. https://doi.org/10.1109/ACCESS.2020.3023625 
+
+[10] U. Fasel, J. N. Kutz, B. W. Brunton and S. L. Brunton, “Ensemble-SINDy: Robust Sparse Model Discovery in the Low-Data, High-Noise Limit, with Active Learning and Control,” "Proc. R. Soc. A , vol. 478, no. 2260, p. 20210904, 2022. https://doi.org/10.1098/rspa.2021.0904 
+
+[11] B. M. de Silva, K. Champion, M. Quade, J.-C. Loiseau, J. N. Kutz and S. L. Brunton, “PySINDy: A Python package for the Sparse Identification of Nonlinear Dynamical Systems from Data,” J Open Source Softw. , vol. 5, no. 49, pp. 2104, 2020. https://doi.org/10.21105/ joss.02104 
+
+[12] N. J. Linden, B. Kramer, and P. Rangamani, "Bayesian Parameter Estimation for Dynamical Models in Systems Biology," PLOS Comput. Biol. , vol. 18, no. 10, p. e1010651, 2022. https: //doi.org/10.1371/journal.pcbi.1010651 
+
+[13] R. K. Niven, L. Cordier, A. Mohammad-Djafari, M. Abel, M. Quade, "Dynamical System Identification, Model Selection, and Model Uncertainty Quantification by Bayesian Inference". 
+
+Chaos , vol. 34, no. 8, pp.083140, 2024. Available: https://doi.org/10.1063/5.0200684 .[14] S. M. Hirsh, D. A. Barajas-Solano and J. N. Kutz, “Sparsifying Priors for Bayesian Uncertainty Quantification in Model Discovery,” Royal Soc. Open Sci. , vol. 9, no. 2, p. 211823, 2022. https: //doi.org/10.1098/rsos.211823 
+
+[15] R. Nayek, R. Fuentes, K. Worden, E.J. Cross, "On Spike-and-Slab Priors for Bayesian Equation Discovery of Nonlinear Dynamical Systems via Sparse Linear Regression", Mech. Syst. Signal Process. , vol. 161, pp.107986, 2021. https://doi.org/10.1016/j.ymssp.2021.107986 
+
+[16] D. Liu, A. Sopasakis, "Enhancing Sparse Identification of Nonlinear Dynamics with Earth-Mover Distance and Group Similarity," Chaos , vol. 35, no. 3, pp. 033139, 2025. https://doi. org/10.1063/5.0214404 
+
+[17] M. Cranmer, A. Sanchez-Gonzalez, P. Battaglia, R. Xu, K. Cranmer, D. Spergel and S. Ho, “Discovering Symbolic Models from Deep Learning with Inductive Biases,” Proc. 34th Int. Conf. Neural Inf. Process. Syst. , no. 1462, pp. 17429 - 17442, 2020. https://dl.acm.org/doi/abs/ 10.5555/3495724.3497186 
+
+[18] K. Lee, N. Trask, and P. Stinis, "Structure-Preserving Sparse Identification of Nonlinear Dy-namics for Data-driven Modeling," Proc. Machine Learning Research , vol. 145, pp. 1-21, 2022. 
+
+https://proceedings.mlr.press/v190/lee22a/lee22a.pdf 
+
+20 [19] N. M. Mangan, J. N. Kutz, S. L. Brunton, and J. L. Proctor, "Model Selection for Dynamical Systems via Sparse Regression and Information Criteria," Proc. R. Soc. A , vol. 473, no. 2204, pp. 20170009, 2017. https://doi.org/10.1098/rspa.2017.0009 
+
+[20] J. Peña, V. Roshchina and N. Soheili, “Some Preconditioners for Systems of Linear Inequalities,” 
+
+Optim. Lett. , vol. 8, pp. 2145-2152, 2014. https://doi.org/10.1007/s11590-013-0721-7 
+
+[21] K. Champion, 2019. "From Data to Dynamics: Discovering Governing Equations from Data," 
+
+Doctoral Dissertation, University of Washington . https://digital.lib.washington.edu/ server/api/core/bitstreams/ac74349e-f90e-45cd-9303-9dedc633ab17/content 
+
+[22] C. M. Bishop, Pattern Recognition and Machine Learning . New York: Springer-Verlag, 2006. [23] N. P. G. C. Arachchige, L. A. Prendergast, and R. G. Staudte, “Robust Analogs to The Co-efficient of Variation,” J.Appl. Stat. , vol. 49, no. 2, pp. 268-290, 2022. https://doi.org/10. 1080/02664763.2020.1808599 
+
+[24] J. Lee, H. Qiu, G. Yu, and J. Lin, "IMS, University of Cincinnati Bearing Data Set," NASA Prognostics Data Repository , NASA Ames Research Center, Moffett Field, CA, 2007. Available: 
+
+https://data.nasa.gov/dataset/ims-bearings 
+
+[25] M. J. Griffin, Handbook of Human Vibration . London: Academic Press, 1990. [26] STMicroelectronics, "LSM6DS3TR-C: iNEMO Inertial Module: always-on 3D Accelerometer and 3D Gyroscope," Datasheet , 2017. [Online]. Available: https://www.st.com/resource/en/ datasheet/lsm6ds3tr-c.pdf 
+
+[27] S. Viknesh, Y. Tatari, C. Christenson, and A. Arzani, "ADAM-SINDy: An Efficient Optimiza-tion Framework for Parameterized Nonlinear Dynamical System Identification," Phys. Rev. Research , vol. 8, no. 013040, 2026. https://journals.aps.org/prresearch/abstract/10. 1103/dwkk-5g2h 
+
+[28] J.-C. Loiseau and S. L. Brunton, "Constrained Sparse Galerkin Regression," J. Fluid Mech. ,vol. 838, pp. 42–67, 2018. https://doi.org/10.1017/jfm.2017.823 
+
+[29] U. Fasel, "Sparse Identification of Nonlinear Dynamics with Conformal Prediction," arXiv preprint arXiv:2507.11739v1 , 2025. https://arxiv.org/html/2507.11739v1 
+
+[30] G.D. Shelke and A.C. Mitra, "Analysis and Validation of Linear Half Car Passive Suspension System with Different Road Profiles," Proc. 7th National Conf. on Recent Developments in Mech. Eng. RDME-2018 , Pune, India, pp. 14-19, 2018. [31] S.D. Jabeen, "Vibration Optimization of a Passive Suspension System via Genetic Algorithm," 
+
+Int. J. Model. Simul. Sci. Comput. , vol. 4, no. 01, p.1250022, 2013. https://doi.org/10. 1142/S1793962312500225 
+
+21
