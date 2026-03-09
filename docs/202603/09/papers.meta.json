@@ -1,0 +1,35 @@
+{
+  "label": "2026-03-09",
+  "date": "2026-03-09",
+  "generated_at": "2026-03-09T04:33:33",
+  "count": 2,
+  "papers": [
+    {
+      "paper_id": "202603/09/2603.05946v1-priorident-prior-informed-pde-identification-from-noisy-data",
+      "section": "deep",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Identifying governing partial differential equations (PDEs) from noisy spatiotemporal data remains challenging due to differentiation-induced noise amplification and ambiguity from overcomplete libraries. We propose a prior-informed weak-form sparse-regression framework that resolves both issues by refining the dictionary before regression and shifting derivatives onto smooth test functions. Our design encodes three compact physics priors-Hamiltonian (skew-gradient and energy-conserving), conservation-law (flux-form with shared cross-directional coefficients), and energy-minimization (variational, dissipative)-so that all candidate features are physically admissible by construction. These prior-consistent libraries are coupled with a subspace-pursuit pipeline enhanced by trimming and residual-reduction model selection to yield parsimonious, interpretable models. Across canonical systems-including Hamiltonian oscillators and the three-body problem, viscous Burgers and two-dimensional shallow-water equations, and diffusion and Allen--Cahn dynamics-our method achieves higher true-positive rates, stable coefficient recovery, and structure-preserving dynamics under substantial noise, consistently outperforming no-prior baselines in both strong- and weak-form settings. The results demonstrate that compact structural priors, when combined with weak formulations, provide a robust and unified route to physically faithful PDE identification from noisy data.\n\n---"
+    },
+    {
+      "paper_id": "202603/09/2603.06290v1-the-epistwin-a-knowledge-graph-grounded-neuro-symbolic-architecture-for-personal-ai",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Personal Artificial Intelligence is currently hindered by the fragmentation of user data across isolated silos. While Retrieval-Augmented Generation offers a partial remedy, its reliance on unstructured vector similarity fails to capture the latent semantic topology and temporal dependencies essential for holistic sensemaking. We introduce EpisTwin, a neuro-symbolic framework that grounds generative reasoning in a verifiable, user-centric Personal Knowledge Graph. EpisTwin leverages Multimodal Language Models to lift heterogeneous, cross-application data into semantic triples. At inference, EpisTwin enables complex reasoning over the personal semantic graph via an agentic coordinator that combines Graph Retrieval-Augmented Generation with Online Deep Visual Refinement, dynamically re-grounding symbolic entities in their raw visual context. We also introduce PersonalQA-71-100, a synthetic benchmark designed to simulate a realistic user's digital footprint and evaluate EpisTwin performance. Our framework demonstrates robust results across a suite of state-of-the-art judge models, offering a promising direction for trustworthy Personal AI."
+    }
+  ],
+  "errors": []
+}

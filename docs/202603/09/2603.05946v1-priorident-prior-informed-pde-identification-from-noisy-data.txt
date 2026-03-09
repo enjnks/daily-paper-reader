@@ -1,0 +1,1420 @@
+Title: PriorIDENT: Prior-Informed PDE Identification from Noisy Data
+
+URL Source: https://arxiv.org/pdf/2603.05946v1
+
+Published Time: Mon, 09 Mar 2026 00:36:23 GMT
+
+Number of Pages: 27
+
+Markdown Content:
+# PriorIDENT: Prior-Informed PDE Identification from Noisy Data 
+
+Cheng Tang ∗
+
+, Hao Liu †
+
+, Dong Wang ‡
+
+Abstract 
+
+Identifying governing partial differential equations (PDEs) from noisy spatiotemporal data remains challenging due to differentiation-induced noise amplification and ambiguity from over-complete libraries. We propose a prior-informed weak-form sparse-regression framework that resolves both issues by refining the dictionary before regression and shifting derivatives onto smooth test functions. Our design encodes three compact physics priors—Hamiltonian (skew-gradient and energy-conserving), conservation-law (flux-form with shared cross-directional co-efficients), and energy-minimization (variational, dissipative)—so that all candidate features are physically admissible by construction. These prior-consistent libraries are coupled with a subspace-pursuit pipeline enhanced by trimming and residual-reduction model selection to yield parsimonious, interpretable models. Across canonical systems—including Hamiltonian oscilla-tors and the three-body problem, viscous Burgers and two-dimensional shallow-water equations, and diffusion and Allen–Cahn dynamics—our method achieves higher true-positive rates, sta-ble coefficient recovery, and structure-preserving dynamics under substantial noise, consistently outperforming no-prior baselines in both strong- and weak-form settings. The results demon-strate that compact structural priors, when combined with weak formulations, provide a robust and unified route to physically faithful PDE identification from noisy data. 
+
+# 1 Introduction 
+
+The discovery of governing physical laws from data has attracted increasing attention in recent years, as it bridges scientific modeling and data-driven learning. In particular, learning par-tial differential equations (PDEs) directly from spatio-temporal observations offers new oppor-tunities for understanding complex systems in physics, engineering, and biology. A large body of work—ranging from sparse-regression [ 1, 3, 9, 12 , 18 –22 , 24 , 26 ] to neural PDE/operator ap-proaches [ 2, 4, 15 –17 , 27 ]—has advanced the field of equation discovery. More recently, the scope of these methods has been expanded to address more complex dynamics and representations: Stoch-IDENT [ 5] was proposed for identifying stochastic PDEs, Phase-IDENT [ 28 ] addressed dynamical systems with phase transitions, and spectral-based frameworks were developed for identification in the Fourier domain [ 11 , 25 ]. A review of related methods can be found in [ 8]. Regression-based approaches typically assume a generic form 
+
+∂tu = F (x, ∂ xu, ∂ 2
+
+> x
+
+u, . . . ), (1) 
+
+> ∗
+
+Department of Mathematics, Hong Kong Baptist University, Kowloon Tong, Hong Kong. Email: 22481184@life.hkbu.edu.hk. 
+
+> †
+
+Department of Mathematics, Hong Kong Baptist University, Kowloon Tong, Hong Kong. Email: haoliu@hkbu.edu.hk. 
+
+> ‡
+
+School of Science and Engineering, The Chinese University of Hong Kong (Shenzhen), Shenzhen, Guangdong 518172, China & Shenzhen International Center for Industrial and Applied Mathematics, Shenzhen Research Insti-tute of Big Data, Guangdong 518172, China & Shenzhen Loop Area Institute, Guangdong 518048, China. Email: wangdong@cuhk.edu.cn 
+
+1
+
+> arXiv:2603.05946v1 [math.NA] 6 Mar 2026
+
+where the right-hand side is represented as a combination of terms drawn from a predefined over-complete feature dictionary containing spatial derivatives and nonlinear interactions. The govern-ing operator F is modeled as a sparse linear combination of these candidate features, reflecting the empirical observation that physically meaningful PDEs are parsimonious. Such sparsity not only enhances interpretability but also mitigates overfitting, making the identification of the active terms and their coefficients a central objective in PDE discovery. Nevertheless, existing methods are frequently hampered by noise amplification—an artifact of numerical differentiation—and model ambiguity due to overcomplete dictionaries. The redundancy of candidate terms complicates the selection of correct governing components, often resulting in the misselection of non-physical terms that merely fit noise. For instance, when a system evolves by minimizing an energy functional, noise can lead to the discovery of PDE terms that are not gradients of any energy, thereby contradicting fundamental physical principles. This paper therefore focuses on two core challenges: improving robustness against noise and developing a principled framework for dictionary construction to ensure physical interpretability. A promising pathway, explored across various disciplines, is the integration of prior knowledge as a regularizing constraint, which offers a natural foundation for enhancing both the robustness and interpretability of PDE discovery. In classical image denoising, one formulates an optimization problem ˆx = arg min 
+
+> x
+
+1
+
+2 ‖y − x‖22 + λR (x),
+
+balancing fidelity to the noisy observation y with a regularization term R(x) that encapsulates prior assumptions [ 7]. The regularizer R(x) can be interpreted as the negative log-prior on the true image, and choosing an appropriate prior is therefore crucial. Early image-denoising studies underscore the value of priors: classical smoothness and total-variation regularizations impose structural constraints that suppress noise while preserving essential features. Such regularization-based strategies bias solutions toward physically or statistically plausible patterns, a principle that naturally extends to the discovery of governing equations. A similar philosophy has recently emerged in the context of PDE identification, where physical priors are embedded directly into neural network architectures. For example, Lee et al. [ 13 ] enforced a Hamiltonian structure within neural ODEs to preserve energy and symplecticity by constraining the learned dynamics to ˙x = J∇H(x),
+
+where J is skew-symmetric. Li et al. [ 14 ] incorporated a conservation-law prior via neural finite-volume schemes, while Eidnes and Lye [ 6] introduced pseudo-Hamiltonian networks that disentangle conservative and dissipative effects. These studies collectively illustrate that physics-informed priors can greatly improve robustness and interpretability by aligning learned models with underlying physical structures. Motivated by this perspective, we incorporate prior knowledge directly into the sparse-regression framework for PDE discovery. Instead of embedding priors within neural architectures, we use them to guide dictionary construction, ensuring candidate terms are both physically admissible and interpretable. In addition to prior-informed modeling, weak-form formulations have proven highly effective for mitigating noise sensitivity. By transferring differentiation from discrete data to smooth test functions, the weak form markedly enhances stability and numerical robustness. Representative examples include WeakSINDy [ 18 ], WeakIdent [ 24 ], and WG-IDENT [ 23 ], the latter also accom-modating spatially varying coefficients through group-structured sparse selection. 2Motivated by these insights, we propose a unified prior-informed weak-form PDE identification framework that addresses the two central challenges: (i) the incorporation of physical priors into sparse-regression discovery, and (ii) robustness against noise through weak formulations. Our contributions are summarized as follows: 1. We propose a novel method to incorporate prior information with dictionary design, which improves the overall robustness and ensures that the identified model is physically meaningful. 2. We develop a unified framework combining prior-informed dictionary construction (Hamilto-nian / flux-form / gradient-flow) with a weak-form sparse-regression pipeline, incorporating trimming and residual-based model selection. 3. Extensive experiments show that our method achieves higher successful rates, stable coeffi-cient recovery, and structure-preserving dynamics even under substantial noise. It consistently outperforms existing no-prior baselines in both weak-form [ 24 ] and strong-form [ 12 ] settings. The rest of this paper is organized as follows: Section 2 presents an overview of the overall PDE identification framework. In Section 3, we introduce the proposed prior-informed dictionary refinement strategy, detailing three representative forms of prior knowledge: the Hamiltonian, conservation-law, and energy–dissipation priors. We provide illustrative case studies for each prior in Section 4, emphasizing the corresponding dictionary construction and weak-form formulations. Section 5 reports extensive numerical experiments on these systems to evaluate the performance and robustness of the proposed approach. We conclude this paper in Section 6.
+
+# 2 Overview of the PDE identification framework 
+
+Given measurements of a state variable u(x, t ) ∈ Rd, where d denotes the dimension of the state vector, the objective is to infer the expression of the underlying PDE: 
+
+ut = N (u, ux, uxx , . . . ),
+
+where N (·) represents an unknown nonlinear differential operator depending on the state and its spatial derivatives. While various approaches exist for PDE identification, here we adopt the framework used in [ 9, 10 , 23 –25 ], which formulates the identification task as an ℓ0 minimization problem. The resulting identification procedure comprises five primary steps. 
+
+Step 1: Dictionary construction. First, a candidate library of P potential functional terms, denoted by {Φj }Pj=1 , is constructed. These terms typically consist of polynomial combinations of the state and its spatial derivatives (e.g., u, u 2, u x, u xx ). By evaluating each Φ j across the M
+
+spatiotemporal observations, we assemble the design matrix Θ ∈ RM ×P , where the j-th column corresponds to the discrete trajectory of Φ j . Organizing the temporal derivatives (or their weak-form projections) into a target vector b ∈ RM casts the identification problem as a linear system: 
+
+b = Θc ,
+
+where the unknown vector c ∈ RP encodes the active physical terms. Since we expect the true PDE is simple, i.e., it relies on only a small subset of the candidate library, the coefficient vector c
+
+is assumed to be sparse. 
+
+Step 2: Sparse regression via subspace pursuit. Based on the sparsity assumption established above, we employ the Subspace Pursuit (SP) algorithm [ 9] to recover the coefficient 3vector c. Given a sparsity θ, SP finds a θ-sparse vector that best fits the data. We use SP to generates a sequence of candidate models with distinct sparsity. 
+
+Step 3: Trimming of marginal features. The support set of a candidate model may include spurious terms with negligible contributions, particularly when the sparsity θ exceeds the true sparsity θ∗. A trimming procedure [ 24 ] is applied to mitigate such over-selection. For a model with sparsity θ, let Θθv denote the column of Θ corresponding to the v-th feature of this model. We define a contribution score χθv for the v-th feature as: 
+
+χθv = αθv
+
+max 1≤v′≤θ αθv′
+
+, where αθv = ‖Θθvcθv ‖2, v = 1 , . . . , θ. (2) Here, αθv quantifies the contribution of the v-th term to the approximation of b, while χθv represents its relative counterpart. Features satisfying χθv < τ for a fixed threshold τ > 0 are discarded. Sub-sequently, the coefficients of the remaining features are updated via least squares. This procedure yields a pool of refined PDE candidates across all sparsity levels. 
+
+Step 4: Model selection via Reduction in Residual (RR). 
+
+The optimal sparsity level θ∗ is selected using the Reduction in Residual (RR) criterion [ 10 ]. For each candidate sparsity level θ, let Rθ = ‖Θc θ −b‖22 denote the squared residual of the least-squares fit corresponding to the support Sθ. The average reduction ratio, 
+
+sθ = Rθ − Rθ+L
+
+LR 1
+
+,
+
+quantifies the normalized improvement in accuracy with increasing sparsity, where L ≥ 1 is a fixed integer. The optimal sparsity level θ∗ is determined as the smallest θ for which sθ falls below a predefined tolerance ρR, indicating marginal returns in data fitting. This criterion balances parsimony and accuracy. 
+
+Step 5: Final identification and reconstruction. 
+
+We obtain the final coefficient vector c∗ by least squares regression using partial columns of Θ
+
+corresponding to the optimal support: min  
+
+> c
+
+‖Θc − b‖22 subject to supp( c) = supp( cθ∗ ),
+
+where cθ∗ denotes the candidate coefficient vector at the selected sparsity level θ∗. The non-zero entries of c∗ determine the identified PDE structure. 
+
+# 3 Prior-informed dictionary refinement for PDE identification 
+
+The framework discussed in Section 2 offers a systematic data-driven approach, whose accuracy and interpretability depend on the quality of the dictionary. Treating N as unknown necessi-tates the construction of large, redundant feature libraries to ensure completeness. However, such overparameterization can induce ill-conditioning, amplify measurement noise, and yield physically inconsistent models. In this paper, we propose a prior-informed dictionary refinement strategy to mitigate these issues by embedding physical knowledge into the candidate space construction. Structural priors, such as Hamiltonian formulations, conservation laws, or energy-dissipation principles, are incor-porated to constrain admissible features. This refinement restricts the search space to features consistent with physical laws, enhancing robustness against noise and ensuring fidelity to the un-derlying dynamics. 43.1 Proposed framework 
+
+Our framework integrates physical knowledge directly into the identification pipeline by imposing a set of structural constraints P (e.g., symmetries, conservation laws, or Hamiltonian/gradient-flow structure) on the governing operator N . These constraints induce an admissible family of candidate terms and, consequently, a prior-constrained dictionary 
+
+ΘP = [Φ(P)1 (u), Φ(P)2 (u), . . . ],
+
+where each basis function Φ (P) 
+
+> i
+
+implicitly satisfies the constraints in P. Thus, while the five-stage workflow of Section 2 remains unchanged, Step 1 is replaced by a prior-constrained dictionary construction and Steps 2–5 operate on the resulting restricted dictionary. The approach applies to structural priors on N . In Sections 3.2 –3.4 , we instantiate this design for three representative classes—Hamiltonian, conservation-law, and energy–dissipation priors—which exemplify geometric, flux-form (algebraic), and variational structures, respectively. 
+
+Revised identification pipeline under prior constraints. 
+
+• Step 1′ (Prior-constrained dictionary construction). Input: spatiotemporal measure-ments of the state u and structural constraints P. Procedure: Construct the dictionary ΘP
+
+by applying the structure-preserving operator (e.g., J∇, ∇· , or δ/δ u) to a parameterized basis of the latent generating function (Hamiltonian, Flux, or Energy). Output: restricted dictionary ΘP with tied parameters implied by P.
+
+• Steps 2–5 (Sparse regression and model selection). Apply the procedures of Section 2
+
+to ( ΘP , ∂ tu), using the same sparsity and selection criteria but acting on the restricted dictionary. This physics-guided restriction provides three practical benefits. (i) Improved conditioning. 
+
+Structural tying reduces the effective degrees of freedom by enforcing physical dependencies. This mitigates the ill-conditioning typical of generic overcomplete libraries by restricting the regression to a smaller subspace of admissible operators. (ii) Noise robustness. By excluding structurally inadmissible terms, the estimator’s variance is reduced and regularization is aligned with the true operator class, improving stability under measurement noise. (iii) Interpretability. Each retained term corresponds to a physically meaningful mechanism (e.g., a flux component), yielding models with transparent physical semantics. We next demonstrate the prior-constrained dictionary construction using three classical struc-tures: (a) Hamiltonian systems (geometric/symplectic), (b) conservation-law systems (algebraic flux-divergence form), and (c) energy–dissipation systems (variational/gradient flows). All three follow a common template: parameterize a latent physical object (Hamiltonian, flux, or energy), apply the structure-preserving operator, and generate PDE-level dictionary entries with coefficient tying induced by P.
+
+3.2 Hamiltonian prior: skew-gradient structure 
+
+For canonical variables ( q, p ) ∈ Rn × Rn, Hamilton’s equations ˙q = ∂pH(q, p ), ˙p = −∂qH(q, p )can be written compactly by stacking z = ( q⊤, p ⊤)⊤ ∈ R2n as ˙z = J∇z H(z), J =
+
+( 0 In
+
+−In 0
+
+)
+
+, J⊤ = −J. 
+
+5The antisymmetry of J implies energy conservation along trajectories: d 
+
+> dt
+
+H(z(t)) = ∇H · ˙z =
+
+∇H · J∇H = 0. Moreover, Liouville’s theorem gives a divergence-free phase flow since ∇· (J∇H) = tr( J∇2H) = 0 for constant J. These identities encode the underlying symplectic geometry. (Field-theoretic Hamiltonian PDEs can be treated analogously by replacing J with a suitable Poisson operator.) 
+
+Dictionary design Let {φα(q, p )}α∈A be a basis for H and parameterize 
+
+H(q, p ) = ∑
+
+> α∈A
+
+wα φα(q, p ), wα ∈ R.
+
+Differentiation yields the PDE-level dictionary as skew-gradient dictionary entries 
+
+DHam =
+
+{
+
+J∇φα(q, p )
+
+∣∣∣ α ∈ A 
+
+}
+
+, ˙z = ∑
+
+> α∈A
+
+wα J∇φα(q, p ).
+
+The coefficients {wα} are shared across state components: the same wα multiplies both the q- and 
+
+p-components through J∇φα, guaranteeing the skew-gradient structure by construction. This parameter tying reduces the number of free parameters and enforces energy conservation and volume preservation in the identified model. 
+
+3.3 Conservation-law prior: flux-form representation 
+
+Many continuum models admit a conservative form 
+
+ut + ∇· F (u) = 0 , u : Ω → Rn,
+
+which states that the temporal change of u in a control volume is balanced by the net outward flux. Under periodic or no-flux boundary conditions, integrating over Ω yields conservation of the corresponding integral invariants. The scalar case n = 1 is recovered by writing ut + ∇· F (u) = 0. 
+
+Dictionary design We generate dictionary entries as divergences of admissible fluxes: 
+
+Dictionary design Let {φα(u)}α∈A be a basis for the flux F (u) and parameterize 
+
+F (u) = ∑
+
+> α∈A
+
+wα φα(u), wα ∈ R.
+
+Differentiation yields the PDE-level dictionary as divergence dictionary entries 
+
+DFlux =
+
+{
+
+∇ · φα(u)
+
+∣∣∣ α ∈ A 
+
+}
+
+, ∂tu + ∑
+
+> α∈A
+
+wα ∇ · φα(u) = 0 .
+
+Coefficient tying encodes physical symmetries; e.g., for isotropic terms in 2D, enforce wx,α =
+
+wy,α across directional flux components. In one dimension we keep the conservative notation to emphasize structure-preserving discretization, 
+
+D1D Flux = {(u)x, (u2)x, (ux)x, (u2ux)x, . . . },
+
+which avoids confusion with non-conservative derivative libraries while making the underlying flux explicit. For numerical implementation, the continuous divergence should be paired with its discrete counterpart (finite-volume or compatible finite-difference operators) to preserve conservation at the discrete level. 63.4 Energy-dissipation prior: gradient-flow structure 
+
+A broad class of dissipative dynamics can be written as gradient flows driven by an energy func-tional, 
+
+ut = − δE 
+
+δu , E[u] = 
+
+∫
+
+> Ω
+
+E(u, ∇u, ∇2u, . . . ) dx, 
+
+with u : Ω → Rm. Under periodic or no-flux boundary conditions, 
+
+dE 
+
+dt =
+
+〈 δE 
+
+δu , ut
+
+〉
+
+= −
+
+∥∥∥ δE 
+
+δu
+
+∥∥∥2 
+
+> L2(Ω)
+
+≤ 0,
+
+so E decays monotonically. Canonical examples include the heat equation ( E = 1 
+
+> 2
+
+|∇ u|2 yielding 
+
+ut = ∆ u), Allen–Cahn ( E = ǫ2 
+
+> 2
+
+|∇ u|2 + 1 
+
+> 4
+
+(u2 − 1) 2 yielding ut = ǫ2∆u − (u3 − u)) We adopt this representation as a prior on the operator class, thereby restricting candidate terms to variational derivatives of admissible energy densities. The vector-valued case is handled natively by the formulation above: u ∈ Rn and δE/δ u is taken componentwise. We present the general vector framework, which encompasses the scalar setting as the special case n = 1. 
+
+Dictionary design Let {φα(u, ∇u, . . . )}α∈A be a basis for the admissible energy density E and parameterize the total energy functional as 
+
+E[u] = 
+
+∫
+
+> Ω
+
+∑
+
+> α∈A
+
+wα φα(u, ∇u, . . . ) dx, wα ∈ R.
+
+Variational differentiation yields the PDE-level dictionary as gradient-flow entries 
+
+DGF =
+
+{
+
+− δ
+
+δu
+
+∫
+
+> Ω
+
+φα dx 
+
+∣∣∣ α ∈ A 
+
+}
+
+, ∂tu = ∑
+
+> α∈A
+
+wα
+
+(
+
+− δ
+
+δu
+
+∫
+
+> Ω
+
+φα dx 
+
+)
+
+.
+
+For numerical fidelity, the discrete variational derivative should be consistent with the discrete energy (e.g., finite-element/finite-difference pairs that satisfy a discrete chain rule), ensuring that the learned model preserves the intended dissipation at the discrete level. 
+
+# 4 Case studies 
+
+In this section, we demonstrate the proposed prior-informed dictionary refinement through case studies across the three structural classes discussed in the previous section. 
+
+Weak formulation setup. Note that all three cases mentioned above admit weak formulations. To mitigate measurement noise, we adopt a unified weak formulation. Consider a general system 
+
+ut − N (u, . . . ) = 0. Let ψ ∈ C∞ 
+
+> c
+
+(Ω × [0 , T )) be a smooth test function with compact temporal support and appropriate spatial boundary conditions (periodic or homogeneous). Multiplying the system by ψ, integrating over Ω × [0 , T ], and integrating by parts yield the weak identity 
+
+∫ T
+
+> 0
+
+∫
+
+> Ω
+
+u F∗[ψ] dx dt = 0 , (3) where F∗ is the formal adjoint operator. This transfers derivatives from the noisy state u to the smooth test function ψ.74.1 Hamiltonian prior: skew-gradient structure 
+
+We begin with Hamiltonian systems, characterized by energy conservation and symplectic phase-space dynamics. We examine two canonical examples: the harmonic oscillator and the three-body problem. 
+
+(a) Harmonic oscillator. 
+
+The harmonic oscillator serves as a canonical model of coupled position–momentum dynamics. For a specific parameter configuration, the governing equations are: ˙q = 2 p, ˙p = −2q, (4) where q(t) and p(t) denote displacement and momentum, respectively. Consistent with Section 3.2 , the system admits a Hamiltonian formulation with state z = ( q, p )⊤.The dynamics are governed by the total energy: 
+
+H(q, p ) = p2
+
+2m + 1
+
+2 kq 2 = p2 + q2, (5) where m = 0 .5 represents the mass and k = 2 denotes the spring stiffness. The system satisfies the canonical evolution ˙ z = J∇z H(z). 
+
+Symplectic constraint for identification. The existence of the scalar potential ( 5) implies that the vector field is strictly determined by the symplectic gradient structure. In Section 5.1.1 , we utilize this prior to constrain the identification to energy-conserving terms. 
+
+Weak formulation under the Hamiltonian prior. Let ψ(q, p, t ) ∈ C∞ 
+
+> c
+
+(Ω × (0 , T ); R2) be a smooth, compactly supported test function. Multiplying ˙ z = J∇z H(z) by ψ and integrating over Ω × [0 , T ] yield 
+
+−
+
+∫ T
+
+> 0
+
+∫
+
+> Ω
+
+z · ψt dq dp dt −
+
+∫ T
+
+> 0
+
+∫
+
+> Ω
+
+H(q, p ) ∇z ·(Jψ) dq dp dt = 0 . (6) 
+
+(b) Three-Body problem. The three-body problem describes three particles interacting un-der Newtonian gravitation in three-dimensional space. Let qi, pi ∈ R3 denote the position and momentum of the i-th body. The equations of motion are ˙qi = pi/m i,
+
+˙pi = − ∑ 
+
+> j6=i
+
+Gm imj
+
+qi − qj
+
+‖qi − qj ‖3 , i = 1 , 2, 3, (7) where G is the gravitational constant and mi is the mass. This system exhibits highly coupled, nonlinear, and potentially chaotic dynamics. Defining the canonical state z = ( q⊤ 
+
+> 1
+
+, . . . , q⊤ 
+
+> 3
+
+, p⊤ 
+
+> 1
+
+, . . . , p⊤ 
+
+> 3
+
+)⊤ ∈ R18 , the system admits the Hamiltonian form ˙ z = J∇zH(z), governed by the total energy: 
+
+H(q, p) = 
+
+> 3
+
+∑
+
+> i=1
+
+‖pi‖2
+
+2mi
+
+− ∑
+
+> i<j
+
+Gm imj
+
+‖qi − qj ‖ . (8) This formulation ensures conservation of energy and angular momentum. Under the Hamilto-nian prior , we identify the scalar Hamiltonian H(q, p) rather than the component-wise equations. We parameterize H(q, p) using weights wα:
+
+H(q, p) = 
+
+> M
+
+∑
+
+> α=1
+
+wαhα(q, p), (9) 8yielding the dictionary of symplectic gradients Dham = {J∇hα}Mα=1 .
+
+Symplectic constraint for identification. This formulation ensures conservation of energy and angular momentum. In Section 5.1.2 , we leverage this Hamiltonian structure to reduce the learning problem from identifying 18 coupled equations to identifying a single scalar energy functional H(z). 
+
+Weak formulation under the Hamiltonian prior. Let ψ(z, t ) ∈ C∞ 
+
+> c
+
+(Z × (0 , T ); R18 ) be a test function on the 18-dimensional phase space Z.The weak formulation yields 
+
+−
+
+∫ T
+
+> 0
+
+∫
+
+> Z
+
+z · ψt dz dt −
+
+∫ T
+
+> 0
+
+∫
+
+> Z
+
+H(z) ∇z ·(Jψ) dz dt = 0 . (10) 
+
+4.2 Conservation-Law prior: flux form representation 
+
+We consider conservation laws, where temporal variation is balanced by flux divergence. Two benchmark PDEs are examined: the 1D Burgers’ equation and the 2D shallow-water equations. 
+
+(a) 1D Burgers’ equation. The one-dimensional Burgers’ equation models nonlinear advective transport of a scalar field u(x, t ) and admits the equivalent forms 
+
+ut + u u x = 0 , ut + ( 1 
+
+> 2
+
+u2) 
+
+> x
+
+= 0 , (11) where the conservative form highlights the flux balance with conservative variable q = u and flux 
+
+F (q) = 1 
+
+> 2
+
+q2, i.e., 
+
+qt + F (q)x = 0 . (12) This representation supports the conservation-law prior , restricting admissible features to spatial derivatives of fluxes. 
+
+Conservation constraint for identification. The form ( 12 ) implies that the dynamics are strictly governed by the divergence of a flux. In Section 5.2.1 , we enforce this prior by restricting the candidate library to terms of the form ( F (u)) x.
+
+Weak formulation under the conservation-law prior. 
+
+Consider a test function ψ(x, t ) ∈ C∞ 
+
+> c
+
+(Ω × [0 , T )). By multiplying ( 12 ) by ψ and integrating by parts over the spatiotemporal domain, the weak identity is given by 
+
+−
+
+∫ T
+
+> 0
+
+∫
+
+> Ω
+
+q ψ t dx dt −
+
+∫ T
+
+> 0
+
+∫
+
+> Ω
+
+F (q) ψx dx dt = 0 , (13) where F (q) is a sparse linear combination of terms from the candidate flux library. 
+
+(b) 2D Shallow-Water equations. The two-dimensional shallow-water (SW) equations describe an incompressible fluid layer of depth h(x, y, t ) with horizontal velocity ( u, v ). The governing equations are 
+
+ht + ( hu )x + ( hv )y = 0 ,ut + u u x + v u y + g h x = 0 ,vt + u v x + v v y + g h y = 0 ,
+
+(14) where g denotes gravitational acceleration. Here, the first equation enforces mass continuity, while the latter two describe the conservation of horizontal momentum. Define the conservative state q = ( h, hu, hv )⊤ . The system admits a vector form of conservation-law: 
+
+qt + F(q)x + G(q)y = 0 , (15) 9where F(q) and G(q) represent the unknown nonlinear flux functions in the x- and y-directions, respectively. In our framework, these fluxes are treated as latent physical objects to be identified from an overcomplete dictionary of candidate functional terms. 
+
+Conservation constraint for identification. The structural identity ( 15 ) implies that the divergence of admissible fluxes strictly governs the dynamics. Following the prior-informed strategy, we do not regress the components of qt independently. Instead, we construct a physically consistent dictionary where each candidate feature is a divergence term ∇· (F, G)⊤, ensuring that any identified model preserves the fundamental mass and momentum conservation laws by construction. 
+
+Weak formulation under the conservation-law prior. Consider a smooth test function 
+
+ψ(x, y, t ) ∈ C∞ 
+
+> c
+
+(Ω × [0 , T ); R3). By transferring the spatial derivatives onto the test function, the weak formulation of ( 15 ) is given by: 
+
+−
+
+∫ T
+
+> 0
+
+∫
+
+> Ω
+
+q · ψt dx dy dt −
+
+∫ T
+
+> 0
+
+∫
+
+> Ω
+
+(F(q) · ψx + G(q) · ψy
+
+) dx dy dt = 0 . (16) 
+
+4.3 Energy-Dissipation prior: gradient flow structure 
+
+Finally, we consider systems evolving to minimize an energy functional, exhibiting dissipative be-havior. Two canonical examples are the 1D diffusion equation and the 1D Allen–Cahn equation. 
+
+(a) 1D Diffusion equation. The one-dimensional diffusion equation describes the dissipative spreading of a scalar field u(x, t ) on Ω = ( a, b ), serving as a canonical prototype for gradient flows. Its standard form is 
+
+ut = ν u xx , ν > 0, (17) where ν is the diffusivity coefficient. This equation is the L2-gradient flow of the Dirichlet energy functional :
+
+E[u] = ν
+
+2
+
+∫
+
+> Ω
+
+|ux|2 dx. (18) The associated gradient-flow dynamics recover the diffusion equation ( 17 ): 
+
+ut = − δE 
+
+δu = ν u xx . (19) This formulation highlights the intrinsic energy-dissipation structure , where temporal evolution follows the steepest descent of E[u]. 
+
+Gradient flow constraint for identification. Since the diffusion equation is formally the L2-gradient flow of the Dirichlet energy ( 18 ), any data-driven identification should ideally respect this variational structure. In our experiments (Section 5.3.1 ), we will leverage this property by parameterizing the energy density rather than the PDE terms directly. 
+
+Weak formulation under the energy–dissipation prior. 
+
+Consider a smooth test function ψ(x, t ) ∈ C∞ 
+
+> c
+
+(Ω ×[0 , T )). Multiplying the gradient-flow identity 
+
+ut = − δE  
+
+> δu
+
+by ψ and integrating by parts over the spatiotemporal domain yield: 
+
+−
+
+∫ T
+
+> 0
+
+∫
+
+> Ω
+
+u ψ t dx dt +
+
+∫ T
+
+> 0
+
+∫
+
+> Ω
+
+δE 
+
+δu ψ dx dt = 0 , (20) where δE  
+
+> δu
+
+is the variational derivative of the latent energy functional E[u]. 10 (b) 1D Allen–Cahn equation. The one-dimensional Allen–Cahn equation models the relaxation dynamics of a scalar order parameter u(x, t ) on Ω = ( a, b ), serving as a canonical prototype for phase separation and interface motion. Its standard form is 
+
+ut = uxx − (u3 − u), (21) where uxx enforces smoothness and −(u3 − u) drives the system toward stable equilibria u = ±1. This equation is the L2-gradient flow of the double-well energy functional :
+
+E[u] = 
+
+∫
+
+> Ω
+
+( 1 
+
+> 2
+
+|ux|2 + 1 
+
+> 4
+
+(u2 − 1) 2)
+
+dx. (22) where the first term penalizes spatial variations and the second favors the symmetric minima 
+
+u = ±1. The associated gradient flow recovers ( 21 ): 
+
+ut = − δE 
+
+δu = uxx − (u3 − u). (23) 
+
+Gradient flow constraint for identification. The variational structure above implies that the admissible driving forces in the PDE must originate from a bounded energy potential. In Section 
+
+5.3.2 , we leverage this property to restrict the candidate library, ensuring that the identified model satisfies the energy dissipation law. 
+
+Weak formulation under the energy–dissipation prior (Allen–Cahn). 
+
+Consider a smooth test function ψ(x, t ) ∈ C∞ 
+
+> c
+
+(Ω × [0 , T )). Following the variational structure established in ( 23 ), the weak formulation is expressed as: 
+
+−
+
+∫ T
+
+> 0
+
+∫
+
+> Ω
+
+u ψ t dx dt +
+
+∫ T
+
+> 0
+
+∫
+
+> Ω
+
+δE 
+
+δu ψ dx dt = 0 , (24) where δE  
+
+> δu
+
+is the variational derivative of the unknown energy functional E[u]. 
+
+# 5 Numerical experiment 
+
+With the prior informed dictionary constructions, this section evaluates identification quality and robustness to measurement noise for several PDEs. For each example, we compare the following four configurations: Conf. 1 Separate identification without weak form: Directly identify PDEs without using prior nor weak formulation, corresponding to the method in [ 9] without Successively Denoised Differ-entiation (SDD). Conf. 2 Separate identification with weak form: Directly identify PDEs without using prior but use weak formulation, corresponding to the method in [ 23 , 24 ]. Conf. 3 Prior-based identification without weak form: Use prior to identify a PDE without using weak formulation. Conf. 4 Prior-based identification with weak form: The proposed method. 11 For each method, we measure its performance by the TPR defined as: TPR = |{ l : c∗(l) 6 = 0 and c(l) 6 = 0 }| 
+
+|{ l : c∗(l) 6 = 0 }| . (25) This metric computes the ratio of correctly identified non-zero coefficients to the total number of true non-zero coefficients. It quantifies the method’s ability to correctly identify relevant features in the underlying differential equation. Consider a space-time domain Ω × [0 , T ] where Ω = [ L1, L 2] with 0 ≤ L1 < L 2 and T > 0. The given data (discretized PDE solution with noise) is denoted by 
+
+D = {U ni = u(xi, t n) + εni , i = 0 , 1, . . . , N x, n = 0 , 1, . . . , N t}, (26) where xi = i∆x ∈ [L1, L 2] and tn = n∆t ∈ [0 , T ]; εni represents independent zero-mean noise; and 
+
+u(xi, t n) represents the clean data, for i = 0 , 1, . . . , N x, and n = 0 , 1, . . . , N t.Let 
+
+Umax = max   
+
+> j=1 ,...,N x
+
+max   
+
+> m=1 ,...,N t
+
+U mj , Umin = min   
+
+> j=1 ,...,N x
+
+min   
+
+> m=1 ,...,N t
+
+U mj .
+
+We consider a noise model ǫ ∼ N (0 , σ 2) with standard deviation σ defined as: 
+
+σ = σNSR 
+
+N tN xN x
+
+∑ 
+
+> j=1
+> Nt
+
+∑
+
+> m=1
+
+∣∣∣∣U mj − Umax + Umin 
+
+2
+
+∣∣∣∣
+
+> 2
+
+.
+
+Here, σNSR ∈ [0 , 1] indicates the noise-to-signal ratio (NSR). We also visually compare the true and identified trajectories across different noise levels, as illustrated in Figures 3, 6–8, 11 . Here, ‘true trajectories’ refer to the ground truth data, while ‘identified trajectories’ represent the solutions obtained from the identified PDEs/ODEs starting from the same initial conditions. 
+
+5.1 Hamiltonian prior 
+
+5.1.1 Harmonic oscillator 
+
+We begin with the harmonic oscillator, serving as a benchmark for Hamiltonian identification (see Section 4.1 ). The data is generated on a uniform grid covering the phase-space domain [ −1.2, 1.2] 2 .Trajectories are integrated over the interval t ∈ [0 , 3] with a time step ∆ t = 0 .01, initialized from energy level sets with radii r ∈ [0 .1, 1.0]. Given the Hamiltonian H = p2 +q2, these radii correspond to concentric circular orbits in phase space with total energy E = r2.
+
+Feature libraries. We construct two feature libraries to evaluate the Hamiltonian prior: a generic polynomial library and a Hamiltonian-constrained library. 
+
+Baseline (non-prior) dictionary. We construct a baseline polynomial library Dbase using a basis 
+
+B up to third order: 
+
+B = {1, p, q, pq, p 2, q 2, p 2q, pq 2, p 3, q 3}.
+
+Hamiltonian prior dictionary. Based on the symplectic structure discussed in Section 4.1 , the prior-informed dictionary is generated by applying the skew-gradient operator to the polynomial basis: 
+
+DHam = {J∇z φ | φ ∈ B }. (27) This ensures every candidate model in DHam inherently satisfies energy conservation. 12 Identification results and performance. We identify the PDE system using both the baseline and prior-informed libraries with the four configurations. Under various noise levels, the TPR averaged over 20 trials are shown in Figure 1. With the baseline library, the position and momentum equations are identified independently. In contrast, the Hamiltonian prior constrains the search to a single joint regression, reducing the degree of freedom. Across all noise levels, the proposed method has stable performances. It correctly identifies the active support S∗ 
+
+> Ham
+
+corresponding to the quadratic energy components p2 and q2 with TPR=1, as shown in (d). While results with other configurations have obvious reduced TPR with high noise levels. The results demonstrate improved performance with our proposed method: the Hamiltonian prior ensures energy-preserving, physically consistent recovery, while the weak-form integration substantially enhances numerical stability and robustness to noise.      
+
+> Noise Std
+> 0% 5% 10% 15% 25% 50%
+> TPR Value
+> 00.2 0.4 0.6 0.8 1
+
+(a) Separate (Strong form)      
+
+> Noise Std
+> 0% 5% 10% 15% 25% 50%
+> TPR Value
+> 00.2 0.4 0.6 0.8 1
+
+(b) Separate (Weak form)      
+
+> Noise Std
+> 0% 5% 10% 15% 25% 50%
+> TPR Value
+> 00.2 0.4 0.6 0.8 1
+
+(c) Prior-based (Strong form)      
+
+> Noise Std
+> 0% 5% 10% 15% 25% 50%
+> TPR Value
+> 00.2 0.4 0.6 0.8 1
+
+(d) Prior-based (Weak form) 
+
+Figure 1: TPR results from 20 repeated identification trials for the harmonic oscillator system with different noise levels {0% , 5% , 10% , 15% , 25% , 50% } under four configurations as mentioned above. 
+
+5.1.2 Three-Body problem 
+
+We test the proposed method on the three-body problem described in Section 4.1 . The system dy-namics are governed by the Hamiltonian H(z) defined in Equation ( 8). In our experiments, we adopt normalized units with gravitational constant G = 1 .0 and equal masses mi = 1 .0. The system is ini-tialized in a perturbed figure-eight configuration, with positions q1 = −q3 = ( −0.9700 , 0.2431 , 0) ⊤
+
+and q2 = 0. Initial momenta are set to p1 = (0 .4662 , 0.4324 ,
+
+0.001) ⊤, p2 = ( −0.9324 , −0.8647 , 0) ⊤ , and p3 = (0 .4662 , 0.4324 , −0.001) ⊤ , ensuring a stationary 13 center of mass and quasi-planar motion. Trajectories are integrated over t ∈ [0 , 100] with a time step ∆ t = 0 .01, confined within the domain [ −1.2, 1.2] 3.
+
+Feature libraries. We construct two feature libraries and compare an unconstrained dictionary with a Hamiltonian-constrained dictionary enforcing symplectic structure. 
+
+Baseline (non-prior) dictionary. The baseline library combines single-body polynomials and pairwise gravitational terms to regress ˙ qi and ˙ pi:
+
+Dbase =
+
+{
+
+qi, pi, q2 
+
+> i
+
+, p2 
+
+> i
+
+, qipi, ‖qij ‖−1, qij ‖qij ‖−3} 
+
+> i,j ∈{ 1,2,3},j 6=i
+
+, (28) where qij = qi − qj denotes the relative position vector between bodies i and j. This library treats each component of the canonical state z = ( q, p)⊤ independently, thereby ignoring the underlying physical symmetries, conservation laws, and symplectic coupling. 
+
+Hamiltonian prior dictionary. We restrict admissible terms to symplectic gradients of a scalar energy. To validate the recovery of isotropy from data, we construct the energy basis BH using scalar momentum components and pairwise potentials: 
+
+BH =
+
+{
+
+p2
+
+> i,α
+
+, ‖qij ‖−1 | i, j ∈ { 1, 2, 3}, j > i, α ∈ { x, y, z }
+
+}
+
+, (29) where pi,α denotes the α-th component of the momentum for body i. Applying the symplectic gradient to each basis element yields the Hamiltonian dictionary: 
+
+DHam = {J∇zφ | φ ∈ B H
+
+}. (30) This construction ensures that every candidate model naturally respects the symplectic structure of the system. 
+
+Identification results and performance. We identify the dynamical system using both the baseline and prior-informed libraries across the four configurations. Under various noise levels, the TPR averaged over 20 trials is shown in Figure 2. With the baseline library, the 18 equations for position ( ˙ qi) and momentum ( ˙ pi) are identified independently from a comprehensive pool of 58 candidate features, necessitating a high-dimensional and unconstrained search. In contrast, the Hamiltonian prior couples the candidate terms into 12 structured groups via the energy basis BH ,constraining the search to a single joint regression and drastically reducing the degrees of freedom. Across all noise levels, the proposed method exhibits stable performance. It correctly identifies the active support S∗ 
+
+> Ham
+
+corresponding to the 12 physical terms with a TPR of 1 up to 10% noise, as shown in Figure 2(d). Conversely, results from the unconstrained baseline approach exhibit a noticeably reduced TPR across all noise levels. Figure 3 compares the true and identified trajectories across noise levels (0%, 1%, and 5%). While low-noise recoveries show excellent agreement, deviations emerge at 5% noise. Notably, the framework successfully identifies the correct Hamiltonian structure (functional forms) even at this level; however, larger errors in coefficient estimation accumulate during integration, causing the observed spatial drift. Despite these quantitative deviations, the identified model maintains a qualitatively consistent orbital structure, demonstrating the robustness of the Hamiltonian prior. 
+
+5.2 Conservation-Law prior 
+
+5.2.1 Inviscid Burgers’ equation 
+
+We consider the inviscid Burgers’ equation (see Section 4.2 ). Numerical data is generated by solving the conservative form ( 11 ) on a periodic domain x ∈ [0 , 1]. The system is initialized 14 Noise Std      
+
+> 0% 1% 5% 10% 20% 50%
+> TPR Value
+> 00.2 0.4 0.6 0.8 1
+
+(a) Separate (Strong form)      
+
+> Noise Std
+> 0% 1% 5% 10% 20% 50%
+> TPR Value
+> 00.2 0.4 0.6 0.8 1
+
+(b) Separate (Weak form)      
+
+> Noise Std
+> 0% 1% 5% 10% 20% 50%
+> TPR Value
+> 00.2 0.4 0.6 0.8 1
+
+(c) Prior-based (Strong form)      
+
+> Noise Std
+> 0% 1% 5% 10% 20% 50%
+> TPR Value
+> 00.2 0.4 0.6 0.8 1
+
+(d) Prior-based (Weak form) 
+
+Figure 2: TPR results from twenty repeated identification trials for the three-body Hamiltonian system with different noise levels {0% , 1% , 5% , 10% , 20% , 50% } under four configurations as men-tioned above. with the mixed-wave condition u0(x) = 0 .5(sin(2 πx ) + cos(2 πx )). Evolution is computed using a finite-volume scheme with the global Lax–Friedrichs flux to correctly capture shock formation. The spatial domain is discretized with Nx = 500 grid points, and trajectories are sampled over Nt = 200 time steps with ∆ t = 0 .001. 
+
+Feature libraries. To evaluate the efficacy of conservation-law priors, we construct two feature libraries and compare the baseline approach with the flux-constrained dictionary derived from the conservation form. 
+
+Baseline (no-prior) dictionary. The baseline dictionary Dbase consists of polynomial derivative terms up to third order: 
+
+Dbase = {ukux, u kuxx | k = 0 , 1, 2, 3} ∪ {uk | k = 1 , 2, 3}. (31) This basis spans a wide space of nonlinear terms (e.g., u u x, uxx ), offering sufficient expres-siveness for general transport dynamics. However, lacking explicit conservation constraints, it may yield models with non-physical source terms. 
+
+Conservation-law prior dictionary. Following the conservative structure identified in Section 
+
+4.2 , we restrict admissible features to spatial derivatives of flux functions. Defining candidate fluxes 
+
+F = {u, u 2, u 3}, the flux-form dictionary is: 
+
+Dflux = {(F )x | F ∈ F } = {ux, (u2)x, (u3)x
+
+}. (32) 15 (a) Given, 0% noise (b) Given, 1% noise (c) Given, 5% noise   
+
+> (d) Identified, 0% noise (e) Identified, 1% noise (f) Identified, 5% noise
+
+Figure 3: Comparison of trajectories of Three–Body Problem. Top row: True trajectories. Bottom row: Identified trajectories. Columns correspond to noise levels of 0%, 1%, and 5% respectively. This construction guarantees that the recovered dynamics satisfy local flux balance by definition. 
+
+Identification results and performance. We identify the governing PDE using both the base-line and flux-informed libraries across the four configurations. Under various noise levels, the TPR averaged over 20 trials is shown in Figure 4. With the baseline library, the regression must navigate a larger, unconstrained hypothesis space, increasing the risk of selecting non-conservative source terms or unphysical dissipation. In contrast, the conservation-law prior constrains the search strictly to flux gradients, significantly reducing the degrees of freedom. Across all noise levels, the proposed method exhibits stable performance. It correctly identifies the active support S∗ 
+
+> flux
+
+corresponding to the nonlinear flux component ( u2)x with a TPR of 1, as shown in Figure 4(d). Conversely, results with the baseline library exhibit a noticeably reduced TPR at high noise levels, often overfitting the noise with spurious terms. These results demonstrate the improved performance of our proposed method: the conservation-law prior ensures flux-balanced, physically consistent recovery of the nonlinear advection dynamics, while the weak-form integration substantially enhances numerical stability and robustness to noise. 
+
+5.2.2 2D Shallow-Water equations 
+
+We simulate the conservative shallow-water equations defined in ( 15 ). The simulation is performed on a periodic domain Ω = [0 , 1] 2 with gravitational acceleration g = 9 .81. We initialize the system with a background water depth H = 1 .5. The initial condition is prescribed by a perturbed water 16 0% 1% 5% 10% 25% 50% 100% 
+
+> Noise Std
+> 00.2 0.4 0.6 0.8 1
+> TPR Value
+
+(a) Separate (Strong form) 
+
+> 0% 1% 5% 10% 25% 50% 100%
+> Noise Std
+> 00.2 0.4 0.6 0.8 1
+> TPR Value
+
+(b) Separate (Weak form) 
+
+> 0% 1% 5% 10% 25% 50% 100%
+> Noise Std
+> 00.2 0.4 0.6 0.8 1
+> TPR Value
+
+(c) Prior-based (Strong form) 
+
+> 0% 1% 5% 10% 25% 50% 100%
+> Noise Std
+> 00.2 0.4 0.6 0.8 1
+> TPR Value
+
+(d) Prior-based (Weak form) 
+
+Figure 4: TPR results from twenty repeated experiments for Burgers’ equation identification with different noise levels {0% , 1% , 5% , 10% , 25% , 50% , 100% } under four configurations as mentioned above. height h(x, y, 0) = max( H + ˜h(x, y ), 0.1H) and zero initial velocity u = 0. The perturbation ˜h(x, y ) consists of Gaussian anomalies and harmonic modes to ensure rich spectral content for identification: ˜h(x, y ) = 
+
+> K
+
+∑
+
+> k=1
+
+Ake−αk ‖x−μk ‖2
+
++ 0 .8 cos(2 πx ) cos(2 πy ) + 0 .3 cos(4 πx ) cos(2 πy ), (33) where μk, Ak, and αk represent the centers, amplitudes, and concentration parameters of the Gaussian humps, respectively. In our primary numerical experiments, we employ K = 1 with a centered Gaussian hump ( A1 = 1 .2, α 1 = 800) as shown in the reference setup. This perturbation is centered and normalized to a standard deviation of 0 .8H. The velocity fields ( u0, v 0) are initialized with sheared sinusoidal profiles balanced by pressure gradients: 
+
+u0 = 0 .8 sin(2 πy ) + 0 .35 cos(2 πx ) sin(2 πy ) + β g 
+
+> ω
+
+∂xh0,v0 = −0.6 sin(2 πx ) + 0 .35 sin(2 πx ) cos(2 πy ) + β g 
+
+> ω
+
+∂y h0, (34) where β = 0 .40 is the phase-alignment factor and ω = √gH |k| represents the characteristic gravity-wave frequency. The system is evolved up to T = 0 .3 using a finite-volume scheme on a 100 × 100 grid with time step ∆ t = 5 × 10 −4.17 Feature libraries. To evaluate the efficacy of conservation-law priors, we construct two feature libraries and compare a standard polynomial-derivative library against a structure-preserving flux library. 
+
+Baseline (no-prior) dictionary. We employ a polynomial-derivative basis Dbase constructed from products of state variables {1, h, u, v, u 2, v 2, uv, hu, hv, huv } and their spatial derivatives 
+
+{hx, u x, v x, h y , u y, v y }. This library captures convective and mixed nonlinearities (e.g., u2ux,
+
+hvv y ), representing general transport and coupling. However, this unconstrained basis offers no guarantees of local conservation and may admit non-physical interactions. 
+
+Conservation-law prior dictionary. Based on the conservation form derived in Eq. ( 15 ), we re-strict the library to spatial divergences. Defining the candidate flux set F = {h, hu, hv, u 2, . . . , uv 2},the flux-form dictionary is: 
+
+Dflux = {(F )α | F ∈ F , α ∈ { x, y }}. (35) This prior enforces local conservation by construction while retaining expressiveness for advection and pressure coupling. 
+
+Identification results and performance. We identify the governing PDE system using both the baseline and flux-informed libraries across the four configurations. Under various noise levels, the TPR averaged over 20 trials is shown in Figure 5. With the baseline library, the equations for 
+
+h, hu , and hv are identified independently from a large pool of 60 candidate features. This uncon-strained approach requires selecting component-wise sparsities ( θ∗ 
+
+> h
+
+= 2, θ∗ 
+
+> hu
+
+= 3, and θ∗ 
+
+> hv
+
+= 3) by using RR and significantly increases the risk of selecting spurious, non-physical terms. In contrast, the conservation-law prior restricts the search strictly to spatial divergences via Dflux , reducing the degrees of freedom through a single joint regression. Across all noise levels, the proposed method exhibits stable performance. It correctly identifies the active support S∗ 
+
+> flux
+
+corresponding to the 8 conservative physical terms with a TPR of 1 across all noise levels. Notably, it not only re-covers advective fluxes with coefficients closely approximating unity, but also accurately identifies the hydrostatic pressure terms ( h2)x and ( h2)y with coefficients matching the physical constant  
+
+> 1
+> 2
+
+g. Conversely, the unconstrained baseline approach exhibits a noticeably reduced TPR at high noise levels. These results demonstrate the improved performance of our proposed method: the conservation-law prior ensures structure-preserving, physically consistent recovery, while the weak-form integration substantially enhances numerical stability and robustness to noise. Furthermore, as illustrated in Figures 6–8, the identified models closely reproduce the spatiotemporal evolu-tion of the water height field h(x, y, t ) at representative snapshots ( t ∈ { 0, 0.15 , 0.3}), preserving conservative dynamics even under severe noise up to 50%. We quantify the reconstruction accuracy using two metrics: the relative coefficient error Ec =
+
+‖c∗ − ctrue ‖2/‖ctrue ‖2, where c∗ and ctrue denote the identified and true coefficient vectors, and the total relative ℓ2 error for the state variables Etotal = ‖qid − qtrue ‖2/‖qtrue ‖2, where q = [ h, u, v ]⊤
+
+represents the combined state vector. The resulting errors are summarized in Table 1. Notably, our method achieves consistently low errors even under substantial measurement noise; as shown in the table, the total relative error remains below 3% (specifically 2 .995 × 10 −2) even at a 50% noise level, demonstrating the exceptional robustness of the proposed framework. 
+
+5.3 Energy-Dissipation Prior 
+
+5.3.1 Diffusion Equation 
+
+We consider the one-dimensional diffusion equation as defined in Section 4.3 (a) 1D Diffusion Equa-tion. We generate numerical data by solving (17 ) on the domain [0 , 1] with periodic bound-18 Noise Std      
+
+> 0% 1% 5% 10% 20% 50%
+> TPR Value
+> 00.2 0.4 0.6 0.8 1
+
+(a) Separate (Strong form)      
+
+> Noise Std
+> 0% 1% 5% 10% 20% 50%
+> TPR Value
+> 00.2 0.4 0.6 0.8 1
+
+(b) Separate (Weak form)      
+
+> Noise Std
+> 0% 1% 5% 10% 20% 50%
+> TPR Value
+> 00.2 0.4 0.6 0.8 1
+
+(c) Prior-based (Strong form)      
+
+> Noise Std
+> 0% 1% 5% 10% 20% 50%
+> TPR Value
+> 00.2 0.4 0.6 0.8 1
+
+(d) Prior-based (Weak form) 
+
+Figure 5: TPR results from twenty repeated experiments for 2D SWE identification with different noise levels {0% , 1% , 5% , 10% , 20% , 50% } under four configurations as mentioned above. Table 1: Relative ℓ2 errors of the identified 2D shallow-water equations (SWE) solutions under different noise levels. 
+
+Noise Level (%) h u v Total 
+
+0 6.903 × 10 −3 2.017 × 10 −2 2.477 × 10 −2 1.748 × 10 −2
+
+10 6.933 × 10 −3 2.039 × 10 −2 2.469 × 10 −2 1.753 × 10 −2
+
+50 1.338 × 10 −2 3.788 × 10 −2 3.801 × 10 −2 2.995 × 10 −2
+
+ary conditions. The diffusivity is set to ν = 0 .02. The initial condition is a composite profile 
+
+u(x, 0) = e−600( x−0.5) 2
+
++0 .2 sin(4 πx ), combining a localized Gaussian with a harmonic perturbation. Time integration is performed over the interval t ∈ [0 , 0.2] using the Forward-Time Central-Space (FTCS) explicit scheme. The spatial domain is discretized with Nx = 500 grid points (∆ x = 0 .002). To ensure numerical stability, the time step is strictly set to ∆ t = 2 .5 × 10 −5.
+
+Feature Libraries. We construct two feature libraries to compare the baseline approach with the energy-informed prior defined in Section 4.3 .
+
+Baseline (no-prior) dictionary. The unconstrained library Dbase contains state and derivative terms up to the second order: 
+
+Dbase = { u, u 2, u x, u 2
+
+> x
+
+, u xx , (uxx )2 }.
+
+While this library accommodates linear diffusion ( uxx ), it also includes nonlinear terms (e.g., 19 t = 0 t = 0 .15 t = 0 .30                 
+
+> 10
+> 1
+> 2
+> h
+> xy
+> 0.5 0.5
+> 3
+> 1000.5 11.5 22.5 33.5 h
+> 10
+> 1
+> 1.5
+> h
+> yx
+> 0.5 0.5
+> 2
+> 1000.5 11.5 2h
+> 0.5
+> 10
+> 1
+> h
+> xy
+> 1.5
+> 0.5 0.5
+> 0100.5 11.5 2h
+> 10
+> 1
+> 2
+> h
+> xy
+> 0.5 0.5
+> 3
+> 1000.5 11.5 22.5 33.5 h
+> 10
+> 1
+> 1.5
+> h
+> yx
+> 0.5 0.5
+> 2
+> 0100.5 11.5 2h
+> 0.5
+> 01
+> 1
+> h
+> yx
+> 1.5
+> 0.5 0.5
+> 0100.5 11.5 2h
+
+Figure 6: Comparison of trajectories of 2D Shallow–Water equation under 0% noise. Top row: Given trajectories. Bottom row: Identified trajectories. Columns correspond to different three time snapshots: t = 0 (left column), mid (middle column), and end (right column). 
+
+u2
+
+> x
+
+, (uxx )2) that may not correspond to valid gradient flow dynamics derived from a well-posed energy functional. 
+
+Energy–Dissipation prior dictionary. Following the gradient flow structure derived in Sec-tion 4.3 , we construct the valid library by identifying variational derivatives of admissible energy densities. We define the candidate energy library Dvalid energy using convex terms consistent with the Dirichlet energy: 
+
+Dvalid energy = { u2, u 2
+
+> x
+
+, (uxx )2 } (36) The corresponding PDE-level library Dvalid GF is obtained via the variational mapping: 
+
+Dvalid GF = { − u, +uxx , −uxxxx }. (37) This framework precludes non-variational and indefinite terms, restricting regression to a subset of thermodynamically consistent operators. This refinement ensures physical interpretability and numerical stability by construction. 
+
+Identification results and performance. We identify the governing PDE using both the base-line and energy-informed libraries across the four configurations. Under various noise levels, the TPR averaged over 20 trials is shown in Figure 9. With the baseline library, the regression must navigate an unconstrained hypothesis space, increasing the risk of selecting non-variational or indefi-nite terms that violate fundamental thermodynamic principles. In contrast, the Energy–Dissipation prior restricts the search strictly to valid gradient flow dynamics via Dvalid GF , reducing the degrees of 20 t = 0 t = 0 .15 t = 0 .30                       
+
+> 01
+> 1
+> 2
+> h
+> xy
+> 0.5 0.5
+> 3
+> 1000.5 11.5 22.5 33.5 h
+> 01
+> 1
+> 1.5
+> h
+> xy
+> 0.5 0.5
+> 2
+> 1000.5 11.5 2h
+> 0.5
+> 10
+> 1
+> h
+> xy
+> 1.5
+> 0.5 0.5
+> 2
+> 0100.5 11.5 2h
+> 10
+> 1
+> 2
+> h
+> xy
+> 0.5 0.5
+> 3
+> 1000.5 11.5 22.5 33.5 h
+> 01
+> 1
+> 1.5
+> h
+> yx
+> 0.5 0.5
+> 2
+> 1000.5 11.5 2h
+> 0.5
+> 01
+> 1
+> h
+> xy
+> 1.5
+> 0.5 0.5
+> 0100.5 11.5 2h
+
+Figure 7: Comparison of trajectories of 2D Shallow–Water equation under 10% noise. Top row: Given trajectories. Bottom row: Identified trajectories. Columns correspond to different three time snapshots: t = 0 (left column), t = 0 .15 (middle column), and t = 0 .30 (right column). freedom. It correctly identifies the active support corresponding to the Laplacian operator uxx and recovers the model ut = ν⋆uxx with the identified coefficient ν⋆ closely approximating the ground truth ν = 0 .02, which inherently guarantees monotonic energy decay ( dE  
+
+> dt
+
+≤ 0). When comparing configuration (d) to the baseline in (b), both weak-form approaches demonstrate strong robustness, maintaining perfect identification up to 50% noise. However, at the extreme 100% noise level, the advantage of the proposed method becomes statistically apparent: while the unconstrained baseline in (b) exhibits high variance and a dropped median (the red segment) TPR, the prior-informed method in (d) manages to maintain a higher median recovery rate (median TPR=1). This subtle but important difference indicates that under severe noise conditions, the thermodynamic con-straints provide a crucial stabilizing effect, preventing the selection of physically invalid terms that unconstrained methods might otherwise fit to noise. 
+
+5.3.2 Allen–Cahn Equation 
+
+For the Allen-Cahn system described in Section 4.3 (b), we simulate the dynamics on a periodic domain [0 , 2π) using a spectral method. The system is initialized with a multi-mode perturbation 
+
+u0(x) = cos x + cos(2 x) + 0 .5 cos(3 x) and evolved up to T = 2 .0 with a time step of 10 −3.
+
+Feature Libraries. We compare an unconstrained library against the energy-based construction detailed in Section 4.3 (b) 1D Allen–Cahn Equation. 
+
+Baseline (no-prior) dictionary. We define an unconstrained library Dbase containing M = 18 21 t = 0 t = 0 .15 t = 0 .30                      
+
+> 01
+> 1
+> 2
+> h
+> xy
+> 3
+> 0.5 0.5
+> 4
+> 1000.5 11.5 22.5 33.5 h
+> 0.5
+> 10
+> 1
+> 1.5
+> h
+> xy
+> 2
+> 0.5 0.5
+> 2.5
+> 1000.5 11.5 2h
+> 0.5
+> 01
+> 1
+> 1.5
+> h
+> xy
+> 2
+> 0.5 0.5
+> 2.5
+> 0100.5 11.5 2h
+> 10
+> 1
+> 2
+> h
+> xy
+> 0.5 0.5
+> 3
+> 1000.5 11.5 22.5 33.5 h
+> 10
+> 1
+> h 1.5
+> xy
+> 0.5 0.5
+> 2
+> 1000.5 11.5 2h
+> 0.5
+> 10
+> 1
+> h
+> xy
+> 1.5
+> 0.5 0.5
+> 0100.5 11.5 2h
+
+Figure 8: Comparison of trajectories of 2D Shallow–Water equation under 50% noise. Top row: Given trajectories. Bottom row: Identified trajectories. Columns correspond to different three time snapshots: t = 0 (left column), t = 0 .15 (middle column), and t = 0 .30 (right column). candidate terms. The library is constructed from polynomial powers of u and its spatial derivatives: 
+
+Dbase = {up, (up)x, (up)xx 
+
+}4 
+
+> p=1
+
+∪ {(ux)p, (uxx )p}4
+
+> p=2
+
+, (38) While this overcomplete library captures both reaction and diffusion dynamics, it may admit non-physical or anti-dissipative terms, leading to ill-posed models. 
+
+Energy–Dissipation prior dictionary. Consistent with the gradient flow structure discussed in Section 4.3 , we construct the candidate library by identifying variational derivatives of admissible energy densities. We define the valid energy library Dvalid energy using even-powered polynomials and squared derivatives: 
+
+Dvalid energy = {u2, u 4, (ux)2, (ux)4, (uxx )2, (uxx )4}. (39) The corresponding gradient flow library Dvalid GF is obtained via the variational derivative as shown following: 
+
+Dvalid GF = { − 2u, −4u3, +2 uxx , +12 u2
+
+> x
+
+uxx ,
+
+− 2uxxxx , −(24 uxx u2 
+
+> xxx
+
++ 12 u2
+
+> xx
+
+uxxxx )}. (40) This construction restricts the search space to a thermodynamically consistent and physically interpretable model class. 22 0% 1% 5% 10% 25% 50% 100% 
+
+> Noise Std
+> 00.2 0.4 0.6 0.8 1
+> TPR Value
+
+(a) Separate (Strong form) 
+
+> 0% 1% 5% 10% 25% 50% 100%
+> Noise Std
+> 00.2 0.4 0.6 0.8 1
+> TPR Value
+
+(b) Separate (Weak form) 
+
+> 0% 1% 5% 10% 25% 50% 100%
+> Noise Std
+> 00.2 0.4 0.6 0.8 1
+> TPR Value
+
+(c) Prior-based (Strong form) 
+
+> 0% 1% 5% 10% 25% 50% 100%
+> Noise Std
+> 00.2 0.4 0.6 0.8 1
+> TPR Value
+
+(d) Prior-based (Weak form) 
+
+Figure 9: TPR results from twenty repeated experiments for diffusion equation identification with varying noise levels {0% , 1% , 5% , 10% , 25% , 50% , 100% } under four configurations as mentioned above. 
+
+Identification results and performance. We identify the governing PDE using both the base-line and energy-informed libraries across the four configurations. Under various noise levels, the TPR averaged over 20 trials is shown in Figure 10 . With the baseline library, the regression must navigate an unconstrained hypothesis space of 18 candidate terms, increasing the risk of select-ing non-physical or anti-dissipative terms that violate fundamental thermodynamic principles. In contrast, the Energy–Dissipation prior restricts the search strictly to valid gradient flow dynam-ics via Dvalid GF , significantly reducing the degrees of freedom. Across all noise levels, the proposed method exhibits stable performance. It correctly identifies the active support corresponding to the Allen–Cahn dynamics with an optimal sparsity of θ∗ = 3. Notably, instead of selecting arbi-trary polynomials, the method specifically recovers the gradient flow structure of the double-well potential defined in ( 22 ), yielding the model 
+
+ut = γu xx − κ(u3 − u),
+
+where the identified parameters satisfy γ ≈ 1 and κ ≈ 1. This physically consistent recovery ensures that the data-driven model preserves the essential phase-separation mechanism, driving the system towards the stable equilibria u = ±1 while maintaining the correct energy-dissipation balance. In contrast, the unconstrained baseline approach exhibits a noticeably reduced TPR at elevated noise levels. These results demonstrate the improved performance of our proposed method: the energy 23 prior ensures thermodynamically consistent, physically interpretable recovery, while the weak-form integration substantially enhances numerical stability and robustness to noise. Furthermore, as qualitatively illustrated in Figure 11 and quantitatively supported by the relative ℓ2 errors in Table 
+
+2, the identified models closely reproduce the true spatiotemporal trajectories across noise levels of {0% , 5% , 10% }, confirming the framework’s reliability in reconstructing gradient flow structures from noisy data.      
+
+> 0% 1% 5% 10% 25% 50%
+> Noise Std
+> 00.2 0.4 0.6 0.8 1
+> TPR Value
+
+(a) Separate (Strong form)      
+
+> 0% 1% 5% 10% 25% 50%
+> Noise Std
+> 00.2 0.4 0.6 0.8 1
+> TPR Value
+
+(b) Separate (Weak form)      
+
+> 0% 1% 5% 10% 25% 50%
+> Noise Std
+> 00.2 0.4 0.6 0.8 1
+> TPR Value
+
+(c) Prior-based (Strong form)      
+
+> 0% 1% 5% 10% 25% 50%
+> Noise Std
+> 00.2 0.4 0.6 0.8 1
+> TPR Value
+
+(d) Prior-based (Weak form) 
+
+Figure 10: TPR results from twenty repeated experiments for Allen–Cahn equation identification with different noise levels {0% , 1% , 5% , 10% , 20% , 50% } under four configurations as mentioned above. Table 2: Relative E2 errors of the identified Allen–Cahn solutions under different noise levels. 
+
+Noise level (%) Relative E2 error 
+
+0 6.23 × 10 −18 
+
+5 3.31 × 10 −3
+
+10 1.41 × 10 −2
+
+24 0% Noise 5% Noise 10% Noise 
+
+Figure 11: Comparison between the true and identified trajectories of the Allen–Cahn equation under different noise levels. Top row: True trajectories. Bottom row: Identified trajectories. Columns: 0% noise (left), 5% noise (middle), and 10% noise (right). 
+
+# 6 Conclusions 
+
+In this paper, we proposed a unified, prior-informed weak-form framework for data-driven PDE identification that directly embeds physical structure at the dictionary construction stage. By in-corporating prior information, the candidate library is constrained to physically admissible terms, improving conditioning, interpretability, and robustness of the algorithm. Coupled with trimming and residual-reduction model selection, the pipeline yields interpretable models that are faithful to the target physics. The effectiveness of the proposed framework is demonstrated on priors including Hamiltonian (skew-gradient, energy conserving), conservation-law (flux-form with cross-directional coefficient tying), and energy–dissipation (variational, dissipative). Extensive studies across canon-ical systems, such as Hamiltonian oscillators, three-body dynamics, two-dimensional shallow-water equations, and Allen–Cahn dynamics, demonstrate consistently higher true-positive rates, stable coefficient recovery, and structure-preserving behavior under substantial noise, surpassing no-prior baselines in both weak- and strong-form settings. 
+
+# Acknowledgments 
+
+We would like to thank Mr. Lingyun Deng for discussion on this project. 25 References 
+
+[1] S. L. Brunton, J. L. Proctor, and J. N. Kutz. Discovering governing equations from data by sparse identification of nonlinear dynamical systems. Proceedings of the National Academy of Sciences , 113(15):3932–3937, 2016. [2] Z. Chen, V. Churchill, K. Wu, and D. Xiu. Deep neural network modeling of unknown partial differential equations in nodal space. Journal of Computational Physics , 449:110782, 2022. [3] J. Cheng, S. H. Kang, H. Zhou, and W. Liao. Identification of differential equations by dynamics-guided weighted weak form with voting. arXiv preprint arXiv:2506.03899 , 2025. [4] V. Churchill. Principal component flow map learning of pdes from incomplete, limited, and noisy data. Journal of Computational Physics , 524:113730, 2025. [5] J. Cui and R. Y. He. Stoch-ident: New method and mathematical analysis for identifying spdes from data. arXiv preprint arXiv:2508.19177 , 2025. [6] S. Eidnes and K. O. Lye. Pseudo-hamiltonian neural networks for learning partial differential equations. Journal of Computational Physics , 500:112738, 2024. [7] L. Fan, F. Zhang, H. Fan, and C. Zhang. Brief review of image denoising techniques. Visual computing for industry, biomedicine, and art , 2(1):7, 2019. [8] R. Y. He, H. Liu, W. Liao, and S. H. Kang. Recent advances in identification of differential equations from noisy data: Ident review. Handbook of Numerical Analysis , 26:177–209, 2025. [9] Y. He, S.-H. Kang, W. Liao, H. Liu, and Y. Liu. Robust identification of differential equations by numerical techniques from a single set of noisy observation. SIAM Journal on Scientific Computing , 44(3):A1145–A1175, 2022. [10] Y. He, S.-H. Kang, W. Liao, H. Liu, and Y. Liu. Group projected subspace pursuit for IDEN-Tification of variable coefficient differential equations (GP-IDENT). Journal of Computational Physics , 488:112367, Dec 2023. [11] K. S. Heinrich, D. S. Seth, M. Ehrnstrom, and S. ˚ A. Ellingsen. Rediscovering shallow water equations from experimental data. arXiv preprint arXiv:2511.05486 , 2025. [12] S. H. Kang, W. Liao, and Y. Liu. Ident: Identifying differential equations with numerical time evolution. 87(1), 2021. [13] K. Lee, N. Trask, and P. Stinis. Structure-preserving sparse identification of nonlinear dynamics for data-driven modeling. In Mathematical and Scientific Machine Learning , pages 65–80. PMLR, 2022. [14] Q. Li and S. Evje. Learning the nonlinear flux function of a hidden scalar conservation law from data. Networks and Heterogeneous Media , 18(1):48–79, 2023. [15] Z. Li, N. Kovachki, C. Choy, B. Li, J. Kossaifi, S. Otta, M. A. Nabian, M. Stadler, C. Hundt, K. Azizzadenesheli, and A. Anandkumar. Geometry-informed neural operator for large-scale 3d pdes. In A. Oh, T. Naumann, A. Globerson, K. Saenko, M. Hardt, and S. Levine, editors, 
+
+Advances in Neural Information Processing Systems , pages 35836–35854. Curran Associates, Inc. 26 [16] Z. Long, Y. Lu, and B. Dong. Pde-net 2.0: Learning pdes from data with a numeric-symbolic hybrid deep network. Journal of Computational Physics , 399:108925, 2019. [17] Z. Long, Y. Lu, X. Ma, and B. Dong. PDE-Net: Learning PDEs from data. In Proceedings of the 35th International Conference on Machine Learning , volume 80 of Proceedings of Machine Learning Research , pages 3208–3216. PMLR, 2018. [18] D. A. Messenger and D. M. Bortz. Weak SINDy for partial differential equations. Journal of Computational Physics , 443:110525, 2021. [19] D. A. Messenger and D. M. Bortz. Weak sindy: Galerkin-based data-driven model selection. 
+
+Multiscale Modeling & amp; Simulation , 19(3):1474–1497, Jan. 2021. [20] S. Rudy, A. Alla, S. Brunton, and J. Kutz. Data-driven identification of parametric partial differential equations. SIAM Journal on Applied Dynamical Systems , 18:643–660, 01 2019. [21] S. H. Rudy, S. L. Brunton, J. L. Proctor, and J. N. Kutz. Data-driven discovery of partial differential equations. Science Advances , 3(4):e1602614, 2017. [22] H. Schaeffer. Learning partial differential equations via data discovery and sparse optimization. 
+
+Proceedings of the Royal Society A: Mathematical, Physical and Engineering Sciences , 473, 2017. [23] C. Tang, R. Y. He, and H. Liu. Wg-ident: Weak group identification of pdes with varying coefficients. Journal of Computational Physics , page 114454, 2025. [24] M. Tang, W. Liao, R. Kuske, and S. H. Kang. Weakident: Weak formulation for identify-ing differential equation using narrow-fit and trimming. Journal of Computational Physics ,483:112069, 2023. [25] M. Tang, H. Liu, W. Liao, and S. H. Kang. Identifying differential equations in fourier domain (fourierident) m. tang et al. Journal of Scientific Computing , 106(2):47, 2026. [26] K. Wu and D. Xiu. Numerical aspects for approximating governing equations using data. 
+
+Journal of Computational Physics , 384:200–221, 2019. [27] K. Wu and D. Xiu. Data-driven deep learning of partial differential equations in modal space. 
+
+Journal of Computational Physics , 408:109307, 2020. [28] E. L. Yang and R. Y. He. Phase-ident: Identification of two-phase pdes with uncertainty quantification. arXiv preprint arXiv:2601.11922 , 2026. 27

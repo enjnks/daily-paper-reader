@@ -1,0 +1,390 @@
+Title: The EpisTwin: A Knowledge Graph-Grounded Neuro-Symbolic Architecture for Personal AI
+
+URL Source: https://arxiv.org/pdf/2603.06290v1
+
+Published Time: Mon, 09 Mar 2026 00:55:14 GMT
+
+Number of Pages: 10
+
+Markdown Content:
+# The EpisTwin: A Knowledge Graph-Grounded Neuro-Symbolic Architecture for Personal AI 
+
+## Giovanni Servedio 1 , Potito Aghilar 1 , Alessio Mattiace 1 ,
+
+## Gianni Carmosino 1 , Francesco Musicco 1 , Gabriele Conte 1 ,
+
+## Vito Walter Anelli 1 , Tommaso Di Noia 1 and Francesco Maria Donini 21Politecnico di Bari, 2Universit` a degli Studi della Tuscia 
+
+## {g.conte12, a.mattiace, g.carmosino1 }@studenti.poliba.it, 
+
+## {potito.aghilar, giovanni.servedio, vitowalter.anelli, tommaso.dinoia }@poliba.it f.musicco@phd.poliba.it, donini@unitus.it 
+
+## Abstract 
+
+Personal Artificial Intelligence is currently hin-dered by the fragmentation of user data across iso-lated silos. While Retrieval-Augmented Generation offers a partial remedy, its reliance on unstructured vector similarity fails to capture the latent seman-tic topology and temporal dependencies essential for holistic sensemaking. We introduce EpisTwin, a neuro-symbolic framework that grounds gener-ative reasoning in a verifiable, user-centric Per-sonal Knowledge Graph. EpisTwin leverages Mul-timodal Language Models to lift heterogeneous, cross-application data into semantic triples. At in-ference, EpisTwin enables complex reasoning over the personal semantic graph via an agentic coor-dinator that combines Graph Retrieval-Augmented Generation with Online Deep Visual Refinement, dynamically re-grounding symbolic entities in their raw visual context. We also introduce PersonalQA-71-100 , a synthetic benchmark designed to simu-late a realistic user’s digital footprint and evaluate EpisTwin’s performance. Our framework demon-strates robust results across a suite of state-of-the-art judge models, offering a promising direction for trustworthy Personal AI. 
+
+## 1 Introduction 
+
+The promise of Personal Artificial Intelligence is to function as a cognitive extension of the user [Balog and Kenter, 2019]. However, this vision is constrained by the fragmentation of user data [Skjæveland et al. , 2024; Chakraborty and Sanyal, 2023] across an archipelago of isolated applications (e.g., cal-endars, galleries, document stores). Lacking a unified se-mantic layer, these silos obscure the latent connections re-quired for holistic sensemaking, preventing effective reason-ing about the user’s past, present, and future context. Con-sider the cognitive burden involved in answering a natural, cross-domain request such as: 
+
+Example 1 (Sarah call) . ”Did Sarah Green call me before or after I arrived at work today?”. Answering this seemingly simple question may require complex reasoning on personal data. For example, if the user was late for work, the sys-tem may need to check today’s call log, the start time of the recurring “Work” calendar event, and even notes, photos, or messages that suggest his actual arrival time. Current systems force the user to bridge these silos manu-ally. While Retrieval-Augmented Generation (RAG) [Lewis 
+
+et al. , 2020] mitigates this problem by grounding generation in retrieved data, it struggles with “global” sensemaking, as it retrieves fragments based on local semantic overlap rather than the topological and temporal dependencies essential for personal reasoning. Furthermore, the reliance on opaque vec-tor stores poses challenges for data sovereignty: the deter-ministic “unlearning” of specific facts, a requirement under tightening regulations [2024], is computationally non-trivial in purely dense representations [Nguyen et al. , 2025]. In this paper, we introduce EpisTwin (Epist emic Twin ), an agentic framework that inverts the standard paradigm :rather than treating the LLM as a probabilistic knowledge store, we use it as a structural architect to populate and rea-son over a Personal Knowledge Graph (PKG) . This de-coupling yields an explicit, verifiable, symbolic structure in which knowledge deletions are deterministic. EpisTwin aligns with Type 3 (Neuro | Symbolic) architecture in Kautz’s taxonomy [Kautz, 2022], defined by a cooperative relation-ship where the neural component acts as a coroutine rather than a mere subroutine. Initially, Type 3 was conceived as the neural transformation of non-symbolic feedback signals to symbolic inputs for symbolic reasoning. EpisTwin adapts this paradigm for inference-time symbolic and neural reason-ing through two uncoupled phases. First, when new unstruc-tured data enter the system, the PKG Constructor performs a neural-to-symbolic transduction, transforming multimodal data into semantic triples to populate the user’s PKG. Sec-ond, when the user interacts with the system, the reasoning is conducted directly on the PKG. This phase actively com-bines symbolic graph operations with neural RAG grounded in the graph’s topology. Differently from standard Type 3 Neuro-Symbolic, EpisTwin leverages both symbolic meth-ods and neural models at inference time to extract new rel-evant and contextual information (see Section 5.1). Indeed, in the initial neural-to-symbolic transduction, some crucial information may be lost due to the context-unaware nature 
+
+> arXiv:2603.06290v1 [cs.AI] 6 Mar 2026
+
+of the operation. Once the system generates an answer for the user query, EpisTwin Core Agent judges the quality of the response. If the answer is unsatisfactory and the rea-soning involves knowledge deriving from non-textual con-tent (e.g., images, audio), the Core Agent triggers the Fall-back agent . This approach may cover a wide range of dif-ferent modalities. Without loss of generality, EpisTwin con-siders only images in this category. The Fallback Agent exploits its Online Deep Visual Refinement tool, leveraging neural retrieval models to select the most relevant images, referenced in the PKG, to extract precise, context-aware at-tributes with neural vision models. Additionally, the reliance on symbolic data ensures that deleting a node in the graph permanently excises the information, a guarantee almost im-possible with purely neural or dense-vector approaches (see the recent research about unlearning [Chen et al. , 2021; Yang et al. , 2025]). To evaluate our framework, in the scarcity of open benchmarks for personal AI, we introduce 
+
+PersonalQA-71-100 , a curated, privacy-preserving dataset, comprising 71 heterogeneous personal data streams and 100 
+
+queries with ground-truth answers. Evaluation is conducted using an LLM-as-a-Judge protocol [Liu et al. , 2023; Lee et al. , 2025], enabling automated assessment of semantic cor-rectness across multi-step and multi-modal reasoning tasks. Results show that EpisTwin consistently achieves satisfactory performance, even in scenarios requiring multimodal integra-tion. In summary, this paper makes the following contribu-tions: • Type 3 Neuro-Symbolic Agentic Framework: EpisT-win unifies PKG construction and agentic reasoning to enable multi-hop question answering over heteroge-neous personal data. • Active Visual-Symbolic Inference: Our Online Deep Visual Refinement tool recovers details lost during the transduction phase by leveraging symbolic knowledge for query-conditioned, on-the-fly visual analysis. • Novel Multimodal Benchmark: We present 
+
+PersonalQA-71-100 , a multimodal dataset of frag-mented, realistic personal data (e.g., notes, calendar, images) paired with questions and gold-standard answers. • Verifiable Performance Analysis: We adopt a “LLM-as-a-Judge” evaluation protocol to quantify reasoning capabilities. We demonstrate that EpisTwin handles the complexity of cross-domain, multi-step user queries. 
+
+## 2 Related Work 
+
+Generative knowledge extraction and graph-based retrieval have seen significant progress, yet current paradigms struggle to connect unstructured perception and symbolic reasoning on personal data. In this section, we analyze prior work on knowledge graph construction, reasoning, personal AI, and data sovereignty to highlight the limitations that motivate an agentic, graph-grounded approach. 
+
+Knowledge Graph Construction. Large Language Mod-els (LLMs) have enabled triple extraction from unstruc-tured text [Wei et al. , 2023], but recent frameworks (e.g., RAKG [Zhang et al. , 2025a]) remain predominantly uni-modal. They fail to integrate structured logs and visual data essential for a digital twin. Moreover, Human-in-the-Loop strategies [Schr¨ oder et al. , 2022] limit the scalability required for real-time personal intelligence. 
+
+Personal Knowledge Graphs. Personal Knowl-edge Graphs differ from general KGs, necessitat-ing strict data sovereignty, subjective context, and continuous evolution [Balog and Kenter, 2019; Skjæveland et al. , 2024]. The current landscape is charac-terized by domain-specific fragmentation. Conversational agents [Li et al. , 2014] and temporal models [Sansen et al. , 2024] lack a holistic view of the user’s digital ecosys-tem. Specialized implementations in healthcare [Li et al. ,2023] and education [Ilkou, 2022] are constrained by static ontologies, and restricted to specific domains. 
+
+Graph-based Reasoning. To ensure logical validity, frameworks like Think-on-Graph (ToG) [Sun et al. , 2024] and FiDeLiS [Sui et al. , 2025] constrain LLM generation to valid graph traversals via beam search or logical entailment. However, these methods rely on a static, complete knowledge base. Graph Retrieval-Augmented Generation (GraphRAG) architectures aim to overcome the “local myopia” of vector-based RAG [Lewis et al. , 2020] by exploiting structural de-pendencies. Systems such as QA-GNN [Yasunaga et al. ,2021] and recent PKG-based assistants [Liu et al. , 2024; Zhang et al. , 2025b] demonstrate that grounding generation in a graph enhances multi-hop reasoning. 
+
+Personal AI and Data Sovereignty. Existing systems are functionally narrow, with PKG adoption limited to spe-cific domains [Carbonaro et al. , 2024]. Moreover, com-pliance with tightening regulations [European Union, 2024; People’s Republic of China, 2021; State of California, 2020] requires deterministic data removal, a non-trivial challenge for neural unlearning [Nguyen et al. , 2025]. EpisTwin ad-dresses this by strictly decoupling reasoning from storage, ensuring data sovereignty is an architectural guarantee rather than a probabilistic behavior. 
+
+## 3 Problem Definition and Preliminaries 
+
+User information is inherently fragmented, scattered across isolated sources that range from structured calendar logs to unstructured document repositories. This compartmentaliza-tion obscures the latent semantic connections required for in-telligent assistance. Formally, let U denote the set of users and S = {S1, S 2, . . . , S n} be the set of available Data Sources . We define the atomic unit of information generated by these sources as an Information Object .
+
+Definition 1 (Information Object) . An Information Object is the atomic unit of digital information, formally defined as a tuple ι = ( σ, μ, c ), where: 
+
+• σ ∈ S denotes the Source Provenance , where S repre-sents the finite set of distinct data silos (e.g., Calendar, Gallery) from which the data originates; 
+
+• μ represents the Structured Metadata (e.g., timestamps, file paths), defined as a set of explicit attributes, key-value pairs, such that μ |= Mσ , where Mσ denotes the schema governing valid metadata for the provenance σ;
+
+• c ∈ C ∪ {∅} denotes the optional Unstructured Payload ,where Cσ represents the domain of raw data made avail-able by σ (e.g., image tensors RH×W ×3). 
+
+Example 2. Let us imagine a photo of Sagrada Familia in the photo gallery as an Information Object ιph = ( σph , μ ph , c ph ),where σph is the Photos App on the user’s device, μph contains the metadata key-value pairs (e.g. time: 10:05, date: 12-Jun-2025) and cph represents the raw RGB pixel data. 
+
+The Information Objects that are owned by or pertaining to a user u are considered their Personal Knowledge .
+
+Definition 2 (Personal Knowledge) . The Personal Knowl-edge Ku for a specific user u ∈ U is the heterogeneous set of all Information Objects associated with u, Ku =
+
+{ι1, ι 2, . . . , ι m}, where each ιi is an Information Object gen-erated by a source σ ∈ S .
+
+Remark 1. Associating an object ι with user u implies that 
+
+ι is either explicitly generated by u (ownership) or semanti-cally refers to u (participation), making Ku user-centric .
+
+The core challenge lies in mapping this unstructured and disconnected set Ku into a coherent epistemic structure that enables a reasoning agent; this implies two distinct but inter-dependent sub-challenges: 1. Personal Knowledge Graph (PKG) Construction :The process to map the Information Objects into a PKG, converting implicit relations into explicit triples ( PKG Population in Skjæveland et al. [2024]); 2. Personalized Answering : The inference process to an-swer a natural language query exploiting the knowl-edge in the PKG ( PKG Utilization in Skjæveland et al. [2024]). Here, this step adopts a neuro-symbolic ap-proach to cross-reference the heterogeneous user data, operation impossible with the sole symbolic reasoning. 
+
+3.1 Personal Knowledge Graph (PKG) 
+
+General Knowledge Graphs (KGs) serve as repositories for universal truths and globally significant entities. Personal Knowledge Graphs (PKGs) represent the subjective context of a single individual, including only entities and relation-ships relevant to that specific user. Balog and Kenter [2019] originally characterized the PKG through a structural lens, defining it as a “spiderweb” layout where the user acts as the central node connected to every other entity. Skjæveland et al. [2024] subsequently argued that the defining feature is not topology but data sovereignty, viewing the PKG as a resource where the user is the sole administrator with exclusive access rights. We synthesize these complementary perspectives in our framework. The proposed model enforces administrative ownership of Skjæveland et al. [2024] while simultaneously retaining the user as the central anchor for all stored informa-tion as required by Balog and Kenter [2019]. 
+
+Definition 3 (Personal Knowledge Graph) . A Personal Knowledge Graph G is defined by a tuple (N , R, T ), where: 
+
+N = E ⊔ L ⊔ B is the set of nodes, composed of the dis-joint union of (i) Entities E (containing the special entity u
+
+representing the owner of the Knowledge Graph), (ii) Lit-erals L, and (iii) Blank Nodes B; R is a set of relations, 
+
+T ⊆ (E ∪ B ) × R × (N /{u}) is a set of triples, where each (h, r, t ) ∈ T represents a fact where h is the head, r
+
+is the relation, and t is the tail. Structurally, G is rooted at 
+
+u, and satisfies the reachability constraint: ∀v ∈ { t | ∃ h, r :(h, r, t ) ∈ T } , there is a path from u to v, denoted by u ⇝ v.
+
+3.2 KG Construction from Text 
+
+In this study, we leverage the generative capabilities of LLMs for Knowledge Graph Construction (KGC) [Zhong et al. ,2023], thus enabling the automated transformation of natu-ral language into structured symbolic representations. For the unstructured non-textual content c, we assume there ex-ists an operator that transforms an unstructured content c into its textual representation ˆc (later defined in Section 4.1). 
+
+Definition 4 (KG Construction Function) . Let ˆc be the text derived from the unstructured content of an Information Ob-ject ι. We define the KG Construction Function fKGC as a mapping that extracts a set of semantic triples Tc from a sequence generated by an LLM parameterized by θ. For-mally, Tc = ξ(y) where y is the token sequence sampled from the conditional distribution of the LLM y ∼ Pθ (· | ˆc),and ξ is a parsing function that maps y to a set of triples 
+
+{(h, r, t )} ⊆ E × R × (E ∪ L ).
+
+The extraction is not a deterministic parsing task, but a dy-namic inference process where fKGC takes into account the specific semantic nuances of the source δ to capture the het-erogeneity typical of personal unstructured data. 
+
+3.3 Thematic Context Extraction via Community Detection 
+
+PKGs may lack explicit triples for semantically cohesive con-cepts (e.g., a link between an Event and its reminder Alarm ). To uncover these latent associations, we employ a Community Detection Algorithm [Fortunato, 2010]. 
+
+Definition 5 (Community Structure) . Given the Personal Knowledge Graph G = ( N , R, T ), a Community Structure is defined as a collection of clusters P = {P1, P 2, . . . , P k},with each cluster P ⊆ N . The quality of this thematic col-lection is evaluated via Modularity objective Q [Fortunato, 2010]. Maximizing Q yields communities where the intra-cluster topological density significantly exceeds that of a ran-dom null model, implying strong thematic coherence. 
+
+Leiden Algorithm. The algorithm optimizes Q through an iterative process composed by local moving (greedy node re-assignment), refinement (splitting sub-optimal clusters to en-sure connectivity), and aggregation (coarsening the network). To compute P , we select Leiden [Traag et al. , 2019] over the classic Louvain [Blondel et al. , 2008] method because it guarantees the connectivity of the resulting communities. In a personal knowledge context, a disconnected community (e.g., a “Work” cluster containing two unrelated sub-graphs) would represent a failure in semantic disambiguation. Each identified community is reified in the graph as a new entity connected to all the members of the community. 3.4 Graph Retrieval-Augmented Generation 
+
+We adopt Graph Retrieval-Augmented Generation 
+
+(GraphRAG) [Lewis et al. , 2020; Edge et al. , 2024] as the retrieval mechanism to enable reasoning over the PKG. Unlike standard RAG, which treats the LLM as a stochastic processor of disjoint text chunks, GraphRAG leverages the structural dependencies of the knowledge graph to capture relational context. Following Peng et al. [2025], the generation process decomposes into two stages: a retriever selecting relevant subgraphs, and a generator that synthesizes responses conditioned on this evidence. Given a user query q and the PKG G, the answer a is generated through the process fG-RAG (q, G; θ, ϕ ) defined as the sampling 
+
+a ∼ Pϕ(a|q, G∗) · Pθ (G∗|q, G), where: • Pθ (G∗|q, G) is the retriever, selecting the optimal sub-graph G∗ ⊆ G via topological operators (e.g., commu-nity clusters, ego-networks); • Pϕ(a|q, G∗) is an LLM with parameters ϕ generating the response a conditioned on the retrieved subgraph. 
+
+3.5 LLM-based Agents 
+
+Static execution flows often lack the flexibility to disentangle ambiguous user queries or synthesize insights from complex sets of triples in the PKG. To bridge this gap, we employ 
+
+Agents powered by Large Language Models (LLMs) [Yao et al. , 2023; Schick et al. , 2023] to orchestrate adaptive reason-ing over information-dense contexts. We define the agent A
+
+as a tuple (πθ , Σ, Λ) , where πθ is a decision policy parame-terized by the LLM, Σ is the dynamic state space, and Λ is a set of executable functional operators. The reasoning pro-ceeds as a discrete control loop. At step t, the agent observes the current state st ∈ Σ, defined as st = ( q, Ht), where q
+
+is the initial query and Ht represents the history of thoughts and observations (the cognitive trajectory ). Based on st, the policy samples an action at ∼ πθ (a|st), where at ∈ Λ.
+
+## 4 Epistemic Twin Constructor 
+
+The Epistemic Twin Constructor implements the PKG popu-lation task described by Skjæveland et al. [2024]. It projects each Information Object ι = ( σ, μ, c ) ∈ K u into the user’s PKG. The graph Gu is initialized with E = {u} and itera-tively expanded when each ι is processed. 
+
+4.1 PKG Population 
+
+We model the PKG Population Task as an update function 
+
+Ψ that transitions the graph from state Gku to Gk+1  
+
+> u
+
+by merg-ing the current graph with the new subgraph, containing the triples extracted from the information object ιk+1 :
+
+Gk+1  
+
+> u
+
+= Ψ( Gku , ι k+1 ) = Gku ⊕ (Φ M(μ) ∪ ΦC (c)) (1) where ΦM represents a deterministic translation of structured metadata μ into a knowledge graph, ΦC denotes the creation of a knowledge graph from the unstructured content c, and ⊕
+
+is a merge operator which joins the newly computed subgraph to Gku . See a visualization of this process in Figure 1. User_1  Photo_1 
+
+> Metadata
+> Content
+> Figure 1: PKG population when the Information Object is a photo: triples are extracted from both metadata and visual content.
+
+Metadata triples extraction - ΦM function 
+
+Let M = K × V be the space of all possible metadata entries, and let T = N ×R× (E ∪L ) be the universe of valid symbolic triples (consistent with the domain of T in Section 3.1). We formulate ΦM as the functional composition ΦM = Φ M2 ◦
+
+ΦM1 . The first component ΦM1 : 2 M → 2T, is a mapping from the power set of metadata to the power set of triples: 
+
+ΦM1 (μ) = 
+
+n nι, ρ (k), λ (v) | (k, v ) ∈ μ
+
+o
+
+(2) where nι ∈ N is the node for ι, ρ maps keys to predicates, and λ casts values into entities or literals. Finally, ΦM2 trans-forms the triples extracted from ι into a knowledge graph. 
+
+Unstructured Triples Extraction: the ΦC function 
+
+Let C denote the space of unstructured content, including tex-tual and visual inputs. The operator ΦC : C → G maps a content item c ∈ C to a knowledge graph by extracting sym-bolic facts and linking them to their source node nι.
+
+Textual Normalization. To enable uniform symbolic pro-cessing across modalities, we first define a normalization op-erator η : C → C text , where Ctext is the space of textual repre-sentations. Without loss of generality, in this paper, we limit the scope of non-textual unstructured content to images. The operator η is defined as 
+
+η(c) = 
+
+c if c ∈ C text ,τ (c) if c ∈ C vis ,
+
+where Cvis denotes the space of visual content and τ is a cap-tioning operator. For visual inputs, τ is implemented using a multimodal language model parameterized by ω, which induces a conditional distribution over textual descriptions 
+
+τ (c) ∼ Pϕ(· | c, prompt vis ), where prompt vis is a dense cap-tioning prompt. In practice, a single realization is used as the normalized textual representation. 
+
+Triple Extraction and Graph Integration. Given a tex-tual representation ˆc = η(c), a knowledge graph construction operator fKGC , defined in Section 3.2, maps text to a set of symbolic triples Ctext → 2E×R× (E∪L ).The triples extracted with fKGC are transformed into a knowledge graph Gc = Φ C (c) and integrated into the PKG via Ψ( G, Gc). The sequential application of captioning and symbolic extraction, c η
+
+−→ ˆc fKGC 
+
+−−−→ G c, constitutes a Vi-sual–Symbolic Transduction process, whereby raw percep-tual inputs are projected into the PKG. 4.2 Community Detection as PKG Post-processing 
+
+As the PKG is populated with high-density, granular triples, the resulting topology often suffers from structural disper-sion, hindering effective global sensemaking, particularly as the graph scales. To mitigate this, we implement a post-processing routine for detecting thematic communities, ex-ecuted after each update of Gu. Figure 2 shows how the-matic communities could be integrated over the PKG topol-ogy. We utilize the Leiden algorithm to identify a Community Structure P = {P1, . . . , P k} (as defined in Section 3.3), op-timizing for the modularity objective. Then we reify them into the graph as distinct nodes that serve as high-level access points for reasoning. We extend the original PKG topology 
+
+Gu = ( N , R, T ) to an augmented graph G′ 
+
+> u
+
+= ( N ′, R′, T ′)
+
+via the following transformation: 
+
+N ′ = N ∪ { nP | P ∈ P} (3) 
+
+R′ = R ∪ { in community } (4) 
+
+T ′ = T ∪ [ 
+
+> P∈P
+
+{(n, in community , n P ) | n ∈ P } (5) where nP is a Community Node denoting the cluster P ⊆ N .
+
+Generative Summarization. To enable semantic reason-ing over these structures, each community node nP is en-riched with a generated summary SP , which synthesizes the information contained within the subgraph induced by the community. We define the induced subgraph topology TP
+
+as the subset of triples strictly contained within the cluster: 
+
+TP = {(h, r, t ) ∈ T | h ∈ P ∧ t ∈ P } (6) To generate the summary, we introduce the Genera-tive Summarization Operator fSUM . Since the underlying mechanism is a Large Language Model, the output is ob-tained by sampling from a conditional distribution. Formally: 
+
+SP = fSUM (P, TP ) where SP ∼ Pγ (· | lin (P, TP )) (7) Here, Pγ represents the LLM parameterized by γ, and lin (·)
+
+is a linearization function that serializes the graph elements (nodes and triples) into a textual prompt context. 
+
+## 5 EpisTwin Reasoning Engine 
+
+The previous sections detailed the construction of the PKG. However, the static graph alone is insufficient for holistic sensemaking. The EpisTwin Reasoning Engine is designed not as a static retrieval pipeline, but as a Cooperative Neuro-Symbolic Orchestrator . Rather than a rigid hierarchy, the sys-tem operates as a dynamic state machine that transitions be-tween symbolic reasoning (traversing Gu) and neural percep-tion (analyzing raw modalities) based on the epistemic confi-dence of the current state. This architecture ensures that the system maximizes the utility of the verifiable graph structure while adaptively grounding reasoning in raw data when sym-bolic representations are sparse or ambiguous. The decision to exploit agentic AI is motivated by the potential to enable additional specialized functionalities, such as Health Assis-tance or Point-of-Interest (PoI) recommendation (e.g., “I am in Paris, recommend a restaurant based on my past dining preferences” ). 
+
+5.1 Agentic Orchestration 
+
+We model the reasoning process as a sequential decision-making problem. The Core Agent ∆Core acts as the pri-mary controller, governed by a policy πθ parameterized by a Large Language Model. At time step t, the system state is defined as st = ( q, Ht), where q is the user query and 
+
+Ht represents the reasoning trajectory (Chain-of-Thought). The agent selects an action at ∼ πθ (a|st) from a compos-ite action space Λ. This space unifies symbolic tools (e.g., community detection, ego-network expansion) and delega-tion triggers. To ensure response fidelity, the workflow inte-grates an Epistemic Verification Module , fVAL , which func-tions as a self-reflection operator. After deriving a candi-date reasoning step, the system evaluates semantic sufficiency 
+
+vt ∼ Pϕ(v|q, Ht ∈ { Sufficient , Insufficient }). If 
+
+vt = Insufficient , implying that the symbolic graph lacks the granularity to answer q, the policy πθ shifts the rea-soning mode. It triggers the Fallback Agent ∆FB not as a subordinate, but as a specialized neural co-routine designed to handle unstructured modalities, effectively expanding the state space beyond the graph’s limits. 
+
+5.2 Bridging the Gap: Online Visual Refinement 
+
+A fundamental challenge in Personal AI is related to the intrinsic contextual nature of user queries. Therefore, the initial transduction ΦC (Section 4.1), compressing high-dimensional sensory data into discrete triples without any context, may inevitably discard content useful in specific con-texts. To resolve this, we introduce Online Deep Visual Re-finement (tVIS ). This tool is invoked when the self-reflection step vt indicates a deficit in symbolic information regarding visual entities. The refinement process operates via query-driven re-grounding . Let Eq ⊂ G u be the set of Information Objects entities topologically relevant to the query (e.g., pho-tos linked to the query topic). The tVIS tool executes a dual-phase neural lookup: 1. Contextual Fetching: It retrieves the raw unstructured payload c (e.g., original image tensors) associated with nodes in Eq .2. Neural VQA Injection: It employs a Multi-modal LLM Mvis to re-analyze the raw content of the information objects relevant to q; avis =
+
+Agg ({Mvis (q, c ) | c ∈ payload (Eq )})
+
+The output avis is a natural language synthesis of visual evidence. Crucially, the extracted insights are treated as 
+
+ephemeral context , injected into the reasoning history Ht for the current session only. This prevents the permanent pollu-tion of the curated PKG with transient, query-specific noise, maintaining the graph as a deterministic source of truth while allowing for flexible, on-demand neural perception. 
+
+## 6 Experimental Evaluation 
+
+The evaluation is designed to assess the system’s capabili-ties in retrieving, connecting, and reasoning on multimodal personal data within a controlled setting. To the best of our knowledge, this is one of the first studies in this direction. 6:00 AM     
+
+> Has_Alarm Has_Event
+> Has_Date Has_Time
+> Alarm_001
+> 15-Jan-2026
+> Has_Date Has_Time
+> Has_Label
+> Event_001
+> 7:30 AM
+> "Football Match"
+> Has_Label
+> None
+> COMMUNITY: " User_1 set an alarm for 6:00 AM on January 15, 2026 for a subsequent Football Match event at 7:30 AM."
+> User_1
+> User_1
+> CC
+> a) b)
+
+Figure 2: Communities over the PKG: (a) The topologically disjoint entities “Alarm” and “Football Match Event” could be grouped into a shared community that reveals an implicit consequentiality, improving reasoning. (b) A macroscopic visualization of a PKG populated by entities, relationships, and thematic communities. 
+
+App Events Images Notes Docs Calls Alarms Contacts 
+
+N. 20 15 15 9 6 4 2
+
+1 App 2 Apps 3 Apps 4 Apps 
+
+Distribution 63 32 4 1Table 1: Data distribution in PersonalQA . Top: Distribution of ques-tions across data sources. Bottom: Distribution of questions based on the number of data sources involved in the reasoning process. 
+
+6.1 The PersonalQA-71-100 Benchmark 
+
+To validate the proposed architecture, we designed 
+
+PersonalQA-71-100 , a synthetic benchmark composed of two synchronized collections (i.e., data and Question-Answer pairs). The first comprises 71 synthetic Information Objects drawn from seven distinct sources (Calendar, Alarm, Photos, Note, Documents, Phone, and Contacts; see Table 1). The other consists of 100 query-answer samples specifically authored to probe the system’s reasoning limits, structured as triplets (q, a target , a ET ) where the ground truth atarget 
+
+only contains strictly needed information to answer the question. The EpisTwin-generated answer aET is released as well. The benchmark is designed to test the architecture across three core cognitive dimensions: Temporal Reason-ing , evaluating the resolution of indexical expressions and scheduling conflicts; Cross-Source Reasoning , challenging the synthesis of fragmented information across heteroge-neous applications (Table 1); and Fact Retrieval , assessing precision in extracting granular details or summarizing recurring patterns found in the data. To guarantee a robust assessment of temporal logic, the querying time is fixed to 
+
+Tglobal = 2025-Sep-01 at 13:00, and the information objects were created with a creation date previous to Tglobal .
+
+6.2 Implementation Details 
+
+The EpisTwin architecture is instantiated as a modular sys-tem. We employ Neo4j 1 as the underlying graph database, leveraging its native hybrid indexing to support both Graph Retrieval ( fG-RAG , Section 3.4) via GraphRag [Edge et al. ,2024] and Knowledge Graph Construction (Section 3.2) via 
+
+LLM Graph Builder 2. The inference logic is distributed across specialized models: Qwen3-32B [Qwen Team, 2025] drives the Agents, GPT-OSS [OpenAI, 2025] handles the 
+
+> 1
+
+https://neo4j.com/ 
+
+> 2
+
+https://neo4j.com/labs/genai-ecosystem/llm-graph-builder/ 
+
+symbolic triple extraction ( fKGC ), Gemini 2.5 Pro [Gemini Team, Google, 2025] powers GraphRAG reasoning, while 
+
+LLaMA-4-maverick-17B-128e [Abdullah et al. , 2025] is the MLLM which manages both visual captioning ( τ ) and the Online Deep Visual Refinement tool ( tVIS ), selected for its native capabilities in long-context visual reasoning. 
+
+6.3 Evaluation Methodology: LLM-as-a-Judge 
+
+To assess the performance of EpisTwin, we employ an auto-mated, reproducible LLM-as-a-Judge framework [Lee et al. ,2025; Liu et al. , 2023]. Responses generated by our system (aET ) were evaluated against the ground truth ( atarget ) to measure reasoning accuracy and retrieval precision. 
+
+Judicial Panel Selection. The evaluation relies on Open Source models in authoritative benchmarks, i.e., LLM Stats 3,to guarantee transparency, consistency, and reproducibil-ity [Liu et al. , 2023]. The panel comprises four state-of-the-art architectures: DeepSeek-V3.2 [2025], Qwen3-32B [2025], GPT-OSS-120B [2025], and Kimi K2 In-struct 0905 [2025]. This approach mitigates the single-judge evaluation biases and ensure a comprehensive assess-ment [Arabzadeh and Clarke, 2025]. 
+
+Evaluation Strategy. The evaluation process follows Prometheus [Kim et al. , 2024] prompting strategy. This methodology enforces a Chain-of-Thought evaluation pro-cess and each judge is provided with (i) a prompt containing the user query ( q), (ii) the system’s generated response ( aET ), and (iii) the ground-truth answer ( atarget ). To minimize sub-jective bias, judges analyze the triplet (q, a target , a ET ) and articulate step-by-step reasoning before assigning a score. The assessment relies on a 5-point Likert scale ranging from 
+
+1 (Irrelevant) to 5 (Ground-Truth Aligned) . However, con-sidering that subtle score differences may occur from model to model [Lee et al. , 2025], we normalize scores to focus on semantic utility. Therefore, scores are assigned to three ordi-nal categories: Positive (Scores 4-5) for accurate responses; 
+
+Neutral (Score 3) for relevant but incomplete outputs; and 
+
+Negative (Scores 1-2) for incorrect results. 
+
+Inter-rater Reliability. To validate the robustness of our au-tomated judicial panel, reporting the score aggregation pro-vides an incomplete overview. Following the recent litera-ture, we rely on a suite of metrics specifically proposed for these purposes. We calculate Percentage Agreement (% Agr.) [McHugh, 2012] and Quadratic Weighted Cohen’s Kappa (κ) [Cohen, 1968] for ordinal reliability. However, Gwet [2008] noted that this metric is affected by a limitation: 
+
+> 3
+
+https://llm-stats.com Score DeepSeek Qwen GPT Kimi                                 
+
+> 5 (%) 84 70 70 53 4 (%) 422 14 31 3 (%) 54510 2 (%) 54921 (%) 2024
+> Avg. 4.63 4.58 4.41 4.27
+> Kimi GPT
+> Qwen
+> DeepSeek 0
+> 20
+> 40
+> 60
+> 80
+> 100
+> Score Dist. (%)
+> Neg. Neu. Pos.
+> Figure 3: Judicial Panel Evaluation. Left: Distribution of scores assigned by LLM Judges on PersonalQA-71-100 to EpisTwin an-swers. Right: LLM judgments distribution after vote aggregation.
+
+when there is high agreement and low variance, the best case, Kappa yields low scores. As a viable alternative metric, they propose Gwet’s AC1 (AC1), that we included in the evalua-tion for completeness. Finally, we assess monotonic scoring trends using Spearman’s Rank Correlation (ρ) [Spearman, 1904] and Krippendorff’s Alpha (α) [Krippendorff, 2011] to evaluate global consistency. 
+
+## 7 Results Discussion 
+
+The empirical evaluation on PersonalQA-71-100 validates the core hypothesis of this work: a Neuro-Symbolic architec-ture, by decoupling reasoning from storage, can achieve high-fidelity “global” sensemaking over fragmented personal data. 
+
+7.1 Reasoning on Fragmented Heterogeneous Data 
+
+As detailed in Figure 3, EpisTwin consistently achieves high performance across all four judge models, with mean scores ranging from 4.27 (Kimi) to 4.63 (DeepSeek) . Notably, the system received a Positive rating (Score 4 or 5) in 87% of the test cases (aggregated across judges, see Figure 3). The significance of this result lies not merely in the high accu-racy, but in the structural complexity of the queries it re-solves. As shown in Table 1, the benchmark is designed to stress-test cross-silo reasoning, with a significant portion of queries requiring the agent to bridge up to four distinct ap-plications (e.g., correlating Calendar logs, Contact details, and Photo metadata) to derive a single answer. In standard vector-based RAG systems, performance typically degrades as the number of required “hops” increases due to context fragmentation [Tao et al. , 2025]. In contrast, EpisTwin’s ro-bust performance confirms that the PKG successfully pre-serves the topological dependencies between these isolated sources. By grounding the agent in a unified semantic layer, the system effectively transforms a complex, multi-source re-trieval problem into a traversable graph query, maintaining coherence where purely neural approaches often hallucinate. 
+
+7.2 Robustness of the Evaluation Panel 
+
+The validity of our results relies on the consistency of the “LLM-as-a-Judge” panel. We observe (Table 2) strong inter-rater reliability, with Gwet’s AC1 consistently exceed-ing 0.84 and Percentage Agreement above 84% . While variance-dependent metrics such as Cohen’s κ and Krip-pendorff’s α yield lower values (avg. 0.65), this reflects                                
+
+> Comparisons AC1 % Agr. κρ
+> DeepSeek vs Qwen 0.92 93.0 0.73 0.70 DeepSeek vs GPT 0.85 87.0 0.69 0.70 DeepSeek vs Kimi 0.84 86.0 0.66 0.60 Qwen vs GPT 0.84 86.0 0.54 0.60 Qwen vs Kimi 0.86 88.0 0.70 0.69 GPT vs Kimi 0.81 84.0 0.61 0.56 Table 2: Statistical alignment using Gwet’s AC1 (AC1), Percentage Agreement (%Agr.), Cohen’s κand Spearman’s ρ.
+
+the paradox of high agreement common in skewed distribu-tions [Gwet, 2008]. Since the system performs correctly on the vast majority of queries, the scarcity of “Negative” labels artificially deflates these metrics. The significant divergence between AC1 (which is robust to trait prevalence) and κ con-firms that the judges function as a homogeneous entity. This statistical consensus demonstrates that the high scores reflect an objective alignment with the ground truth. 
+
+Overall, the statistically robust consensus among state-of-the-art judge models proves that EpisTwin bridges the gap between fragmented personal data and agentic reasoning. 
+
+7.3 Limitations 
+
+The prioritization of structural grounding and data sovereignty entails specific trade-offs. 
+
+Scalability and Model Dependency. Symbolic transduc-tion of long documents generates high-density subgraphs that can saturate the context window. This complexity necessi-tates high-capability LLMs for strict schema adherence, as smaller models ( <10B) struggle with these constraints. 
+
+Latency and Engineering Trade-offs. The architecture prioritizes quality and observability through a coordinated ecosystem of specialized components (Population vs. Agen-tic layers). This design introduces latency, as the Reasoning Engine demands multiple state-space hops to synthesize con-text, particularly when integrating multimodal data. 
+
+## 8 Conclusion 
+
+In this paper, we presented EpisTwin, a Type 3 neuro-symbolic architecture that addresses the critical fragmenta-tion of personal digital footprints. By synthesizing a Per-sonal Knowledge Graph (PKG) from heterogeneous sources and employing Online Deep Visual Refinement, we overcome the local myopia of standard RAG systems. EpisTwin does not merely retrieve text; it actively investigates visual evi-dence and traverses temporal dependencies, mirroring human cognitive processes to answer complex queries. By ground-ing generation in a user-controlled PKG, we ensure that the “right to be forgotten” is a technical reality rather than a probabilistic hope; deleting a node in EpisTwin is final and verifiable. Beyond these structural benefits, EpisTwin repre-sents a shift from passive retrieval to active sensemaking. By equipping the system with the agency to perform on-the-fly visual analysis–re-grounding symbolic entities in their raw pixel context only when necessary–we bridge the gap be-tween the rigidity of knowledge graphs and the nuance of multimodal perception. The robust results achieved on our novel PersonalQA-71-100 benchmark validate that this dy-namic interplay is essential for handling the complexity of real-world user data. We envision that the future of personal assistants lies in this cooperative neuro-symbolic paradigm, where AI is a powerful reasoning engine, but the user remains the undisputed owner of the map. 
+
+## Ethical Statement 
+
+This work prioritizes user agency as an architectural imper-ative. First, EpisTwin operationalizes the Right to be For-gotten (e.g., GDPR Article 17) through deterministic un-learning; unlike probabilistic neural networks or vector stores where data traces may linger, the deletion of a subgraph in our framework guarantees the immediate, verifiable excision of information. Second, we enforce a strict separation be-tween reasoning and memory . By utilizing frozen Large Lan-guage Models and treating user data strictly as ephemeral, inference-time context, we prevent the leakage of sensitive personal information into model weights. Finally, if em-ployed local LMs, EpisTwin ensures physical sovereignty , al-lowing users to confine their digital footprint to a completely isolated environment. 
+
+## References 
+
+[Abdullah et al. , 2025] Abdulhady Abas Abdullah, Arkaitz Zubiaga, Seyedali Mirjalili, Amir H. Gandomi, Fatemeh Daneshfar, Mohammad Sadra Amini, Alan Salam Mo-hammed, and Hadi Veisi. Evolution of meta’s llama mod-els and parameter-efficient fine-tuning of large language models: a survey. CoRR , abs/2510.12178, 2025. [Arabzadeh and Clarke, 2025] Negar Arabzadeh and Charles L. A. Clarke. A human-ai comparative analysis of prompt sensitivity in llm-based relevance judgment. In 
+
+SIGIR , pages 2784–2788. ACM, 2025. [Balog and Kenter, 2019] Krisztian Balog and Tom Kenter. Personal knowledge graphs: A research agenda. In Pro-ceedings of the 2019 ACM SIGIR International Confer-ence on Theory of Information Retrieval, ICTIR 2019, Santa Clara, CA, USA, October 2-5, 2019 , pages 217–220. ACM, 2019. [Blondel et al. , 2008] Vincent D Blondel, Jean-Loup Guil-laume, Renaud Lambiotte, and Etienne Lefebvre. Fast unfolding of communities in large networks. Jour-nal of Statistical Mechanics: Theory and Experiment ,2008(10):P10008, October 2008. [Carbonaro et al. , 2024] Antonella Carbonaro, Alberto Mar-foglia, Filippo Nardini, and Sabato Mellone. Corrigen-dum: CONNECTED: leveraging digital twins and per-sonal knowledge graphs in healthcare digitalization. Fron-tiers Digit. Health , 6, 2024. [Chakraborty and Sanyal, 2023] Prantika Chakraborty and Debarshi Kumar Sanyal. A comprehensive survey of per-sonal knowledge graphs. WIREs Data. Mining. Knowl. Discov. , 13(6), 2023. [Chen et al. , 2021] Min Chen, Zhikun Zhang, Tianhao Wang, Michael Backes, Mathias Humbert, and Yang Zhang. Graph unlearning. CoRR , abs/2103.14991, 2021. [Cohen, 1968] Jacob Cohen. Weighted kappa: Nominal scale agreement provision for scaled disagreement or par-tial credit. Psychological Bulletin , 70(4):213–220, 1968. [DeepSeek-AI, 2025] DeepSeek-AI. DeepSeek-V3.2: Push-ing the frontier of open large language models, 2025. [Edge et al. , 2024] Darren Edge, Ha Trinh, Newman Cheng, Joshua Bradley, Alex Chao, Apurva Mody, Steven Tru-itt, and Jonathan Larson. From local to global: A graph RAG approach to query-focused summarization. CoRR ,abs/2404.16130, 2024. [European Union, 2024] European Union. Regulation (eu) 2024/1689 of 13 june 2024 (AI act), Jul 2024. [Fortunato, 2010] Santo Fortunato. Community detection in graphs. Physics Reports , 486(3–5):75–174, 2010. [Gemini Team, Google, 2025] Gemini Team, Google. Gem-ini 2.5: Pushing the Frontier with Advanced Reasoning, Multimodality, Long Context, and Next Generation Agen-tic Capabilities, 2025. [Gwet, 2008] Kilem L. Gwet. Computing inter-rater relia-bility and its variance in the presence of high agreement. 
+
+British Journal of Mathematical and Statistical Psychol-ogy , 61(1):29–48, May 2008. [Ilkou, 2022] Eleni Ilkou. Personal knowledge graphs: Use cases in e-learning platforms. In WWW (Companion Vol-ume) , pages 344–348. ACM, 2022. [Kautz, 2022] Henry A. Kautz. The third AI summer: AAAI robert s. engelmore memorial lecture. AI Mag. , 43(1):93– 104, 2022. [Kim et al. , 2024] Seungone Kim, Jamin Shin, Yejin Cho, Joel Jang, Shayne Longpre, Hwaran Lee, Sangdoo Yun, Seongjin Shin, Sungdong Kim, James Thorne, and Min-joon Seo. Prometheus: Inducing fine-grained evaluation capability in language models, 2024. [Kimi Team et al. , 2025] Kimi Team, Yifan Bai, et al. Kimi k2: Open agentic intelligence, 2025. [Krippendorff, 2011] Klaus Krippendorff. Computing krip-pendorff’s alpha-reliability. 2011. [Lee et al. , 2025] Yukyung Lee, JoongHoon Kim, Jaehee Kim, Hyowon Cho, Jaewook Kang, Pilsung Kang, and Na-joung Kim. CheckEval: A reliable LLM-as-a-judge frame-work for evaluating text generation using checklists. In 
+
+Proceedings of the 2025 Conference on Empirical Meth-ods in Natural Language Processing , pages 15771–15798, Suzhou, China, November 2025. [Lewis et al. , 2020] Patrick Lewis, Ethan Perez, Aleksan-dra Piktus, Fabio Petroni, Vladimir Karpukhin, Na-man Goyal, Heinrich K¨ uttler, Mike Lewis, Wen-tau Yih, Tim Rockt¨ aschel, Sebastian Riedel, and Douwe Kiela. Retrieval-augmented generation for knowledge-intensive NLP tasks. In NeurIPS , 2020. [Li et al. , 2014] Xiang Li, G¨ okhan T¨ ur, Dilek Hakkani-T¨ ur, and Qi Li. Personal knowledge graph population from user utterances in conversational understanding. In SLT , pages 224–229. IEEE, 2014. [Li et al. , 2023] Juan Li, Vikram Pandey, and Rasha Hen-dawi. A blockchain-based personal health knowledge graph for secure integrated health data management. In 
+
+ISCC , pages 1–7. IEEE, 2023. [Liu et al. , 2023] Yang Liu, Dan Iter, Yichong Xu, Shuohang Wang, Ruochen Xu, and Chenguang Zhu. G-eval: NLG evaluation using gpt-4 with better human alignment. In 
+
+Proceedings of the 2023 Conference on Empirical Meth-ods in Natural Language Processing , pages 2511–2522, Singapore, December 2023. [Liu et al. , 2024] Lingyuan Liu, Huifang Du, Xiaolian Zhang, Mengying Guo, Haofen Wang, and Meng Wang. A question-answering assistant over personal knowledge graph. In SIGIR , pages 2708–2712. ACM, 2024. [McHugh, 2012] Mary L. McHugh. Interrater reliability: the kappa statistic. Biochemia Medica , 22(3):276–282, 2012. [Nguyen et al. , 2025] Thanh Tam Nguyen, Thanh Trung Huynh, Zhao Ren, Phi Le Nguyen, Alan Wee-Chung Liew, Hongzhi Yin, and Quoc Viet Hung Nguyen. A survey of machine unlearning. ACM Trans. Intell. Syst. Technol. ,16(5):108:1–108:46, 2025. [OpenAI, 2025] OpenAI. gpt-oss-120b & gpt-oss-20b model card, 2025. [Peng et al. , 2025] Boci Peng, Yun Zhu, Yongchao Liu, Xi-aohe Bo, Haizhou Shi, Chuntao Hong, Yan Zhang, and Siliang Tang. Graph retrieval-augmented generation: A survey. ACM Transactions on Information Systems ,44(2):1–52, December 2025. [People’s Republic of China, 2021] People’s Republic of China. Personal Information Protection Law of the People’s Republic of China (PIPL). Presidential Order No. 91, 2021. Effective November 1, 2021. [Qwen Team, 2025] Qwen Team. Qwen3 technical report. 
+
+CoRR , abs/2505.09388, 2025. [Sansen et al. , 2024] Hugues Sansen, G´ erard Chollet, Kris-tiina Jokinen, Mar´ ıa In´ es Torres, J´ erˆ ome Boudy, and Mossaab Hariz. Fuzzy dates in personal knowledge graphs and dialogue, the example of ”lifeline”. In HSI , pages 1–5. IEEE, 2024. [Schick et al. , 2023] Timo Schick, Jane Dwivedi-Yu, Roberto Dess` ı, Roberta Raileanu, Maria Lomeli, Eric Hambro, Luke Zettlemoyer, Nicola Cancedda, and Thomas Scialom. Toolformer: Language models can teach themselves to use tools. In NeurIPS , 2023. [Schr¨ oder et al. , 2022] Markus Schr¨ oder, Christian Jilek, and Andreas Dengel. A human-in-the-loop approach for personal knowledge graph construction from file names. In KGCW@ESWC , volume 3141 of CEUR Workshop Pro-ceedings . CEUR-WS.org, 2022. [Skjæveland et al. , 2024] Martin G. Skjæveland, Krisztian Balog, Nolwenn Bernard, Weronika Lajewska, and Trond Linjordet. An ecosystem for personal knowledge graphs: A survey and research roadmap. AI Open , 5:55–69, 2024. [Spearman, 1904] Charles Spearman. The proof and mea-surement of association between two things. The Ameri-can Journal of Psychology , 15(1):72–101, January 1904. [State of California, 2020] State of California. California Privacy Rights Act of 2020 (CPRA). Proposition 24, cod-ified at Cal. Civ. Code §§ 1798.100 et seq., 2020. [Sui et al. , 2025] Yuan Sui, Yufei He, Nian Liu, Xiaoxin He, Kun Wang, and Bryan Hooi. Fidelis: Faithful reasoning in large language models for knowledge graph question answering. In ACL (Findings) , pages 8315–8330. Associ-ation for Computational Linguistics, 2025. [Sun et al. , 2024] Jiashuo Sun, Chengjin Xu, Lumingyuan Tang, Saizhuo Wang, Chen Lin, Yeyun Gong, Lionel M. Ni, Heung-Yeung Shum, and Jian Guo. Think-on-graph: Deep and responsible reasoning of large language model on knowledge graph. In ICLR . OpenReview.net, 2024. [Tao et al. , 2025] Wenyu Tao, Xiaofen Xing, Zeliang Li, and Xiangmin Xu. SAKI-RAG: Mitigating context fragmen-tation in long-document RAG via sentence-level attention knowledge integration. In Proceedings of the 2025 Confer-ence on Empirical Methods in Natural Language Process-ing , pages 1195–1213, Suzhou, China, November 2025. [Traag et al. , 2019] V. A. Traag, L. Waltman, and N. J. van Eck. From louvain to leiden: guaranteeing well-connected communities. Scientific Reports , 9(1), March 2019. [Wei et al. , 2023] Yanbin Wei, Qiushi Huang, Yu Zhang, and James T. Kwok. KICGPT: large language model with knowledge in context for knowledge graph completion. In EMNLP (Findings) , pages 8667–8683. Association for Computational Linguistics, 2023. [Yang et al. , 2025] Zhe-Rui Yang, Jindong Han, Chang-Dong Wang, and Hao Liu. Erase then rectify: A training-free parameter editing approach for cost-effective graph unlearning. In AAAI , pages 13044–13051. AAAI Press, 2025. [Yao et al. , 2023] Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik R. Narasimhan, and Yuan Cao. React: Synergizing reasoning and acting in language mod-els. In ICLR . OpenReview.net, 2023. [Yasunaga et al. , 2021] Michihiro Yasunaga, Hongyu Ren, Antoine Bosselut, Percy Liang, and Jure Leskovec. QA-GNN: reasoning with language models and knowledge graphs for question answering. In NAACL-HLT , pages 535–546, 2021. [Zhang et al. , 2025a] Hairong Zhang, Jiaheng Si, Guohang Yan, Boyuan Qi, Pinlong Cai, Song Mao, Ding Wang, and Botian Shi. Rakg:document-level retrieval augmented knowledge graph construction. CoRR , abs/2504.09823, 2025. [Zhang et al. , 2025b] Zhihui Zhang, Qizun Zhang, Zizhao Fang, Jiapeng Li, and Zichen Ni. Ai information assis-tant: An integrated solution for automated knowledge ag-gregation and personalized recommendation. In 2025 6th International Conference on Big Data & Artificial Intelli-gence & Software Engineering (ICBASE) , pages 122–126, 2025. [Zhong et al. , 2023] Lingfeng Zhong, Jia Wu, Qian Li, Hao Peng, and Xindong Wu. A comprehensive survey on auto-matic knowledge graph construction. ACM Comput. Surv. ,56(4), November 2023.
