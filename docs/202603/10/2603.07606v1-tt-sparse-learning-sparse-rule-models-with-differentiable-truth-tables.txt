@@ -1,0 +1,1283 @@
+Title: TT-Sparse: Learning Sparse Rule Models with Differentiable Truth Tables
+
+URL Source: https://arxiv.org/pdf/2603.07606v1
+
+Published Time: Tue, 10 Mar 2026 01:21:16 GMT
+
+Number of Pages: 24
+
+Markdown Content:
+# TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+Hans Farrell Soegeng 1 Sarthak Ketanbhai Modi 1 Thomas Peyrin 1
+
+## Abstract 
+
+Interpretable machine learning is essential in high-stakes domains where decision-making requires accountability, transparency, and trust. While rule-based models offer global and exact interpretabil-ity, learning rule sets that simultaneously achieve high predictive performance and low, human-understandable complexity remains challenging. To address this, we introduce TT-S PARSE , a flex-ible neural building block that leverages differ-entiable truth tables as nodes to learn sparse, effective connections. A key contribution of our approach is a new soft T OP K operator with straight-through estimation for learning discrete, cardinality-constrained feature selection in an end-to-end differentiable manner. Crucially, the for-ward pass remains sparse, enabling efficient com-putation and exact symbolic rule extraction. As a result, each node (and the entire model) can be transformed exactly into compact, globally interpretable DNF/CNF Boolean formulas via Quine–McCluskey minimization. Extensive em-pirical results across 28 datasets spanning binary, multiclass, and regression tasks show that the learned sparse rules exhibit superior predictive performance with lower complexity compared to existing state-of-the-art methods. 
+
+## 1. Introduction 
+
+In high-stakes deployments including healthcare, finance, public policy, and safety-critical engineering, interpretabil-ity is often a functional requirement, enabling accountability and auditability (Doshi-Velez & Kim, 2017; Seshia et al., 2022). In these regimes, post-hoc explainability methods that attempt to rationalize a black-box predictor can be brit-tle: the explanation may be misaligned with the true de-cision process (Slack et al., 2020; Adebayo et al., 2018). Rudin (2019) argues that, when possible, one should prefer 
+
+> 1
+
+School of Physical and Mathematical Sciences, Nanyang Tech-nological University, Singapore. Correspondence to: Hans Farrell Soegeng <hans0048@e.ntu.edu.sg >.
+
+Preprint. March 10, 2026. 
+
+Figure 1. AUC score against rule log-complexity scatter plot of 8 interpretable models and TabM as SOTA black-box baseline across different hyperparameters, on diabetes and heart tabular datasets. 
+
+inherently interpretable models over explanations of opaque ones, where transparency is a property of the model itself. Rule-based predictors are a natural target for such fundamen-tal interpretability. However, interpretability is multifaceted. First, global interpretability means that a single set of rules governs the model’s behavior for all inputs; this contrasts with local explanations that provide input-dependent ratio-nales. Second, exact interpretability means that the extracted rules reproduce the model’s inference exactly, rather than approximately (e.g., via feature-attribution scores). In this work, we focus on the demanding but practically valuable regime of global and exact interpretability, where the entire model’s inference can be reduced to symbolic logic without approximation. Crucially, interpretability does not guarantee human under-standability. Human-subject evaluations demonstrate that cognitive load scales non-linearly; specifically, studies sug-gest that rule sets exceeding a complexity of 50 become functionally unintelligible (Lage et al., 2019). Hence, our work focuses on producing rule sets that minimize rule complexity while maintaining competitive predictive perfor-
+
+1
+
+> arXiv:2603.07606v1 [cs.LG] 8 Mar 2026
+
+TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables                            
+
+> Feature is False
+> Feature is True
+> Chest pain is NAP
+> 0-0.83
+> r1
+> ExerciseAngina is Y
+> 00.97
+> r2
+> ST Slope is Flat
+> 01.13
+> r3
+> Oldpeak ≥3
+> Chest pain is TA Cholesterol <167.6
+> Chest pain is ATA Chest pain is TA
+> Cholesterol <167.6
+> 01.4
+> r4
+> MaxHR ≥177.25
+> Chest pain is ATA Oldpeak ≥2.25
+> Cholesterol <225
+> 0-1
+> r5
+
+P (y = 1 | x) = σ
+
+
+
+−1.04 + P5 
+
+> j=1
+
+wj · rj (x)
+
+
+
+Figure 2. A TT-S PARSE model trained on Heart dataset converted to Boolean decision trees, achieving 91% test ROC-AUC score and complexity of 15. The sigmoid σ(·) function is applied to the final activated weights + intercept term to obtain the probability of heart disease existence between [0 , 1] .
+
+mance . Figure 1 showcases this: our model TT-S PARSE 
+
+achieves superior predictive performance while maintaining low rule complexity (well within the complexity threshold for human intelligibility of 50 indicated by the green region), outperforming other rule models and remaining competitive with the state-of-the-art deep tabular model, TabM (Gorish-niy et al., 2025). Despite their appeal, learning high-performing rule sets while minimizing complexity remains challenging. Classi-cal approaches often rely on discrete, heuristic search (e.g., greedy rule induction or tree growth/pruning), which can become trapped in suboptimal solutions and may struggle to exploit modern hardware efficiently (Cohen, 1995; Breiman et al., 1984). More recent lines of work pursue global op-timization objectives or neural-symbolic relaxations that enable gradient-based training, but they impose restrictive logical forms that limit expressivity (Petersen et al., 2022a; 2024). Truth table-based nodes offer a direct route to exact sym-bolic conversion via standard minimization procedures such as Quine-McCluskey (Benamira et al., 2023; 2024). Cru-cially, truth table-based nodes provide high expressivity be-cause they are capable of representing any Boolean function over their inputs, effectively acting as the discrete coun-terpart to standard neural network (NN) nodes. Unlike neural-symbolic relaxations that approximate discrete logic through continuous functions, truth table nodes function as fundamental building blocks that directly map input patterns to outputs. However, making such nodes trainable at scale requires solving a key bottleneck: selecting a sparse, mean-ingful subset of inputs for each node in a way that remains compatible with backpropagation. We introduce TT-S PARSE , a differentiable rule-learning ar-chitecture built around Learnable Truth Table (LTT) nodes that can be transformed exactly into Boolean formulas (DNF/CNF) after training. Each LTT node learns a Boolean function over a small set of selected input features; the entire model is then a composition of these rule activations with a lightweight prediction head. The central technical challenge is that choosing which k inputs feed each node is a discrete TOP K operation, which is non-differentiable. TT-S PARSE 
+
+resolves this with a novel soft T OP K operator that provides a continuous relaxation while enforcing an exact cardinal-ity constraint in expectation, enabling stable gradient flow through the connection-selection mechanism. Concretely, we use a straight-through strategy where the forward pass uses hard T OP K selections to preserve sparsity, while the backward pass uses the differentiable relaxation to update connection scores. After training, we enumerate each node’s induced truth table and apply Quine-McCluskey (Quine, 1952; McCluskey, 1956) minimization to obtain compact symbolic rules, yielding global and exact interpretability. Empirically, we evaluate TT-S PARSE along the Pareto fron-tier of performance versus complexity. Our experiments show that TT-S PARSE consistently achieves favorable trade-offs, matching or approaching the predictive performance of strong baselines while producing substantially more com-pact rule sets. Across a broad suite of tabular benchmarks spanning binary and multiclass classification as well as re-gression, TT-S PARSE consistently produces competitive accuracy with markedly reduced rule complexity compared to a range of interpretable baselines, while remaining com-petitive to the SOTA tabular architecture. 
+
+Contributions. Hence, the main contributions of this work include: (1) We propose a novel, efficient, and fully dif-ferentiable relaxation of the discrete T OP K operator ,enabling end-to-end gradient-based optimization of discrete feature routing via backpropagation. (2) We introduce the 
+
+TT-S PARSE layer , a versatile neural building block that leverages our Soft T OP K operator to dynamically learn sparse connections and extract higher-order Boolean inter-actions. This block is inherently flexible, allowing for seam-less adaptation across diverse tasks. (3) We provide a rule extraction pipeline that converts trained LTT nodes to com-2TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+pact DNF/CNF rules via truth table enumeration and Quine-McCluskey minimization, leveraging data-driven don’t-care terms to reduce redundancy. We illustrate such exact rule extraction with no approximation in Figure 3. (4) Through extensive empirical validation on 28 datasets, we demon-strate that TT-S PARSE establishes a new Pareto frontier in the performance-complexity landscape while achieving predictive accuracy competitive with SOTA non-pretrained tabular model, TabM. 
+
+## 2. Related Work 
+
+In this section, we provide an overview of the literature on methods that achieve global and exact interpretability, as well as relaxations of the discrete T OP K function. We evaluate these approaches with TT-S PARSE in Section 4. 
+
+Tree-Based Approaches. While classical decision trees (Breiman et al., 1984) offer an intuitive approach, their greedy induction strategy often leads to suboptimal rule sets. To address this, GOSDT (Lin et al., 2020) employs dynamic programming to find provably optimal sparse trees, though at a high computational cost for large datasets. Conversely, ensemble methods like LightGBM (Ke et al., 2017) achieve state-of-the-art predictive performance but sacrifice inter-pretability by distributing the decision logic across hundreds of weaker trees. However, the tree topology inherently re-stricts each root-to-leaf path to a logical conjunction (AND) of splitting predicates. 
+
+Heuristic-Guided Bottom-Up Rule Induction. RIP-PER (Cohen, 1995) is a classic technique that employs a greedy strategy to grow and prune rule sets, incre-mentally refining them to optimize predictive accuracy. Classy (Proen c¸ a & van Leeuwen, 2020) advances this ap-proach by utilizing the Minimum Description Length (MDL) principle to search for compact probabilistic rule lists with-out the need for hyperparameter tuning. Other approaches, such as GLRM (Wei et al., 2019) and RuleFit (Friedman & Popescu, 2008) improve scalability by leveraging column generation or tree ensembles to identify candidate rules. However, similar to the limitation with trees, these methods remain constrained by discrete heuristic generation: they build rules by iteratively adding conjunctions (ANDs), lack-ing the native flexibility to learn complex, nested Boolean structures (e.g., ORs) directly within a single rule unit. 
+
+Neuro-Symbolic Approaches. Neuro-symbolic models aim to combine the generalization power of neural networks with symbolic interpretability. RRL (Wang et al., 2021) learns a set of discrete rules by projecting logical structures into a differentiable space and applying gradient-based op-timization. RL-Net (Dierckx et al., 2023) uses a neural architecture that mimics rule lists by enforcing a hierarchi-cal activation structure. Most recently, NeuRules (Xu et al., 2025) integrate feature discretization, rule construction, and rule ordering into a single end-to-end differentiable pipeline. 
+
+Differentiable TOP K. Prior differentiable TopK ap-proaches rely on iterative Optimal Transport solvers with the Sinkhorn algorithm (Xie et al., 2020; Cuturi, 2013) or stochastic noise injection (Cordonnier et al., 2021; Berthet et al., 2020), which introduces significant computational overhead or gradient variance. Most recently, Petersen et al. (2022b) used these novel differentiable T OP K operators to define a top-k cross-entropy loss, enabling the direct end-to-end optimization of top-k classification accuracy, achieving state-of-the-art fine-tuning results on ImageNet. 
+
+## 3. TT-S PARSE 
+
+In this section, we introduce TT-S PARSE , a Truth Table-based Sparse neural block. Each node in the TT-S PARSE 
+
+layer can be understood as a learnable truth table logic over its inputs, we call them Learnable Truth Table (LTT) nodes interchangeably. This block is the core interpretable unit that transforms input features into Boolean rules. Let ⃗x be the n-dimensional input vector to the layer, and there are M
+
+LTT nodes in the layer. There are three aspects of a TT-S PARSE layer: the connec-tion selection, the linear operation of the selected inputs, and the binarization. The connection selection mechanism leverages the soft T OP K operator we introduce to enable learning by backpropagation of the loss by relaxing the dis-crete, non-differentiable selection of the traditional T OP K. 
+
+3.1. Components Soft T OP K. First, we define the space of operators 
+
+Sk : Rn → P k ⊂ [0 , 1] n
+
+where ⃗x ∈ R n denotes the input vector. This space is constrained by Pni=1 Sk(⃗x) i = k.The hard T OP K operator can be viewed as finding the vector 
+
+y within the feasible set that maximizes x⊤y, achieved by assigning the components of y corresponding to the k largest values of x to 1, while setting the rest to 0. Since this dis-crete selection is not differentiable, we introduce an entropic regularizer to find a probability-like vector ⃗y ∈ [0 , 1] n that is closest to the logits ⃗x (maximizing the dot product) while maintaining smoothness and summing exactly to k. The entropic regularizer is weighted by a predetermined param-eter temperature τ > 0. This leads us to the optimization objective ⃗y ∗ = argmax ⃗y∈[0 ,1] n
+
+[Pni=1 yixi + τ Pni=1 H(yi)] 
+
+subject to Pni=1 yi = k, where H(yi) is the binary entropy 
+
+H(yi) = −yi log yi − (1 − yi) log(1 − yi). Solving this 3TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+x1 x2 x3 · · · xn
+
+LTT 1 LTT 2 · · · LTT M
+
+y1 y2 · · · yM
+
++ σ
+
+LTT j DNF: 
+
+(x2 ∧ x0) ∨ . . . 
+
+Wmap 
+
+WLTT 
+
+LTT j
+
+> Forward
+> Backward
+
+Forward 
+
+WLTT if 
+
+Wmap ∈
+
+TOP K
+
+Figure 3. Overview of the TT-S PARSE Architecture. (Left) The hybrid model structure. The input vector is processed by a layer of Learnable Truth Table (LTT) nodes (blue trapezoids), which extract higher-order Boolean rules. These outputs are concatenated with the raw input features to form the final prediction. (Middle) Each potential connection is parameterized by the logic weight WLTT and the mapping weight Wmap . Darker lines highlight the “active” connections, those where Wmap belongs to the subset of the k-highest mapping weights for that node. Each LTT node is convertible to an equivalent CNF/DNF equation (See Figure 4). (Right) In the forward pass, the input is fed forward and multiplied by WLTT if the corresponding Wmap is part of T OP K. In the backward pass, gradients flow with the Soft T OP K relaxation, updating both Wmap and WLTT . This design enables exact rule extraction while preserving gradient-based training through discrete connection selection. 
+
+optimization via Lagrangian multipliers (see Appendix C), we obtain the solution Sk(⃗x) := ⃗y where yi := σ( xi 
+
+> τ
+
++ c)
+
+for i ∈ { 1, . . . , n } and c ∈ R is the unique root of f (c) = Pnj=1 σ( xi 
+
+> τ
+
++c)−k = 0 . Since f (c) is strictly increasing, c
+
+is uniquely determined and solved by the bisection method. This formulation allows for the derivation of exact gradients with implicit differentiation. Let s′ 
+
+> i
+
+= σ′( xi 
+
+> τ
+
++ c) = yi(1 −
+
+yi) and s′ = [ s1, . . . , s n]⊤.∂y i
+
+∂x j
+
+= s′ 
+
+> i
+
+· ∂∂x j
+
+ xi
+
+τ + c
+
+
+
+= 1
+
+τ s′
+
+> i
+
+
+
+δij − s′
+
+> j
+
+∥s′∥1
+
+
+
+(1) 
+
+∇⃗x Sk(⃗x) = 1
+
+τ
+
+
+
+diag (s′) − s′(s′⊤ )
+
+∥s′∥1
+
+
+
+(2) 
+
+∂y i
+
+∂k = s′ 
+
+> i
+
+· ∂∂k 
+
+ xi
+
+τ + c
+
+
+
+= s′
+
+> i
+
+∥s′∥1
+
+(3) 
+
+∇kSk(⃗x) = s′
+
+∥s′∥1
+
+(4) The complete derivation of the partials can be found in Section C.2. Notice that the gradient is scaled by the inverse temperature 1 
+
+> τ
+
+, similar to the effect of temperature in the softmax function when approximating the Heaviside step function. As τ → 0, the relaxation gets closer to the hard, discrete counterpart. The effect of temperature τ on the distribution of probabilities is illustrated in Figure 6. In the implementation of the bisection search of c, it takes around 25 halving iterations before reaching machine preci-sion limits of float32 (ϵ ≈ 10 −6), taking around 1 ms to complete for a batch of 16 input vectors. See Section C.4 for visualization of the convergence of the bisection method. 
+
+LTT Nodes. Let ⃗x ∈ R n denote the input to the TT-SPARSE layer with M LTT nodes. The block has 2 learnable modules: the connection mapping represented by a matrix 
+
+Wmap ∈ Rn×M and the truth table logic represented by matrix WLTT ∈ Rn×M (augmented by a bias vector b ∈
+
+RM ). For each LTT node j ∈ { 1, . . . , M }, the objective is to select a sparse subset of k input features to form a truth table of size 2k and learn effective truth table logic over the features. To determine the active inputs for node j, we define a selection mask vector m(j) ∈ { 0, 1}n.In the forward pass, this mask is discrete. It selects the indices corresponding to the top-k values in the j-th column of the mapping matrix: 
+
+m(j) 
+
+> forward ,i
+
+=
+
+(
+
+1 if Wmap [i, j ] ∈ TopK (Wmap [: , j ]) 0 otherwise for i ∈ [1 , . . . , n ].The output of each LTT node is the linear combination of the active features 
+
+zj (⃗x) = 
+
+> n
+
+X
+
+> i=1
+
+m(j) 
+
+> i
+
+· WLTT [i, j ] · xi + bj (5) However, the traditional T OP K operation is discrete and not differentiable, so without relaxation, the connection matrix will not update to find better connections for the LTT logic. Thus, we leverage the soft T OP K operator Sk we propose in 3.1 to replace m(j) in the backward pass to: 
+
+m(j) 
+
+> backward
+
+= Sk(Wmap [·, j ]) 
+
+Consequently, the partial derivatives w.r.t. the connection weights are computed via the chain rule. Let δj = ∂L 
+
+> ∂z j
+
+be 4TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+the gradient of the loss function L w.r.t. the node output zj .The gradient flow to the connection matrix is given by 
+
+∂L
+
+∂W map [·, j ] = ∂L
+
+∂z j
+
+· ∂z j
+
+∂m (j)
+
+> backward
+
+· ∂S k(Wmap [·, j ]) 
+
+∂W map [·, j ] (6) The term ∂z j
+
+> ∂m (j)
+> backward
+
+is an n-dimensional vector representing the potential contribution of each feature if selected, given by 
+
+∂z j
+
+∂m (j)
+
+> backward
+
+=⃗x ⊙ W LTT [·, j ]
+
+The term ∂S k (Wmap [·,j ])  
+
+> ∂W map [·,j ]
+
+is the Jacobian of the Soft T OP Koperator, JSk ∈ Rn×n given by equation (2). The full derivation of the gradient is provided in Appendix D. This mechanism allows the TT-S PARSE layer to dynamically re-route connections into the LTT node while learning the LTT logic during training. Finally, to function as a Boolean logic gate, the continuous output zj is binarized. Differentiability is maintained with a straight-through estimator (STE): yj = 1(zj >0) + ( zj −
+
+stop gradient (zj )) .
+
+3.2. TT-S PARSE Design 
+
+The architecture of the overall model is designed as a hybrid neural block that integrates high-order feature interaction logic through the TT-S PARSE layer with linear single-order features. The layer processes an n-dimensional input vector ⃗x to pro-duce M binary rule activations ⃗z ∈ { 0, 1} M via the LTT nodes. Then, we implement a skip-concatenation, so the final representation ⃗ h is formed by concatenating the raw input features with the LTT rule outputs: ⃗ h = [ ⃗x ∥⃗z] ∈
+
+Rn+M . This combined vector is then fed into a final classi-fier or regressor layer fcls (⃗ h) = σ(Wcls ⃗ h + bcls ), depending on the task (binary/multiclass/regression). The final lin-ear classifier layer assigns weights to both the higher-order and single-order rules, before the task-specific activation function. While the TT-S PARSE layer selects several inputs per node, not all connections or all nodes may be essential for a given task. To identify the most compact and effective rule set, we implement a post-hoc iterative magnitude pruning after the initial training phase. Connections in the TT-S PARSE layer are removed based on the weights’ L1 norm, followed by an iterative fine-tuning of the non-zeroed weights. Through-out this refinement process, the selected connections of the LTT nodes remain fixed to the selected indices by Wmap dur-ing training. This refinement phase focuses on optimizing the weights of the established logical structure, finding the lightest and most effective rule logic for the given task. 
+
+3.3. Rule Extraction 
+
+Each node j in the TT-S PARSE layer represents a learnable Boolean logic of its selected inputs. Let Ij ⊂ { 1, . . . , n }
+
+be the selected indices of the input features by the T OP Koperator on Wmap , where |I j | = k. Recall that the output of the node zj (⃗x) is determined by the thresholded linear combination of the inputs as in Equation (5). To extract the explicit Boolean formula of the input features for node j, we perform a simple truth table enumeration. All 
+
+2k possible binary inputs are efficiently iterated and for each input, the node’s output activation is computed, obtaining the truth table Tj for node j
+
+Tj = {(vi, z j (vi)) |vi ∈ { 0, 1}k}2k
+
+> i=1
+
+where vi denotes the i-th binary vector in the enumeration of the input space. The subset of the truth table where the output is 1, i.e. Mj = {vi ∈ { 0, 1}k | zj (vi) = 1 }, are the 
+
+minterms of the Boolean function.                                   
+
+> x1
+> x2
+> x3
+> x4
+> b
+> −0.5
+> 1.7
+> −1.2
+> −2.2
+> −0.4
+> LTT
+> x1x2x3x4Φ
+> 0000000010001*001**11***0
+> DNF: x2∧x1∧x3∧x4
+> Figure 4. Conversion of an LTT node to DNF by truth table enumeration of 2ninput combinations and obtaining the binary outputs with the LTT weight and bias parameters.
+
+To minimize rule complexity, we identify Don’t-Care Terms 
+
+(DCTs)—input combinations ( vi) that do not appear in the training data. Following the identification of minterms and DCTs, the truth table is synthesized into a CNF or DNF expression via the Quine-McCluskey (QMC) algorithm (Quine, 1952; McCluskey, 1956) (Algorithm 1). By opti-mally assigning binary values to these DCTs, the algorithm minimizes the resulting rule complexity while maintaining exact fidelity on the observed training distribution. By modeling the node truth table logic as a thresholded linear combination of the selected inputs, TT-S PARSE re-quires only n + 1 learnable parameters (one weight per selected input plus a bias term) to represent the logic, a lin-ear complexity compared to DiffLogicNet (Petersen et al., 2022a) double-exponential and DWN (Bacellar et al., 2024) exponential complexities. DiffLogicNet introduces a differentiable relaxation of the Boolean logic to implement binary gates as nodes, by learn-ing a probability distribution over the set of all possible bi-nary operators for a given number of inputs. While effective for 2-input gates, this approach scales poorly as the number of possible Boolean functions grows double exponentially 5TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+Table 1. Binary Classification Results: AUC ↑ (top) and Complexity ↓ (bottom) for each dataset. Standard error in subscript. Best values in bold . The last row reports the avg. rank ↓ of each model’s AUC across all datasets, as calculated for the Friedman statistical test. OOM 
+
+indicates out-of-memory during training. 
+
+Dataset TT-S PARSE GOSDT GLRM RuleFit Classy NeuRules RL-Net RRL DWN TabM bank .9096 .00 .6662 .01 .8928 .00 .8963 .01 .9042 .00 .8648 .01 .6917 .01 .8913 .01 .8480 .01 .9351 .00 
+
+112 37 50 38 2 58 20 370 13 902 45 1318 6 73 7 533 31 -blood .7554 .02 .6155 .04 .7093 .05 .7059 .05 .6628 .03 .7116 .02 .5618 .05 .6712 .04 .6545 .05 .7193 .04 
+
+15 8 15 5 30 5 43 7 92 165 3 201 0 52 465 29 -calhousing .9307 .00 .8111 .01 .9205 .01 .9259 .00 .9072 .01 .8804 .01 .8004 .03 .8684 .01 .7961 .01 .9667 .00 
+
+62 11 25 0 108 7 131 46 457 17 229 8 88 1 45 3 572 21 -compas .7301 .01 .6765 .01 .7236 .01 .7270 .01 .7080 .01 .7129 .01 .6851 .02 .6825 .01 .6629 .01 .7311 .01 
+
+92 13 0 38 4 31 16 39 2 280 6 961 1 17 5 1358 28 -covertype .8554 .00 OOM .8437 .00 .8465 .00 .8913 .00 .8320 .00 .7672 .01 .8522 .00 .8002 .00 .9801 .00 
+
+194 31 49 1 39 6 2183 102 284 28 194 16 325 8 464 16 -cc default .7915 .01 .7011 .01 .7705 .01 .7802 .00 .7631 .01 .7596 .01 .7233 .00 .7454 .02 .6601 .02 .7883 .01 
+
+128 19 62 56 24 110 41 116 3 281 20 440 2 100 20 445 18 -creditg .7919 .04 .5788 .02 .6851 .04 .7948 .04 .6768 .02 .7313 .05 .6625 .04 .6745 .05 .7234 .07 .7329 .03 
+
+54 36 27 6 56 5 97 24 13 2 781 148 246 0 35 8 2444 36 -diabetes .8208 .02 .6443 .03 .7796 .02 .8024 .01 .7260 .02 .6854 .05 .6442 .02 .7609 .03 .7186 .04 .7957 .01 
+
+14 9 52 87 10 19 7 14 3 18 1 91 0 24 7 588 26 -electricity .8823 .00 .7734 .00 .8705 .00 .8745 .00 .8895 .00 .8397 .01 .7459 .01 .8387 .01 .8160 .00 .9666 .00 
+
+99 29 20 0 61 3 186 32 731 12 240 6 1121 0 56 6 2913 96 -eye .6312 .02 .5836 .00 .6278 .01 .6216 .01 .5913 .02 .5981 .01 .5815 .01 .5930 .01 .5711 .02 .6799 .02 
+
+76 43 82 16 2 46 18 38 6 715 24 1921 0 64 11 340 19 -heart .9308 .01 .8140 .01 .9149 .02 .9151 .01 .8749 .01 .8663 .01 .8301 .01 .8661 .03 .8719 .02 .9236 .02 
+
+11 15 20 39 6 34 16 31 2 100 9 641 0 29 10 474 20 -income .9147 .00 .7341 .01 .8958 .00 .9121 .00 .8799 .00 .8800 .01 .7707 .02 .8962 .01 .8642 .01 .9230 .00 
+
+152 40 11 2 28 2 155 47 684 22 413 58 4345 1351 307 18 1045 23 -jungle .8917 .00 .7804 .01 .8904 .00 .8630 .01 .9476 .00 .8702 .01 .7685 .03 .8781 .01 .7900 .01 .9970 .00 
+
+262 75 27 4 51 4 103 48 891 25 163 1 421 0 28 4 440 25 -road safety .7764 .00 .7197 .01 .7603 .00 OOM .8435 .00 .7842 .01 .7465 .01 .8293 .01 .7295 .02 .8852 .01 
+
+236 54 15 8 24 1 1348 33 186 9 1948 38 119 10 425 13 -Avg. rank ↓ 1.53 8.27 3.6 3.07 3.8 4.8 7.93 4.87 7.13 
+
+with the number of inputs, (2 2n
+
+). The DWN model ad-dresses this scalability bottleneck by parameterizing nodes as Lookup Tables (LUTs) and introducing an Extended Fi-nite Difference method to estimate gradients. This reduces the parameter complexity from 22n
+
+to 2n, the size of the lookup table itself. However, by parameterizing a regular lookup table, a standard LUT is strictly position-dependent; the meaning of its weights is tied to the specific ordering of its address. If the input selection mechanism permutes the selected features (e.g. swapping index i with index j), the LUT weights do not accommodate this shift, causing performance inefficiency. In contrast, the TT-S PARSE node uses a linear combination of the inputs, which is commuta-tive, making the node robust to input reordering during the connection search phase. Pruning a single input connection from a dense LUT is also non-trivial. To make a LUT invariant to a specific input bit, one must constrain half of the table’s parameters to be iden-tical to the other half (based on Shannon expansion). In the TT-S PARSE formulation, removal of a redundant input con-nection can simply be done by pushing the corresponding linear weight to zero via L1 norm. We validate these theoretical advantages by replacing the TT-S PARSE block in our model with the DWN block in our experimental evaluation (Tables 1-3). 
+
+## 4. Experiments 
+
+In this section, we validate the efficacy of TT-S PARSE 
+
+across the 3 main tabular tasks: binary and multiclass clas-sification, and regression. Our evaluation aims to answer 2 fundamental questions: (1) Can TT-S PARSE generate rule sets that are Pareto-competitive, offering a better trade-off between predictive performance and complexity compared to existing interpretable models? (2) How does the perfor-mance of TT-S PARSE compare to T AB M (Gorishniy et al., 2025), the current state-of-the-art non-pretrained deep learn-ing architecture for tabular data? The code for this project is publicly available at 1.
+
+Datasets and Tasks. We conduct experiments on 28 datasets (14 binary, 7 multiclass, 7 regression). We evaluate the Area Under the Receiver Operating Characteristic Curve 
+
+> 1
+
+https://anonymous.4open.science/r/sparse-CF97 
+
+6TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+Table 2. Multiclass Classification Results: AUC ↑ (top) and Complexity ↓ (bottom) for each dataset. Standard error in subscript. Best values in bold . The last row reports the avg. rank ↓ of each model’s AUC across all datasets, as calculated for the Friedman statistical test. 
+
+Dataset TT-S PARSE GOSDT Classy NeuRules RL-Net DWN TabM car .9901 .00 .6636 .03 .9727 .01 .8930 .02 .8631 .03 .6967 .06 1.0000 .00 
+
+252 110 41 12 136 6 227 11 73 6 2445 63 -ecoli .9663 .01 .8315 .05 .8968 .02 .9340 .01 .7551 .05 .8841 .02 .9629 .01 
+
+148 77 16 4 34 4 201 3 36 0 1358 3 -iris .9993 .00 .9500 .02 .9633 .02 .9883 .01 .9040 .05 .8090 .04 .9963 .01 
+
+26 17 72 12 0 25 1 301 0 2406 68 -penguins 1.0000 .00 .9519 .03 .9795 .02 .9893 .01 .9551 .02 .9503 .02 .9998 .00 
+
+61 15 2 19 3 212 8 50 2 1065 55 -satimage .9802 .00 .8408 .01 .9587 .00 .9488 .01 .8094 .03 .8652 .02 .9925 .00 
+
+157 18 17 3 408 12 378 9 740 2 554 26 -wine 1.0000 .00 .9592 .01 .9430 .03 .9807 .02 .9543 .06 .9528 .01 1.0000 .00 
+
+72 16 3 13 0 95 6 1121 0 795 21 -yeast .8457 .02 .6767 .02 .7809 .02 .7787 .01 .7082 .03 .6721 .04 .8564 .02 
+
+77 14 37 6 135 11 307 8 42 5 3050 41 -Avg. rank ↓ 1 4.71 3 2.43 4.71 5.14 
+
+(ROC-AUC ) score for the binary and multiclass (One-vs-Rest) classification to judge predictive performance while handling class imbalance. For regression tasks, we evaluate the R2 score. 
+
+Baselines. We compare TT-S PARSE against the inter-pretable baselines we discussed on the Related Work (section 2): GOSDT (Lin et al., 2020), GLRM (Wei et al., 2019), RuleFit (Friedman & Popescu, 2008), Classy 
+
+(Proen c¸ a & van Leeuwen, 2020), NeuRules (Xu et al., 2025), RL-Net (Dierckx et al., 2023), RRL (Wang et al., 2021), and DWN (Bacellar et al., 2024). Our objective is to maximize predictive performance (AUC/ R2) while minimizing rule complexity. The com-plexity of a rule set is simply defined as the sum of the number of rules and the number of Boolean operators in all the rules. Crucially, for multiclass tasks, we calculate a single global complexity score: a rule or feature contributes to the complexity count exactly once if it holds a non-zero weight for any target class, ensuring that logic shared across classes is not penalized multiple times. Refer to Appendix F for examples of rules generated by each interpretable model and its complexity. Because the output of a rule-based model depends on its hyperparameters, a single performance num-ber does not provide a complete picture. For comprehensive evaluation, we visualize the performance complexity Pareto frontier for every model on every dataset (see Appendix E). The results presented in Tables 1, 2, and 3 report the performance of the model configuration that achieves the best performance-complexity of this Pareto grid. Due to architectural limitations, GLRM and RuleFit cannot han-dle multiclass classification, and the remaining models are limited to classification. For all binary classification datasets except covertype, jun-gle, and road safety (Table 1), TT-S PARSE consistently 
+
+Table 3. Regression Results: R2 ↑ (top) and Complexity ↓ (bottom) for each dataset. Standard error in subscript. Best values in bold .The last row reports the avg. rank ↓ of each model’s R2 across all datasets, as calculated for the Friedman statistical test. 
+
+Dataset TT-S PARSE GLRM RuleFit TabM abalone .5328 .01 .4103 .02 .5324 .01 .5494 .02 
+
+43 16 53 6 23 7 -bike .6956 .01 .1879 .05 .7380 .01 .9547 .00 
+
+299 21 50 5 127 27 -boston .8566 .01 .6541 .10 .8576 .05 .9042 .01 
+
+77 41 74 14 89 17 -california .7102 .01 .5473 .04 .7006 .01 .8432 .01 
+
+135 30 197 20 101 34 -crime .3647 .08 .4893 .04 .6540 .01 .6513 .02 
+
+3003 22 68 5 79 33 -parkinsons .9232 .01 .8598 .02 .9270 .01 .9909 .00 
+
+103 90 96 6 82 15 -wine reg .3121 .02 .2151 .04 .3090 .03 .3629 .10 
+
+111 46 59 8 85 21 -Avg. rank ↓ 1.71 2.86 1.43 
+
+pushes the Pareto limit, achieving comparable or better performance with lower complexity. While GOSDT of-ten yields the lowest complexity rules with sparse decision trees, it frequently suffers from performance issues. For some datasets (blood, compas, cc default, creditg, diabetes, heart, income), TT-S PARSE remains competitive with the SOTA DL baseline TabM, notably surpassing it on the Heart dataset with low complexity. Multiclass classification (Table 2) highlights the strongest advantage of our approach. With GLRM and RuleFit un-able to operate in this setting, TT-S PARSE comfortably outperforms the other models in all datasets as the Pareto frontier, and is very close to achieving TabM performance while maintaining full transparency. TT-S PARSE also shows 7TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+strong competitiveness for the regression tasks (Table 3), ef-fectively outperforming GLRM and underperforming Rule-Fit in rank by a thin margin. 
+
+4.1. Ablation Study 
+
+A core contribution of TT-S PARSE is the use of the Soft TOP K operator to select the input connections for each LTT node. To validate the necessity and efficiency of this design, we perform an ablation study comparing it against a baseline connection selection mechanism leveraging the softmax operator as a relaxation of the argmax operator, used in DWN (Bacellar et al., 2024). 
+
+Baseline. In the baseline configuration we ablate against, instead of selecting k features from a single importance vector, the k inputs to a truth table are treated as distinct, ordered ”slots”. Mathematically, the connection matrix for the layer is Wmap ∈ Rn×kM instead of Wmap ∈ Rn×M .For each node j in the layer, the k inputs to the node are determined by taking an argmax over k columns in the matrix, and, in the backpropagation, the weights are updated by taking the relaxation of argmax with softmax. This baseline exhibits two disadvantages relative to our proposed soft T OP K approach: (1) Parameter inefficiency, where mapping complexity scales as O(M ·n·k) rather than 
+
+O(M · n); and (2) Input redundancy, where independent slots may converge on the same feature index, effectively collapsing the dimension of the truth table. Our soft T OP Koperator inherently prevents this by selecting the k most relevant distinct indices from the columns of the mapping matrix. Experimental results (Figure 5) demonstrate that TT-SPARSE (x-axis) consistently yields superior predictive per-formance compared to the Softmax baseline (y-axis).   
+
+> Figure 5. Predictive performance comparison (AUC/ R2, higher is better) between TT-S PARSE (Soft T OP K) and the slot-based Softmax baseline. Points below the diagonal indicate superior performance by TT-S PARSE .
+
+## 5. Conclusion 
+
+In this work, we introduced TT-S PARSE , a new neural build-ing block designed to achieve highly performant rule sets while minimizing complexity. By reformulating truth tables as differentiable modules with sparse connectivity learned through the new soft T OP K operator, we enable the end-to-end learning of Boolean logic via standard gradient descent. Furthermore, as a fully differentiable layer, TT-S PARSE 
+
+offers significant architectural flexibility; it can be seam-lessly integrated into standard neural pipelines to learn in-terpretable rules across diverse problem settings, including binary, multiclass, and regression tasks. 
+
+5.1. Limitations 
+
+Continuous features must be encoded before training, fixing the representation of the literals. Second, the utilization of the soft T OP K operator makes training reliant on the initialization of the temperature parameter τ . While these parameters must be well-initialized, our ablations in Ap-pendix H show that TT-S PARSE is robust to this constraint, maintaining high performance after as few as 5 encoding bits. 
+
+5.2. Future Work 
+
+Future research will focus on enhancing the architectural expressivity of TT-S PARSE for broader data domains. We aim to adapt the LTT nodes for time-series analysis by in-troducing recurrent latent dimensions, enabling the Soft TOP K operator to sparsely select historical states and ex-tract interpretable temporal logic. Additionally, we plan to extend the feature selection mechanism to support literals formed by learnable linear combinations of input variables (e.g. w1x1 +w2x2 ≤ z) to capture complex decision bound-aries, thereby reducing the Boolean complexity required to approximate non-linear functions. 
+
+## 6. Impact Statement 
+
+This work advances the field of interpretable machine learn-ing by introducing a scalable framework for achieving global and exact interpretability without sacrificing predic-tive performance. This directly addresses the transparency requirements of high-stakes sectors such as healthcare, fi-nance, and criminal justice, where auditability and account-ability are essential. By enabling domain experts to inspect, verify, and reason about model behavior, TT-S PARSE facil-itates algorithmic oversight, strengthens institutional trust, and supports informed, responsible use of machine-learning systems under emerging regulatory frameworks. 8TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+## References 
+
+Adebayo, J., Gilmer, J., Muelly, M., Goodfellow, I., Hardt, M., and Kim, B. Sanity checks for saliency maps. Ad-vances in neural information processing systems , 31, 2018. Bacellar, A. T. L., Susskind, Z., Breternitz Jr., M., John, E., John, L. K., Lima, P. M. V., and Fran c¸ a, F. M. G. Differ-entiable weightless neural networks. In Proceedings of the 41st International Conference on Machine Learning ,ICML’24. JMLR.org, 2024. Benamira, A., Gu ´erand, T., Peyrin, T., and Soegeng, H. Neural network-based rule models with truth tables. In Gal, K. et al. (eds.), ECAI 2023: 26th European Conference on Artificial Intelligence , volume 372 of 
+
+Frontiers in Artificial Intelligence and Applications , pp. 223–230. IOS Press, 2023. doi: 10.3233/FAIA230274. URL https://ebooks.iospress.nl/doi/10. 3233/FAIA230274 .Benamira, A., Peyrin, T., Yap, T., Gu ´erand, T., and Hooi, B. Truth table net: Scalable, compact & verifiable neural networks with a dual convolutional small boolean circuit networks form. In International Joint Conference on Artificial Intelligence (IJCAI) , 2024. Berthet, Q., Blondel, M., Teboul, O., Cuturi, M., Vert, J.-P., and Bach, F. Learning with differentiable perturbed optimizers. In Larochelle, H., Ranzato, M., Hadsell, R., Balcan, M., and Lin, H. (eds.), 
+
+Advances in Neural Information Processing Systems ,volume 33, pp. 9508–9519. Curran Associates, Inc., 2020. URL https://proceedings.neurips. cc/paper_files/paper/2020/file/ 6bb56208f672af0dd65451f869fedfd9-Paper. pdf .Breiman, L., Friedman, J. H., Olshen, R. A., and Stone, C. J. 
+
+Classification and Regression Trees . Wadsworth, 1984. ISBN 0-534-98053-8. Cohen, W. W. Fast effective rule induction. In Proceed-ings of the Twelfth International Conference on Interna-tional Conference on Machine Learning , ICML’95, pp. 115–123, San Francisco, CA, USA, 1995. Morgan Kauf-mann Publishers Inc. ISBN 1558603778. Cordonnier, J.-B., Mahendran, A., Dosovitskiy, A., Weis-senborn, D., Uszkoreit, J., and Unterthiner, T. Differen-tiable patch selection for image recognition. In Proceed-ings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR) , pp. 2351–2360, June 2021. Cuturi, M. Sinkhorn distances: Lightspeed compu-tation of optimal transport. In Burges, C., Bottou, L., Welling, M., Ghahramani, Z., and Weinberger, K. (eds.), Advances in Neural Information Process-ing Systems , volume 26. Curran Associates, Inc., 2013. URL https://proceedings.neurips. cc/paper_files/paper/2013/file/ af21d0c97db2e27e13572cbf59eb343d-Paper. pdf .Dierckx, L., Veroneze, R., and Nijssen, S. Rl-net: In-terpretable rule learning with neural networks. In Ad-vances in Knowledge Discovery and Data Mining: 27th Pacific-Asia Conference on Knowledge Discovery and Data Mining, PAKDD 2023, Osaka, Japan, May 25–28, 2023, Proceedings, Part I , pp. 95–107, Berlin, Heidel-berg, 2023. Springer-Verlag. ISBN 978-3-031-33373-6. doi: 10.1007/978-3-031-33374-3 8. URL https:// doi.org/10.1007/978-3-031-33374-3_8 .Doshi-Velez, F. and Kim, B. Towards a rigorous sci-ence of interpretable machine learning. arXiv preprint arXiv:1702.08608 , 2017. Erickson, N., Purucker, L., Tschalzev, A., Holzm ¨uller, D., Desai, P. M., Salinas, D., and Hutter, F. Tabarena: A liv-ing benchmark for machine learning on tabular data. In 
+
+The Thirty-ninth Annual Conference on Neural Informa-tion Processing Systems Datasets and Benchmarks Track ,2025. URL https://openreview.net/forum? id=jZqCqpCLdU .Friedman, J. H. and Popescu, B. E. Predictive learning via rule ensembles. The Annals of Applied Statistics , 2(3): 916–954, 2008. ISSN 19326157. URL http://www. jstor.org/stable/30245114 .Gorishniy, Y., Kotelnikov, A., and Babenko, A. Tabm: Advancing tabular deep learning with parameter-efficient ensembling. In The Thirteenth International Conference on Learning Representations , 2025. URL https:// openreview.net/forum?id=Sd4wYYOhmY .Grinsztajn, L., Oyallon, E., and Varoquaux, G. Why do tree-based models still outperform deep learning on typical tabular data? In Koyejo, S., Mohamed, S., Agarwal, A., Belgrave, D., Cho, K., and Oh, A. (eds.), 
+
+Advances in Neural Information Processing Systems ,volume 35, pp. 507–520. Curran Associates, Inc., 2022. URL https://proceedings.neurips. cc/paper_files/paper/2022/file/ 0378c7692da36807bdec87ab043cdadc-Paper-Datasets_ and_Benchmarks.pdf .Hegselmann, S., Buendia, A., Lang, H., Agrawal, M., Jiang, X., and Sontag, D. Tabllm: Few-shot classification of tabular data with large language models. In International Conference on Artificial Intelligence and Statistics , vol-ume 206, pp. 5549–5581. PMLR, 2023. 9TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+Ke, G., Meng, Q., Finley, T., Wang, T., Chen, W., Ma, W., Ye, Q., and Liu, T.-Y. Lightgbm: A highly efficient gradi-ent boosting decision tree. In Guyon, I., Luxburg, U. V., Bengio, S., Wallach, H., Fergus, R., Vishwanathan, S., and Garnett, R. (eds.), Advances in Neural Information Processing Systems , volume 30. Curran Associates, Inc., 2017. URL https://proceedings.neurips. cc/paper_files/paper/2017/file/ 6449f44a102fde848669bdd9eb6b76fa-Paper. pdf .Lage, I., Chen, E., He, J., Narayanan, M., Kim, B., Ger-shman, S. J., and Doshi-Velez, F. Human evaluation of models built for interpretability. Proceedings of the AAAI Conference on Human Computation and Crowd-sourcing , 7(1):59–67, Oct. 2019. doi: 10.1609/hcomp. v7i1.5280. URL https://ojs.aaai.org/index. php/HCOMP/article/view/5280 .Lin, J., Zhong, C., Hu, D., Rudin, C., and Seltzer, M. Gen-eralized and scalable optimal sparse decision trees. In 
+
+Proceedings of the 37th International Conference on Ma-chine Learning , ICML’20. JMLR.org, 2020. McCluskey, E. J. Minimization of boolean functions. The Bell System Technical Journal , 35(6):1417–1444, 1956. doi: 10.1002/j.1538-7305.1956.tb03835.x. Petersen, F., Borgelt, C., Kuehne, H., and Deussen, O. Deep differentiable logic gate networks. In Koyejo, S., Mo-hamed, S., Agarwal, A., Belgrave, D., Cho, K., and Oh, A. (eds.), Advances in Neural Information Processing Sys-tems , volume 35, pp. 2006–2018. Curran Associates, Inc., 2022a. URL https://proceedings.neurips. cc/paper_files/paper/2022/file/ 0d3496dd0cec77a999c98d35003203ca-Paper-Conference. pdf .Petersen, F., Kuehne, H., Borgelt, C., and Deussen, O. Dif-ferentiable top-k classification learning. In Chaudhuri, K., Jegelka, S., Song, L., Szepesvari, C., Niu, G., and Sabato, S. (eds.), Proceedings of the 39th International Confer-ence on Machine Learning , volume 162 of Proceedings of Machine Learning Research , pp. 17656–17668. PMLR, 17–23 Jul 2022b. URL https://proceedings. mlr.press/v162/petersen22a.html .Petersen, F., Kuehne, H., Borgelt, C., Welzel, J., and Er-mon, S. Convolutional differentiable logic gate networks. 
+
+Advances in Neural Information Processing Systems , 37: 121185–121203, 2024. Proen c¸ a, H. M. and van Leeuwen, M. Interpretable multiclass classification by mdl-based rule lists. In-formation Sciences , 512:1372–1393, 2020. ISSN 0020-0255. doi: https://doi.org/10.1016/j.ins.2019.10. 050. URL https://www.sciencedirect.com/ science/article/pii/S0020025519310138 .Quine, W. V. The problem of simplifying truth functions. 
+
+The American Mathematical Monthly , 59(8):521–531, 1952. ISSN 00029890, 19300972. URL http://www. jstor.org/stable/2308219 .Rudin, C. Stop explaining black box machine learning models for high stakes decisions and use interpretable models instead. Nature Machine Intelligence , 1(5):206– 215, 2019. doi: 10.1038/s42256-019-0048-x. Seshia, S. A., Sadigh, D., and Sastry, S. S. Toward verified artificial intelligence. Communications of the ACM , 65 (7):46–55, 2022. Slack, D., Hilgard, S., Jia, E., Singh, S., and Lakkaraju, H. Fooling lime and shap: Adversarial attacks on post hoc ex-planation methods. In Proceedings of the AAAI/ACM Con-ference on AI, Ethics, and Society , pp. 180–186, 2020. Wang, Z., Zhang, W., Liu, N., and Wang, J. Scalable rule-based representation learning for interpretable classification. In Ranzato, M., Beygelzimer, A., Dauphin, Y., Liang, P., and Vaughan, J. W. (eds.), 
+
+Advances in Neural Information Processing Systems ,volume 34, pp. 30479–30491. Curran Associates, Inc., 2021. URL https://proceedings.neurips. cc/paper_files/paper/2021/file/ ffbd6cbb019a1413183c8d08f2929307-Paper. pdf .Wei, D., Dash, S., Gao, T., and Gunluk, O. Generalized linear rule models. In Chaudhuri, K. and Salakhutdinov, R. (eds.), Proceedings of the 36th International Confer-ence on Machine Learning , volume 97 of Proceedings of Machine Learning Research , pp. 6687–6696. PMLR, 09– 15 Jun 2019. URL https://proceedings.mlr. press/v97/wei19a.html .Xie, Y., Dai, H., Chen, M., Dai, B., Zhao, T., Zha, H., Wei, W., and Pfister, T. Differentiable top-k with optimal transport. In Larochelle, H., Ranzato, M., Hadsell, R., Balcan, M., and Lin, H. (eds.), 
+
+Advances in Neural Information Processing Systems ,volume 33, pp. 20520–20531. Curran Associates, Inc., 2020. URL https://proceedings.neurips. cc/paper_files/paper/2020/file/ ec24a54d62ce57ba93a531b460fa8d18-Paper. pdf .Xu, S., Walter, N. P., and Vreeken, J. Neural rule lists: Learning discretizations, rules, and order in one go. In The Thirty-ninth Annual Conference on Neural In-formation Processing Systems , 2025. URL https: //openreview.net/forum?id=oBf5eZSeBT .10 TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+## A. Datasets 
+
+We benchmark with 28 publicly available datasets (14 binary, 7 multiclass, 7 regression) used in prior works (Xu et al., 2025; Grinsztajn et al., 2022; Erickson et al., 2025; Wei et al., 2019; Hegselmann et al., 2023).  
+
+> Table 4. Dataset information: the tabular task, the dataset name, the number of rows, the number of continuous columns, categorical columns, the number of instances per class for binary and multiclass datasets.
+
+Task Dataset # Rows # Cont. # Cat. Classes 
+
+Binary bank 45,210 8 8 39921/5289 blood 748 4 0 570/178 calhousing 20,640 8 0 10323/10317 compas 4,966 3 8 2483/2483 covertype 423,680 10 44 211840/211840 credit card default 13,272 20 1 6636/6636 creditg 1,000 7 13 300/700 diabetes 768 8 0 500/268 electricity 38,474 7 1 19237/19237 eye movements 7,608 20 3 3804/3804 heart 918 5 6 410/508 income 48,842 6 8 37155/11687 jungle 44,819 6 0 21757/23062 road safety 111,762 29 3 55881/55881 Multiclass car 1,728 0 6 1210/384/69/65 ecoli 327 5 2 143/77/35/20/52 iris 150 4 0 50/50/50 penguins 333 4 3 146/68/119 satimage 6,435 36 0 1533/703/1358/626/707/1508 wine 178 13 0 59/71/48 yeast 1,479 6 2 244/429/463/44/35/51/163/30/20 Regression abalone 4,177 7 1 -bike 17,379 4 8 -boston 506 11 2 -california 20,640 8 0 -crime 1,994 122 5 -parkinsons 5,875 19 1 -wine reg 6,497 11 0 -
+
+## B. Implementation Details 
+
+B.1. Hardware 
+
+For all experiments, we use 4 Nvidia GeForce RTX 3090 GPUs and 48 cores Intel(R) Core(TM) i7-8650U CPU clocked at 1.90 GHz, 16 GB RAM. The hardware chosen was based on availability; neural networks under PyTorch (TT-S PARSE ,NeuRules, RL-Net, RRL, DWN, TabM) were run on GPU, while tree-based model GOSDT and rule induction based models (Classy, GLRM, RuleFit) were run on CPU. 
+
+B.2. Hyperparameters and Training Protocol 
+
+For each dataset, we reserve 20% of the data as a hold-out test set using a fixed seed. The remaining 80% is used for hyperparameter tuning. We perform a grid search by further splitting this development set into 80% training and 20% validation. Once the optimal hyperparameters are identified based on the validation metric (AUC for classification, R2 for regression), we retrain the model on the full development set. This process is repeated across 5 different random seeds and we report the model’s performance on the hold-out test set. 11 TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+We tune the key hyperparameters for all models by performing GridSearch: • TT-S PARSE : Number of bits ∈ { 4, 5, 6}, Number of LTT nodes ∈ { 1, 20 , 30 , 40 , 50 }, Soft T OP K temperature 
+
+τ ∈ { 0.001 , 0.01 , 0.05 }.• RuleFit: max rules ∈ { 5, 20 , 40 , 60 , 80 } and regularization strength Cs ∈ { 1, 5, 10 , 50 }.• GLRM: Regularization penalty λ0 ∈ { 0.05 , 0.01 , 0.005 }. We fix λ1 = 0 .2 · λ0 as per (Wei et al., 2019). • Classy (MDL-Rule-List): min support ∈ { 5, 10 , 15 , 20 , 30 }, maximum depth ∈ { 3, 5, 7}, and number of cutpoints 
+
+∈ { 5, 7}.• GOSDT: Regularization parameter ∈ { 0.005 , 0.01 , 0.05 } and depth budget ∈ { 3, 5, 7}.• NeuRules: n rules ∈ { 5, 10 , 20 , 40 , 60 , 80 }, predicate temperature ∈ { 0.1, 0.2}, and selector temperature ∈ { 0.5, 1.0}.• RL-Net: n rules ∈ { 5, 10 , 20 , 40 , 60 , 80 }, conjunction penalty λand ∈ { 0.01 , 0.005 , 0.001 }, and L2 regularization 
+
+∈ { 0, 0.001 , 0.01 }.• DWN (Linear): Hidden layer sizes ∈ { 20 , 30 , 40 , 50 } and Look-Up Table (LUT) size ∈ { 4, 5, 6}. To ensure a fair comparison with TT-S PARSE , we implemented the classifier layer immediately following the LUT layer. This architecture introduces a linear operation by assigning a weight to each LUT and adding a bias term before the activation function. The logic rules are derived similarly as TT-S PARSE , utilizing Quine-McCluskey conversion to transform LUT minterms into DNF equations. • TabM : We use the AdamW optimizer and a batch size of 512. Number of layers ∈ {1, 2, 3}, hidden size 
+
+∈ { 64 , 128 , 256 , 512 }, dropout rate ∈ { 0, 0.1, 0.2}, learning rate ∈ { 0.01 , 0.005 , 0.001 }, bin count for embeddings 
+
+∈ { 8, 16 , 32 , 64 }, and embedding dimension ∈ { 8, 16 , 32 , 64 }.
+
+## C. Soft T OP K
+
+Figure 6. The output distribution of the soft T OP K operator with k = 3 applied on input vector [−2.2, 0.3, 0.4, 1.4, 10] 
+
+across different temperatures τ . y-axis represents the output mass for each index of the input vector. 
+
+Sk(⃗x) = [ y 1, . . . , y n] where yi = σ( xi 
+
+> τ
+
++ c), constrained by Pnj=1 σ( xi 
+
+> τ
+
++ c) = k. σ(x) = 11+ e−x is the sigmoid func-tion and σ′(x) = σ(x)(1 − σ(x)) . Let s′ 
+
+> i
+
+= σ′( xi 
+
+> τ
+
++ c) =    
+
+> dd(xiτ+c)
+
+σ( xi 
+
+> τ
+
++ c) = yi(1 − yi) and s′ = [ s1, . . . , s n]⊤.
+
+C.1. Solving the optimization objective via Lagrangian multipliers 
+
+Recall the optimization objective ⃗y ∗ = argmax ⃗y∈[0 ,1] n
+
+" nX
+
+> i=1
+
+yixi + τ
+
+> n
+
+X
+
+> i=1
+
+H(yi)
+
+#
+
+subject to 
+
+> n
+
+X
+
+> i=1
+
+yi = k
+
+(7) where H(yi) is the binary entropy H(yi) = −yi log yi − (1 −
+
+yi) log(1 − yi). We then derive the optimum by introducing a Lagrange multiplier λ for the Pni=1 yi = k constraint such that the problem becomes 
+
+L(⃗y, λ ) = 
+
+> n
+
+X
+
+> i=1
+
+yixi + τ
+
+> n
+
+X
+
+> i=1
+
+
+
+− yi log yi − (1 − yi) log(1 − yi)
+
+
+
+− λ
+
+> n
+
+X
+
+> i=1
+
+yi − k
+
+!
+
+(8) 
+
+∂L
+
+∂y i
+
+= xi + τ
+
+
+
+log 1 − yi
+
+yi
+
+
+
+− λ = 0 (9) 12 TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+Setting the derivative 0, we obtain the solution yi = 11+ e− (xi−λ)
+
+> τ
+
+= σ( xi−λτ ), where σ(·) is the sigmoid function. Thus, setting c = − λτ , we define Sk(⃗x) := ⃗y where yi := σ( xi 
+
+> τ
+
++ c) for i ∈ { 1, . . . , n } and c ∈ R is the unique root of 
+
+f (c) = Pnj=1 σ( xi 
+
+> τ
+
++ c) − k = 0 . Since f (c) is strictly increasing, c is uniquely determined and solved by the bisection method. 
+
+C.2. Obtaining ∇⃗x Sk(⃗x)
+
+We want the Jacobian J ∈ Rn×n where Jij = ∂y i 
+
+> ∂x j
+
+.First, we apply the chain rule to yi = σ( xi 
+
+> τ
+
++ c):
+
+∂y i
+
+∂x j
+
+= σ′  xi
+
+τ + c
+
+
+
+· ∂∂x j
+
+ xi
+
+τ + c
+
+
+
+Since ∂x i 
+
+> ∂x j
+
+= δij :
+
+∂y i
+
+∂x j
+
+= s′
+
+> i
+
+ 1
+
+τ δij + ∂c ∂x j
+
+
+
+(10) where δij = 1{i=j} is the Kronecker delta. Next, we differentiate the constraint function w.r.t. xj to obtain: 
+
+∂∂x jnX
+
+> m=1
+
+σ
+
+ xm
+
+τ + c
+
+
+
+= 0 . (11) 
+
+> n
+
+X
+
+> m=1
+
+s′
+
+> m
+
+ 1
+
+τ δmj + ∂c ∂x j
+
+
+
+= 0 . (12) 
+
+1
+
+τ s′ 
+
+> j
+
++
+
+> n
+
+X
+
+> m=1
+
+s′
+
+> m
+
+!
+
+∂c ∂x j
+
+= 0 . (13) 
+
+∂c ∂x j
+
+= − 1
+
+τs′
+
+> j
+
+∥s′∥1
+
+(14) Substituting this back to Equation (1): 
+
+∂y i
+
+∂x j
+
+= 1
+
+τ s′
+
+> i
+
+
+
+δij − s′
+
+> j
+
+∥s′∥1
+
+
+
+(15) 
+
+∇⃗x Sk(⃗x) = 1
+
+τ
+
+
+
+diag (s′) − s′(s′)⊤
+
+∥s′∥1
+
+
+
+(16) 
+
+C.3. Obtaining ∇kSk(⃗x)
+
+∂y i
+
+∂k = s′ 
+
+> i
+
+· ∂∂k 
+
+ xi
+
+τ + c
+
+
+
+(17) 
+
+∂y i
+
+∂k = s′ 
+
+> i
+
+· ∂c ∂k (18) Then, similarly, we differentiate both sides of the constraint function w.r.t. k to obtain: 
+
+∂∂k 
+
+> n
+
+X
+
+> m=1
+
+σ
+
+ xm
+
+τ + c
+
+
+
+= 1 (19) 
+
+> n
+
+X
+
+> m=1
+
+s′ 
+
+> m
+
+· ∂c ∂k = 1 (20) 
+
+∂c ∂k = 1
+
+∥s′∥1
+
+(21) 13 TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+Substituting this back to Equation (9): 
+
+∂y i
+
+∂k = s′
+
+> i
+
+∥s′∥1
+
+(22) 
+
+∇kSk(⃗x) = s′
+
+∥s′∥1
+
+(23) 
+
+C.4. Convergence of bisection method 
+
+Figure 7. Absolute error | P yi − k| (log scale) vs. iterations for a batch of 16-input vectors ⃗x ∈ R 100 with target k = 10 . Each light blue line represents the error plot of an input vector in the batch. 
+
+To compute the constant c, we implement vectorized bi-section search that solves for c across an entire batch simultaneously on GPU. The bisection method halves the search space in every iteration, so the absolute error 
+
+| P Sk(⃗x) i − k| decays with ϵt ∝ 2−t.Figure 7 illustrates the convergence of this method. The soft T OP K is applied to a batch of 16 input vectors ⃗x ∈ R 100 with target k = 10 . The theoretical lin-ear convergence (linear slope on the semi-log plot) is observed empirically. The error magnitude drops be-low 10 −3 within 15 iterations and reaches the limit of 
+
+Float32 machine precision in around 30 iterations. Our experiments also show negligible overhead with around 1 ms for a batch of size 16, giving a throughput of more than 10000 samples per second. 
+
+## D. TT-S PARSE Parameter Gradients 
+
+Let ⃗x ∈ R n denote the input to the TT-S PARSE layer with 
+
+M LTT nodes. The layer is parameterized by Wmap ∈ Rn×M , WLTT ∈ Rn×M , and b ∈ RM . For each node j ∈ { 1, . . . , M },the output is 
+
+zj =
+
+> n
+
+X
+
+> i=1
+
+m(j) 
+
+> i
+
+· WLTT [i, j ] · xi + bj .
+
+Leveraging the soft T OP K operator Sk in the backpropagation, m(j) = Sk(Wmap [·, j ]) is the operator applied on the j-th column of Wmap which corresponds to the j-th node. Let L be the upstream loss. 
+
+D.1. Gradient w.r.t. Wmap 
+
+With the chain rule, we have 
+
+∂L
+
+∂W map [·, j ] = ∂L
+
+∂z j
+
+· ∂z j
+
+∂S k(Wmap [·, j ]) · ∂S k(Wmap [·, j ]) 
+
+∂W map [·, j ]
+
+As m(j) = Sk(Wmap [·, j ]) , we have 
+
+∂z j
+
+∂S k(Wmap [·, j ]) = xi ⊙ WLTT [i, j ]. (24) The third term is the Jacobian of the soft T OP K operator applied on the Wmap . Using the Jacobian formula obtained in Equation (13), where s′ = m(j) ⊙ (1 − m(j)) is the derivative of the sigmoid: 
+
+∂S k(Wmap [·, j ]) 
+
+∂W map [·, j ] = 1
+
+τ
+
+
+
+diag (s′) − s′(s′)⊤
+
+∥s′∥1
+
+
+
+(25) 14 TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+Let gj = ∂L 
+
+> ∂z j
+
+· (x ⊙ WLTT [·, j ]) be the local gradient from the first and second terms of the derivative. Combining these, we obtain the vector-Jacobian product: 
+
+∂L
+
+∂W map [·, j ] = 1
+
+τ
+
+
+
+diag (s′)gj − s′(s′)⊤
+
+∥s′∥1
+
+gj
+
+
+
+= 1
+
+τ
+
+
+
+s′ ⊙ gj − s′(s′ · gj )
+
+∥s′∥1
+
+
+
+(26) 
+
+D.2. Gradient w.r.t. WLTT and b∂L
+
+∂W LTT [i, j ] = ∂L
+
+∂z j
+
+· ∂z j
+
+∂W LTT [i, j ] = ∂L
+
+∂z j
+
+· m(j) 
+
+> i
+
+· xi (27) 
+
+∂L
+
+∂b = ∂L
+
+∂z j
+
+· ∂z j
+
+∂b = ∂L
+
+∂z j
+
+(28) 15 TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+## E. Performance-Complexity Pareto Grids 
+
+16 TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+17 TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+18 TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+19 TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+20 TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+## F. Example rules 
+
+GLRM example rule for eye movements dataset with complexity 15: 
+
+0.84 – titleNo ≤ 2; 0.34 – wordNo ≤ 2; -0.33 – nextWordRegress = 1 ; 0.31 – regressDur ≤ 139 ; 0.13 –nextWordRegress = 0 ; -0.13 – wordNo ≤ 1; 0.15 – regressDur ≤ 0; -0.18 – prevFixPos ≤ 149 .5; -0.16 
+
+– landingPos ≤ 71 .6; -0.10 – firstSaccLen ≤ 250 .1; -0.04 – firstSaccLen ≤ 204 .0; -0.53 – (lastSaccLen ≤
+
+503 .2 ∧ landingPos ≤ 117 .3 ∧ 1 < wordNo ≤ 8) ; (Bias: -0.23) 
+
+GOSDT example rule in the form of a tree for blood dataset with complexity 14: 
+
+Class 0 – Feature 0 > −0.62 ; Class 0 – Feature 0 ≤ − 0.62 ∧Feature 3 > 0.34 ; Class 1 – Feature 0 ≤ − 0.62 ∧Feature 3 ≤
+
+0.34 ∧ Feature 6 > 2.14 ; Class 0 – Feature 0 ≤ − 0.62 ∧ Feature 3 ≤ 0.34 ∧ Feature 6 ≤ 2.14 ∧ Feature 8 > 0.34 ; Class 1 – Feature 0 ≤ − 0.62 ∧ Feature 3 ≤ 0.34 ∧ Feature 6 ≤ 2.14 ∧ Feature 8 ≤ 0.34 ;
+
+Classy (MDL Rule List) example decision list for blood dataset with complexity 8: 
+
+Class 1 (P = 0 .57 ) – (monetary ≥ 1500 ∧ time < 59 ∧ recency < 7) ; Class 0 (P = 0 .71 ) – recency < 7; Default Class 0 (P = 0 .89 ) – else. 
+
+NeuRules example rule for diabetes dataset with complexity 17: 
+
+3.19 – ( 0.82 < Feature 0 < 1.69) → Class 1 (71 .5% ); 8.41 – ( 0.46 < Feature 4 ∧ − 0.40 < Feature 7 < 3.50) →
+
+Class 1 (74 .2% ); 4.56 – ( 0.62 < Feature 4 ∧ − 0.15 < Feature 7 < 3.31) → Class 1 (62 .8% ); 5.97 – ( Feature 0 <
+
+2.49 ∧ Feature 1 < 0.58 ∧ Feature 6 < 4.55) → Class 0 (80 .9% ); 1.00 – ( −3.49 < Feature 1 < 1.67 ∧ 0.18 <
+
+Feature 4 < 4.98 ∧ − 1.14 < Feature 6 < 5.58 ∧ − 0.35 < Feature 7 < 3.50) → Class 1 (64 .4); 
+
+RL-Net example rule for calhousing dataset with complexity 87: 
+
+Class 1 – ( Feature 0 ∧ ¬ Feature 4 ∧ ¬ Feature 6 ∧ ¬ Feature 7); Class 1 – ( ¬Feature 0 ∧ Feature 1 ∧ ¬ Feature 2 ∧ Feature 3 ∧¬Feature 4 ∧ Feature 5 ∧ ¬ Feature 6 ∧ ¬ Feature 7); Class 1 – ( ¬Feature 0 ∧ Feature 1 ∧ Feature 2 ∧ Feature 3 ∧ ¬ Feature 4 ∧
+
+Feature 5 ∧ ¬ Feature 6 ∧ ¬ Feature 7); Class 1 – ( Feature 0 ∧ ¬ Feature 1 ∧ Feature 2 ∧ Feature 3 ∧ Feature 4 ∧ Feature 5 ∧¬Feature 6 ∧ ¬ Feature 7); Class 0 – ( ¬Feature 0 ∧ Feature 1 ∧ ¬ Feature 2 ∧ Feature 3 ∧ Feature 4 ∧ Feature 5 ∧ Feature 6 ∧
+
+Feature 7); Class 0 – ( ¬Feature 0 ∧ Feature 1 ∧ ¬ Feature 2 ∧ ¬ Feature 3 ∧ Feature 4 ∧ Feature 5 ∧ ¬ Feature 6 ∧ Feature 7); 
+
+Class 0 – ( ¬Feature 0 ∧ Feature 1 ∧ ¬ Feature 2 ∧ Feature 3 ∧ ¬ Feature 4 ∧ Feature 5 ∧ ¬ Feature 6 ∧ Feature 7); Class 0 –(¬Feature 0 ∧ Feature 1 ∧ ¬ Feature 2 ∧ Feature 3 ∧ Feature 4 ∧ Feature 5 ∧ ¬ Feature 6 ∧ ¬ Feature 7); Default: Class 0 RRL example rule with complexity 12: 
+
+0.12 – frequency > 17 .85 ; -0.05 – frequency ≤ 3.14 ; 0.04 – recency > 19 .73 ; 0.04 – (recency > 32 .27 ∨ time ≤
+
+31 .02) ; 0.19 – (recency > 12 .79 ∧ time > 10 .96 ∧ frequency ≤ 1.75) ; 0.09 – (time > 16 .72 ∧ frequency ≤
+
+2.10 ∧ monetary ≤ 1131 .57) ; (Bias: -0.02) 
+
+RuleFit example rule on abalone dataset with complexity 15: 
+
+12.63 – Feature 5 ; -11.86 – Feature 6 ; -3.28 – Feature 7 ; 3.12 – Feature 8 ; 1.83 – Feature 4 ; 1.36 – Feature 3 ;
+
+-0.74 – Feature 0 ; -0.12 – Feature 2 ; 0.08 – Feature 1 ; -0.30 – ( Feature 8 ≤ − 0.62 ); 0.09 – ( Feature 8 >
+
+−0.64 ∧ Feature 8 ≤ 0.83 ); -0.43 – (Feature 8 > −0.64 ∧ Feature 8 > 0.83 ); (Bias: 10.24) 
+
+TT-S PARSE example rule (same as Figure 2) with complexity 15: 
+
+-0.83 – Feature ChestPainType = ’NAP’ ; 0.97 – Feature ExerciseAngina = ’Y’ ; 1.13 – Feature ST Slope = ’Flat’ ;
+
+1.40 – (( Feature Cholesterol < 167 .63 ∧Feature Oldpeak ≥ 3.00) ∨(Feature ChestPainType ̸ = ’TA’ ∧Feature Oldpeak ≥
+
+3.00) ∨ (Feature ChestPainType ̸ = ’TA’ ∧ Feature ChestPainType ̸ = ’ATA’ ∧ Feature Cholesterol < 167 .63)) ; -1.03 
+
+– (( Feature MaxHR ≥ 177 .25 ∧ Feature Oldpeak < 2.25) ∨ (Feature ChestPainType = ’ATA’ ∧ Feature Cholesterol <
+
+224 .88)) ; (Bias: -1.04) 
+
+TT-S PARSE example multiclass rule (Iris dataset) with complexity 7: Class 0: -3.66 – sepal-length ; Class 0: 7.10, Class 2: -2.91 – sepal-width ; Class 0: -9.47, Class 2: 6.42 – petal-length ; Class 0: -10.65, Class 1: -4.34, Class 2: 5.77 –petal-width ; Class 1: -10.55, Class 2: 8.85 – (petal-length ≥ 5.76 ∨ petal-width ≥ 1.87) ; (Bias: Class 0: 2.70, Class 1: 8.71, Class 2: -2.82 )
+
+## G. Quine-McCluskey 
+
+21 TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+Algorithm 1 Quine-McCluskey with XOR/XNOR 
+
+Require: Set of minterms M1, set of don’t-cares Mdc , flag use xor 
+
+Ensure: Minimal set of implicants R covering M1
+
+1: procedure SIMPLIFY (M1, M dc )
+
+2: T ← BinaryStringRep (M1 ∪ Mdc )
+
+3: P I ← GET PRIME IMPLICANTS (T, use xor )
+
+4: EI ← EXTRACT ESSENTIAL (P I, M dc )
+
+5: R ← REDUCE IMPLICANTS (EI, M dc )
+
+6: return R
+
+7: end procedure 
+
+8: function GET PRIME IMPLICANTS (T, use xor )
+
+9: if use xor then 
+
+10: T ← T ∪ { MergeXOR (ti, t j ) | ti, t j ∈ T } { Pre-pass for simple XOR/XNOR }
+
+11: end if 
+
+12: marked ← ∅ 
+
+13: while changes occur in T do 
+
+14: Group T by tuple (nones , n ⊕, n ⊙)
+
+15: Tnew ← ∅ 
+
+16: for each group Gk and adjacent group Gnext do 
+
+17: for t1 ∈ Gk, t 2 ∈ Gnext do 
+
+18: if dH (t1, t 2) = 1 then {Standard QM Merge }
+
+19: tnew ← ReplaceDiff (t1, t 2, ’-’ )
+
+20: Tnew ← Tnew ∪ { tnew }; marked ← marked ∪ { t1, t 2}
+
+21: else if use xor ∧ IsComplement (t1, t 2) then {Extended Merge }
+
+22: tnew ← ReplaceDiff (t1, t 2, ⊕ or ⊙)
+
+23: Tnew ← Tnew ∪ { tnew }; marked ← marked ∪ { t1, t 2}
+
+24: end if 
+
+25: end for 
+
+26: end for 
+
+27: P I ← P I ∪ (T \ marked )
+
+28: T ← Tnew 
+
+29: end while 
+
+30: return P I 
+
+31: end function 
+
+32: function REDUCE IMPLICANTS (I, M dc )
+
+33: Def E(t): Set of minterms covered by term t excluding Mdc 
+
+34: Def C(t): Complexity cost of term t (weighted sum of operators) 
+
+35: {Step 1: Orthogonal Combination }
+
+36: repeat 
+
+37: Find pair a, b ∈ I and merger m such that E(m) = E(a) ∪ E(b)
+
+38: if exists m then 
+
+39: I ← (I \ { a, b }) ∪ { m}
+
+40: end if 
+
+41: until no combinations found 
+
+42: {Step 2: Redundancy Elimination }
+
+43: repeat 
+
+44: Find t ∈ I such that E(t) ⊆ S 
+
+> k∈I\{ t}
+
+E(k)
+
+45: if exists t then 
+
+46: Select tworst ∈ { t | t is redundant } maximizing C(t)
+
+47: I ← I \ { tworst }
+
+48: end if 
+
+49: until no redundant terms exist 
+
+50: return I
+
+51: end function 22 TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+## H. Ablation Studies 
+
+We conduct ablation studies to isolate the impact of specific components and hyperparameters within the TT-S PARSE 
+
+framework. In Figure 13, we analyze the effect of the quantization bit-width for continuous features on both predictive performance and rule complexity. We observe a performance plateau beyond 7 bits, indicating that TT-S PARSE effectively captures decision boundaries without requiring tighter bins on the continuous feature encoding. Figures 14 and 15 examine the model’s sensitivity to key structural parameters: the sparsity degree (number of input bits per LTT node), the model capacity (number of LTT nodes), and the temperature τ of the Soft T OP K operator. Finally, we validate the necessity of our hybrid design by ablating the global skip connections that link input features directly to the final classifier. We observe that removing this skip connection degrades performance. 
+
+Figure 13. Ablation study on the number of bits used for continuous feature encoding, showing the performance metric (AUC or R2) on the left side of the y-axis and rule complexity (in gray) on the right. 
+
+Figure 14. Ablation study on the number of input bits into each LTT node and the number of LTT nodes in the layer, visualized with a heatmap of the performance metric (AUC or R 2). 
+
+Figure 15. Ablation study on the temperature τ of the soft T OP K operator (lower τ gets it closer to discrete T OP K). 
+
+23 TT-S PARSE : Learning Sparse Rule Models with Differentiable Truth Tables 
+
+Figure 16. Ablation study on the integration of skip connection from the input features directly to the final classifier, concatenated with the outputs of the TT-S PARSE block. Each points show the evaluation metric (AUC/R2) achieved by the model with and without skip connections. 
+
+24

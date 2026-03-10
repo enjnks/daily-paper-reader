@@ -1,0 +1,74 @@
+{
+  "label": "2026-03-10",
+  "date": "2026-03-10",
+  "generated_at": "2026-03-10T04:26:49",
+  "count": 5,
+  "papers": [
+    {
+      "paper_id": "202603/10/2603.07261v1-turning-time-series-into-algebraic-equations-symbolic-machine-learning-for-interpretable-modeling-of-chaotic-time-series",
+      "section": "deep",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Chaotic time series are notoriously difficult to forecast. Small uncertainties in initial conditions amplify rapidly, while strong nonlinearities and regime dependent variability constrain predictability. Although modern deep learning often delivers strong short horizon accuracy, its black box nature limits scientific insight and practical trust in settings where understanding the underlying dynamics matters. To address this gap, we propose two complementary symbolic forecasters that learn explicit, interpretable algebraic equations from chaotic time series data. Symbolic Neural Forecaster (SyNF) adapts a neural network based equation learning architecture to the forecasting setting, enabling fully differentiable discovery of compact and interpretable algebraic relations. The Symbolic Tree Forecaster (SyTF) builds on evolutionary symbolic regression to search directly over equation structures under a principled accuracy complexity trade off. We evaluate both approaches in a rolling window nowcasting setting with one step ahead forecasting using several accuracy metrics and compare against a broad suite of baselines spanning classical statistical models, tree ensembles, and modern deep learning architectures. Numerical experiments cover a benchmark of 132 low dimensional chaotic attractors and two real world chaotic time series, namely weekly dengue incidence in San Juan and the Nino 3.4 sea surface temperature index. Across datasets, symbolic forecasters achieve competitive one step ahead accuracy while providing transparent equations that reveal salient aspects of the underlying dynamics.\n\n---"
+    },
+    {
+      "paper_id": "202603/10/2603.08327v1-manifold-adapted-sparse-rbf-sindy-unbiased-library-construction-and-unsupervised-discovery-of-dynamical-states-in-turbulent-wall-flows",
+      "section": "deep",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "The turbulent attractor of wall bounded flows is not a structureless strange set but contains a skeleton of dynamically distinct states connected by rare directed transitions whose geometry is reflected in the invariant measure of the phase space trajectory. We show that this skeleton can be recovered from wall measurements alone, namely wall pressure and wall shear stress, without physical labels or prior knowledge, provided that the data driven function library used to identify the dynamics respects the intrinsic geometry of the attractor rather than the variance hierarchy of the POD representation. Standard sparse identification approaches introduce two structural biases during library construction. First, the steep decay of POD spectra causes Euclidean distances in k means clustering to be dominated by leading modes, collapsing basis function centres into a low dimensional subspace and leaving transitional dynamics poorly represented. Second, turbulent trajectories slow near quasi invariant states, so uniform time sampling over represents these regions and under samples rapid transitions. Both biases are corrected by resampling the trajectory uniformly in arc length and replacing the Euclidean metric with a Mahalanobis metric derived from the local cluster covariance. A single sparse regression on this corrected library yields a reduced model. Applied to a minimal turbulent channel at low Reynolds number, unsupervised clustering reveals two phases of the near wall cycle: stable streak states and burst initiating instabilities corresponding to the coherent structure skeleton of the flow. The model reproduces the invariant measure, reaches the Lyapunov predictability horizon and provides a differentiable vector field on which invariant solutions can be located by Newton iteration.\n\n---"
+    },
+    {
+      "paper_id": "202603/10/2603.07606v1-tt-sparse-learning-sparse-rule-models-with-differentiable-truth-tables",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Interpretable machine learning is essential in high-stakes domains where decision-making requires accountability, transparency, and trust. While rule-based models offer global and exact interpretability, learning rule sets that simultaneously achieve high predictive performance and low, human-understandable complexity remains challenging. To address this, we introduce TT-Sparse, a flexible neural building block that leverages differentiable truth tables as nodes to learn sparse, effective connections. A key contribution of our approach is a new soft TopK operator with straight-through estimation for learning discrete, cardinality-constrained feature selection in an end-to-end differentiable manner. Crucially, the forward pass remains sparse, enabling efficient computation and exact symbolic rule extraction. As a result, each node (and the entire model) can be transformed exactly into compact, globally interpretable DNF/CNF Boolean formulas via Quine-McCluskey minimization. Extensive empirical results across 28 datasets spanning binary, multiclass, and regression tasks show that the learned sparse rules exhibit superior predictive performance with lower complexity compared to existing state-of-the-art methods."
+    },
+    {
+      "paper_id": "202603/10/2603.08447v1-efficient-policy-learning-with-hybrid-evaluation-based-genetic-programming-for-uncertain-agile-earth-observation-satellite-scheduling",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "The Uncertain Agile Earth Observation Satellite Scheduling Problem (UAEOSSP) is a novel combinatorial optimization problem and a practical engineering challenge that aligns with the current demands of space technology development. It incorporates uncertainties in profit, resource consumption, and visibility, which may render pre-planned schedules suboptimal or even infeasible. Genetic Programming Hyper-Heuristic (GPHH) shows promise for evolving interpretable scheduling policies; however, their simulation-based evaluation incurs high computational costs. Moreover, the design of the constructive method, denoted as Online Scheduling Algorithm (OSA), directly affects fitness assessment, resulting in evaluation-dependent local optima within the policy space. To address these issues, this paper proposes a Hybrid Evaluation-based Genetic Programming (HE-GP) for effectively solving UAEOSSP. A Hybrid Evaluation (HE) mechanism is integrated into the policy-driven OSA, combining exact and approximate filtering modes: exact mode ensures evaluation accuracy through elaborately designed constraint verification modules, while approximate mode reduces computational overhead via simplified logic. HE-GP dynamically switches between evaluation models based on real-time evolutionary state information. Experiments on 16 simulated instance sets demonstrate that HE-GP significantly outperforms handcrafted heuristics and single-evaluation based GPHH, achieving substantial reductions in computational cost while maintaining excellent scheduling performance across diverse scenarios. Specifically, the average training time of HE-GP was reduced by 17.77\\% compared to GP employing exclusively exact evaluation, while the optimal policy generated by HE-GP achieved the highest average ranks across all scenarios."
+    },
+    {
+      "paper_id": "202603/10/2603.08488v1-nn-opinf-an-operator-inference-approach-using-structure-preserving-composable-neural-networks",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "We propose neural network operator inference (NN-OpInf): a structure-preserving, composable, and minimally restrictive operator inference framework for the non-intrusive reduced-order modeling of dynamical systems. The approach learns latent dynamics from snapshot data, enforcing local operator structure such as skew-symmetry, (semi-)positive definiteness, and gradient preservation, while also reflecting complex dynamics by supporting additive compositions of heterogeneous operators. We present practical training strategies and analyze computational costs relative to linear and quadratic polynomial OpInf (P-OpInf). Numerical experiments across several nonlinear and parametric problems demonstrate improved accuracy, stability, and robustness over P-OpInf and prior NN-ROM formulations, particularly when the dynamics are not well represented by polynomial models. These results suggest that NN-OpInf can serve as an effective drop-in replacement for P-OpInf when the dynamics to be modeled contain non-polynomial nonlinearities, offering potential gains in accuracy and out-of-distribution performance at the expense of higher training computational costs and a more difficult, non-convex learning problem."
+    }
+  ],
+  "errors": []
+}
