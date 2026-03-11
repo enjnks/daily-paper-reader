@@ -1,0 +1,309 @@
+Title: Epistemic Closure: Autonomous Mechanism Completion for Physically Consistent Simulation
+
+URL Source: https://arxiv.org/pdf/2603.09756v1
+
+Published Time: Wed, 11 Mar 2026 01:12:42 GMT
+
+Number of Pages: 30
+
+Markdown Content:
+# Graphical Abstract 
+
+Epistemic Closure: Autonomous Mechanism Completion for Physi-cally Consistent Simulation 
+
+Yue Wu, Tianhao Su, Rui Hu, Mingchuan Zhao, Shunbo Hu, Deng Pan, Jizhong Huang 
+
+> arXiv:2603.09756v1 [cs.DB] 10 Mar 2026
+
+# Epistemic Closure: Autonomous Mechanism Completion for Physically Consistent Simulation 
+
+Yue Wu a,1 , Tianhao Su a,1 , Rui Hu a,c , Mingchuan Zhao d, Shunbo Hu a,b, ∗, Deng Pan a, ∗, Jizhong Huang a,b, ∗
+
+> aMaterials Genome Institute, Shanghai University, Shanghai, 200444, China
+> bInstitute for the Conservation of Cultural Heritage, School of Cultural Heritage and Information Management, Shanghai University, Shanghai, 200444, China
+> cShanghai Swave Technology Co., Ltd, Shanghai, China
+> dSchool of Mathematical Sciences, University College Cork, Cork, Republic of Ireland
+
+Abstract 
+
+The integration of Large Language Models (LLMs) into scientific discovery is currently hindered by the "Implicit Context" problem, where governing equa-tions extracted from literature contain invisible thermodynamic assumptions (e.g., undrained conditions) that standard generative models fail to recognize. This leads to "Physical Hallucination" : the generation of syntactically cor-rect solvers that faithfully execute physically invalid laws. Here, we introduce a Neuro-Symbolic Generative Agent that functions as a cognitive supervisor atop traditional numerical engines. By encapsulating physical laws into modular 
+
+"Constitutive Skills" and leveraging latent intrinsic priors, the Agent em-ploys a Chain-of-Thought reasoning workflow to autonomously validate, prune, and complete physical mechanisms. We demonstrate this capability on the chal-lenge of thermal pressurization in low-permeability sandstone. While a standard literature-retrieval baseline erroneously predicts catastrophic material failure by blindly adopting a rigid "undrained" simplification, our Agent autonomously identifies the system as operating in a drained regime (Deborah number De ≪ 1)via dimensionless scaling analysis. Consequently, it inductively completes the       
+
+> ∗Corresponding author.
+> Email addresses: shunbohu@shu.edu.cn (Shunbo Hu), DPan_MGI@shu.edu.cn (Deng Pan), hjizhong@shu.edu.cn (Jizhong Huang)
+> 1These authors contributed equally to this work.
+
+missing dissipation mechanism (Darcy flow) required to satisfy boundary con-straints, predicting a stable stress path consistent with experimental reality. This work establishes a paradigm where AI agents transcend the role of cod-ing assistants to act as epistemic partners, capable of reasoning about—and correcting—the theoretical assumptions embedded in scientific data. 
+
+Keywords: Neuro-Symbolic AI, Physical Hallucination, Autonomous Mechanism Completion 
+
+1. Introduction 
+
+The integration of Artificial Intelligence into scientific discovery has tran-scended the phase of static property prediction (e.g., AlphaFold for protein structure [1], GNoME for material stability [2]) and is now confronting the dynamic frontier of multi-physics simulation[3, 4, 5, 6]. While traditional nu-merical solvers (FEM/FVM) demand rigorous, explicit definition of governing laws[7, 8], the scientific knowledge required to formulate these laws remains fragmented across unstructured literature. The ultimate goal of "AI Scientist" agents is to bridge this epistemic gap: autonomously reading literature, syn-thesizing mathematical models, and executing high-fidelity simulations without human intervention[9, 10, 11, 12]. The realization of this vision has been catalyzed by the recent performance leap in General-Purpose Large Language Models (LLMs), such as Claude 4.5 Sonnet[13] and Gemini 3 Pro[14]. Unlike their predecessors, these frontier mod-els exhibit emergent reasoning capabilities that extend beyond syntactic trans-lation to semantic understanding [15, 16, 17, 18]. Coupled with the rise of Agentic Frameworks—which structure LLM outputs into executable "Skills" or tools[19, 20, 21, 22]—it is now computationally feasible to construct autonomous systems that can manipulate abstract physical concepts as modular program-ming units[23, 24]. However, a critical bottleneck remains: the "Implicit Context" problem. Scientific equations in literature are rarely self-contained; they are bounded 3by invisible assumptions (e.g., "undrained conditions," "isothermal," or "small strain") that are obvious to a human expert but opaque to a standard "Copilot"[25]. A naive LLM, treating physics as a text completion task, often falls into the trap of "Physical Hallucination": generating code that is syntactically correct and mathematically solvable, but physically disastrous because it applies a valid law (e.g., undrained pressurization) outside its validity domain (e.g., a drained boundary)[26, 27, 28]. This limitation highlights a structural gap in the current computational land-scape. Established multi-physics platforms like MOOSE [29], FEniCSx [30], or JAX-FEM [31] have achieved high maturity in automating downstream numer-ical execution (e.g., weak-form assembly, linearization). However, they funda-mentally operate as "agnostic calculators": they lack the cognitive agency to question the validity of their inputs. They rely entirely on an external en-tity—traditionally a human expert—to perform the upstream decision-making: selecting the correct constitutive laws, verifying thermodynamic consistency, and determining the appropriate coupling topology[32]. Currently, this "Cog-nitive Supervisor" role remains manual; if the solver is fed a mathematically valid but physically incomplete model (as generated by a naive LLM), it will faithfully converge to a physically erroneous solution. To bridge this gap, we introduce a Neuro-Symbolic Generative Agent[33, 34, 35] that elevates the LLM from a code translator to a Reasoning Kernel, effec-tively automating the role of the Cognitive Supervisor. Our framework treats ex-tracted equations not as static text, but as "Constitutive Skills"—encapsulated logic units with semantic metadata. By leveraging the intrinsic physical priors embedded within the LLM’s latent space (verified via knowledge graph extrac-tion), the Agent executes a Chain-of-Thought (CoT) workflow to: 1. Deductively Prune redundant mechanisms (e.g., identifying capillary pressure as negligible in saturated states). 2. Inductively Complete missing physics (e.g., synthesizing Darcy flow dissipation when dimensionless scaling analysis reveals a drained regime). 4We validate this approach on a representative geomechanical challenge: ther-mal pressurization in low-permeability rock (Rothbach sandstone). This prob-lem serves as an ideal "cognitive stress test" because it involves competing timescales of heat generation and fluid dissipation. We demonstrate that while a standard literature-retrieval baseline fails by blindly adopting an "undrained" simplification, our Agent autonomously identifies the correct physical regime, injects the necessary dissipation terms, and predicts a stable stress path consis-tent with experimental reality. 
+
+2. Results 
+
+To validate the proposed framework, we deploy the Agent to solve a represen-tative geomechanical challenge: thermal pressurization in low-permeability rock (Rothbach sandstone). This problem requires balancing thermodynamic driv-ing forces with hydraulic dissipation, making it an ideal testbed for the Agent’s reasoning capabilities. The implementation follows a three-stage autonomous workflow: 1. Skill Ingestion (Figure 1a): The Agent processes a raw dataset of con-stitutive literature, encapsulating governing equations (e.g., thermal ex-pansion, capillary laws) into discrete "Constitutive Skills" annotated with semantic metadata regarding interacting physical fields and applicability domains (e.g., saturation states). 2. Topological Construction (Figure 1b): Synthesizing the user-specified simulation scenario (including geometry and boundary conditions like Tbnd =200 ◦C) with the skill library, the Agent autonomously assembles a causal graph. Crucially, it performs Logical Pruning to remove redundant mechanisms and Intrinsic Completion to introduce missing dissipation paths required by the boundary constraints. 3. Coupled Simulation (Figure 1c): The constructed graph is compiled into a solver instance to execute the fully coupled simulation, with results verified against experimental stability criteria. 5Figure 1: Architectural overview of the Neuro-Symbolic Generative Agent. a, From Text to Skills: The Agent ingests unstructured scientific literature (PDFs), extracting govern-ing equations into modular "Constitutive Skills." Unlike a naive LLM (grey path) that blindly executes retrieved code, our Agent treats these skills as candidate hypotheses. b, The Reason-ing Core: The Agent acts as a cognitive gatekeeper. It employs Deductive Pruning (Scissors icon) to remove mathematically redundant mechanisms (e.g., capillary pressure in saturated states) and Inductive Completion (Blue path) to inject missing physics. The decision logic is governed by Dimensionless Scaling Analysis (Central Dial), specifically using the Deb-orah number ( De ) to arbitrate between competing mechanisms. c, Physical Consequence: A comparison of simulation outcomes for heated saturated rock. The "Literature-Only" model (top), constrained by the extracted "undrained" assumption, predicts false material fracture (Physical Hallucination). In contrast, the "Agent-Completed" model (bottom) correctly iden-tifies the drained regime, activating Darcy flow to relieve pressure and predicting a stable, physically valid state. 
+
+62.1. Autonomous Constitution via Emergent Causal Topology 
+
+To transition from rigid, pre-defined solvers to an adaptive simulation paradigm, we introduce the concept of "Constitutive Skills" —encapsulated units of physical knowledge that bind mathematical governing equations with semantic metadata regarding their applicability and interacting fields. Figure 2 visual-izes the emergent causal topology constructed by the Agent, representing the dynamic assembly of these skills upon a substrate of intrinsic physical logic. The framework operates through a context-aware construction process rather than static execution. Upon initialization with a specific simulation context, the Agent synthesizes a coupled system by orchestrating two distinct knowl-edge sources. First, it anchors critical driving forces to the Skill Library pop-ulated from domain literature. The Dark Blue Path (Figure 2), for instance, is not merely a connection but an instantiated operator, applying the thermal pressurization coefficient Λ (extracted from Source II) to drive pore pressure evolution. Crucially, this construction is governed by an autonomous optimization of physical fidelity and computational economy. The Agent evaluates the necessity of each candidate skill against the boundary conditions. 
+
+• Logical Pruning: As illustrated by the Green Path (Figure 2), the Agent retrieves the saturation-capillary constraint (from Source I[36]). However, by reasoning that the initial state is fully saturated ( Sr = 1 ), it identifies this mechanism as mathematically redundant and autonomously 
+
+prunes the edge, simplifying the system without sacrificing accuracy. 
+
+• Intrinsic Completion: Conversely, the Agent recognizes that literature-derived skills may be insufficient. The Orange Path (linking Viscosity to Fluid Flux) emerges not from an external text, but from the LLM’s in-trinsic physical priors (fluid mechanics fundamentals). The Agent iden-tifies this pathway as a latent dissipation channel (Darcy flow), holding it in reserve to resolve potential physical inconsistencies that rigid literature assumptions (e.g., "undrained conditions") might overlook. 7This dynamic topology serves as the blueprint for the subsequent automated coupling, ensuring that the final simulation is not just a stacking of equations, but a rationally constituted system tailored to the specific physical reality. 
+
+2.2. Unit Verification of Constitutive Kernels 
+
+The predictive fidelity of an autonomous simulation is fundamentally bounded by the accuracy of its constituent kernels. Before orchestrating the full multi-physics coupling, the Agent subjects the extracted literature-based skills—visualized as the Dark Blue and Green paths in Figure 2—to rigorous element-wise verifi-cation. This phase validates that the implicit causal links have been correctly instantiated into deterministic governing equations. 
+
+Verification of High-Order Dynamics (The Green Path, Source I) 
+
+Although the saturation-capillary mechanism is eventually pruned due to the specific initial condition ( Sr = 1 ), its verification serves as a baseline for the Agent’s constitutive handling. As shown in Figure 3a, the Agent successfully reconstructs the capillary rise dynamics. The simulation captures the transient evolution and accurately converges to the equilibrium height ( H = 29 .68 cm) predicted by Jurin’s Law. This confirms that the Agent correctly instantiates the physical laws governing fluid potential, validating the mathematical integrity of the Green Path prior to its context-aware pruning. 
+
+Verification of the Thermodynamic Driver (The Dark Blue Path, Source II) 
+
+The precision of the primary source term—thermal pressurization—is ver-ified against experimental data from Ghabezloo & Sulem (2009). Figure 3b illustrates the evolution of pore pressure ( uw) under undrained heating. The Agent’s simulation (solid line) exhibits a strong alignment with the experimental markers, confirming the accurate extraction and implementation of the thermal pressurization coefficient Λ. This result validates the integrity of the Dark Blue Path in the causal topology, ensuring that the external driving forces are phys-ically sound before the Agent introduces its intrinsic completion mechanism to resolve system-level constraints. 8Figure 2: Visualization of the implicit causal topology utilized by the Agent for autonomous mechanism construction. This graph is not an explicit input but an ex-tracted representation of the Agent’s underlying cognitive process, fusing Intrinsic Priors 
+
+(LLM-based) with Retrieved Skills (literature-based). Dark Blue Path (Retrieved): 
+
+Represents the primary thermodynamic driver implicitly anchored to the Skill Library ( Source II ), linking thermal expansion to pore pressure. Green Path (Pruned): Represents the saturation-capillary constraint ( Source I ). The Agent internally identifies this mechanism as valid but dynamically executes pruning due to the specific simulation context ( Sr = 1 ), fil-tering out mathematical redundancy. Orange Path (Intrinsic): Represents a mechanism completion pathway derived from the LLM’s internal physical knowledge rather than exter-nal text. It reflects the Agent’s latent capacity for fluid dissipation (Darcy flow), preserved to ensure physical stability against time-scale violations (discussed in Section 2.3). 
+
+9Figure 3: Element-wise verification of the literature-retrieved constitutive ker-nels. a, Validation of the capillary dynamics extracted from Source I (The Green Path). The Agent-simulated capillary rise height h(t) (solid blue line) accurately captures the tran-sient rise and converges to the theoretical equilibrium limit defined by Jurin’s Law (dashed black line, H = 29 .68 cm). This confirms the Agent’s capability to correctly instantiate the saturation-pressure relationship before it is autonomously pruned. b, Validation of the thermal pressurization driver extracted from Source II (The Dark Blue Path). The simula-tion accurately reproduces the experimental pore pressure evolution from Ghabezloo & Sulem (2009) (orange markers) under undrained heating conditions. This establishes the accuracy of the primary thermodynamic driving force prior to the activation of the Agent’s intrinsic completion mechanism (The Orange Path). 
+
+10 2.3. Context-Aware Reasoning via Dimensionless Scaling 
+
+Merely verifying constitutive kernels is insufficient, as the validity of literature-derived equations is often constrained by implicit assumptions—such as "undrained conditions"—that may not hold in the target simulation environment. To re-solve this, the Agent employs dimensionless scaling analysis (specifically the Deborah number, De ) as a cognitive filter to determine the dominant physical regime. The Agent continuously evaluates the competition between the characteristic fluid diffusion time ( τdif f ) and the thermal loading timescale ( τload ). This ratio is quantified as: 
+
+De = τdif f 
+
+τload 
+
+≈ L2μf (T )βk · t (1) 
+
+Crucially, the Agent spontaneously isolates the Deborah number (De ) as the unique governing parameter , distinguishing it from other potential dimensionless candidates (e.g., Fourier number for heat conduction, Peclet number for advection). To explain this autonomous decision, our post-hoc analysis of the extracted knowledge graph (Figure 2) provides the mechanistic evidence. The graph reveals that the Agent internally structures pore pressure evolution as a competition between a Source Term (thermal pressurization rate, 
+
+∼ 1/τ load ) and a Diffusive Sink Term (Darcy flux, ∼ 1/τ dif f ). By implicitly fil-tering out advection-dominated regimes ( P e → 0) and intrinsic reaction kinetics (Da not applicable), the Agent correctly deduces that the system’s behavior is uniquely determined by the ratio of the intrinsic relaxation time ( τdif f ) to the extrinsic loading time ( τload ). This ratio corresponds strictly to the Deborah number definition ( De = τdif f /τ load ), confirming that the Agent successfully derived the mathematically precise scaling law from its latent physical priors. Figure 4a visualizes the Agent’s regime detection for the target material (Rothbach sandstone, k = 10 −16 m2, indicated by the bold yellow line ). Contrary to the "undrained" idealization ( De ≫ 1) often assumed in simplified theoretical treatments of thermal pressurization (Source II), the Agent identifies 11 that the system actually operates deep within the "Drained Regime" (Pink Zone), where De ranges from 10 −2 to 10 −3. This scaling analysis reveals a critical physical reality: the timescale of fluid escape is two orders of magnitude faster than the heating rate. 
+
+Mechanism Completion Trigger: 
+
+This explicit identification of the De ≪ 1 regime serves as the trigger for the Agent’s intrinsic mechanism completion . The Agent recognizes that adher-ing strictly to an "undrained" formulation would lead to a gross overestimation of pore pressure. Consequently, it autonomously activates the Orange Path (Figure 2)—the intrinsic Darcy flow mechanism—thereby injecting a diffusive dissipation term ( ∇ · v) into the governing equations. Furthermore, as shown in Figure 4b, the Agent accounts for the temperature-dependent evolution of hy-draulic diffusivity components (viscosity μf and storage Ss), ensuring that the dissipation mechanism dynamically adapts to the thermal field. This process demonstrates the Agent’s capacity to override literature-based simplifications with robust, scale-appropriate physical priors. 
+
+2.4. Emergent Validity in Fully Coupled Simulations 
+
+The culmination of the Agent’s constitutive reasoning is the fully coupled multi-physics simulation , where the impact of its autonomous mechanism completion becomes undeniable. By integrating the verified thermal pressur-ization driver (Retrieved Skill) with the scale-appropriate fluid dissipation term (Intrinsic Prior), the Agent synthesizes a physically consistent model that pre-vents catastrophic prediction errors. Figure 5 visualizes this impact in the p′ −q stress space (mean effective stress vs. deviatoric stress), which serves as the definitive map for material stability. The dashed grey line represents the naive "Literature-Only" simulation. Con-strained to the "undrained" assumption extracted from Source II, the model predicts an unchecked accumulation of pore pressure. This forces the effec-tive stress path to migrate rapidly to the left, eventually crossing the Tension Cutoff and Hvorslev Surface (Red Zone). Critically, this naive model falsely 12 Figure 4: Autonomous regime detection via Deborah number scaling analysis. a, 
+
+Evolution of the Deborah number ( De ) versus temperature for various rock permeabilities. The bold yellow line represents the target constitutive model used in this study (Rothbach sandstone, k = 10 −16 m2). The Agent identifies that the system operates entirely within the 
+
+Pink Zone ( De ≪ 1), signifying a "Drained" regime where fluid diffusion dominates. This scaling insight explicitly contradicts the "undrained" assumption often implied in simplified thermal pressurization models (Source II), compelling the Agent to activate intrinsic dissipa-tion mechanisms. b, Decomposition of the hydraulic diffusivity components relative to their initial values at T0. The Agent tracks the competing effects of viscosity reduction (Orange line, promoting flow) and storage capacity changes (Green line), synthesizing them into a net diffusivity trend (Blue line) to modulate the Darcy flow intensity dynamically. 
+
+13 predicts material failure, suggesting the rock would fracture under conditions where it is experimentally known to remain intact. In stark contrast, the solid blue line represents the "Agent-Completed" simu-lation. Having diagnosed the Drained Regime ( De ≪ 1) via scaling analysis, the Agent autonomously activates the Darcy flow mechanism (The Orange Path). The result is a stabilized stress path: the intrinsic dissipation relieves the excess pore pressure, arresting the leftward migration of effective stress. The system settles at a safe equilibrium endpoint ( p′ = 8 .9 MPa), maintaining a sufficient safety margin from the failure envelopes. This result serves as the definitive validation of "Emergent Validity." It con-firms that without the Agent’s autonomous reasoning to bridge the gap between literature assumptions and physical reality, the simulation would not merely be inaccurate—it would be qualitatively wrong , predicting structural failure where none exists. Finally, the Agent’s mechanism completion ensures the correct representa-tion of spatial heterogeneity, a capability beyond the scope of zero-dimensional constitutive solvers. Figure 6 presents the spatial fields of temperature ( T ) and pore pressure ( uw) at t = 175 s for the Rothbach sandstone case ( k = 10 −16 m2). While the temperature field (Figure 6a) is governed by conductive heat transfer driving inwards from the boundary, the pore pressure field (Figure 6b) reveals the active role of the Agent-activated Darcy flow. Crucially, the pore pressure stabilizes around 41.1 MPa (consistent with the stable effective stress p′ ≈ 8.9
+
+MPa shown in Figure 5). The visible gradient—higher in the center and lower at the rim—confirms that the Agent successfully enforces the drainage boundary condition, allowing fluid to escape rather than accumulating to failure levels. 
+
+3. Discussion Epistemic Correction vs. Blind Translation 
+
+The central contribution of this work is not merely the automation of code generation, but the demonstration of epistemic correction —the ability of an 14 Figure 5: Emergent validity demonstrated via effective stress path stability. The plot tracks the evolution of the system in p′ − q space relative to the rock’s failure envelopes (Red Zones: Tensile/Shear Failure). Dashed Grey Line (Literature-Only): Represents the model constrained strictly to the "undrained" literature extraction. The unchecked ther-mal pressurization drives the effective stress path into the failure zone (marked by the Red Cross ), falsely predicting rock fracture. Solid Blue Line (Agent-Completed): Represents the fully coupled model where the Agent has autonomously activated its intrinsic mecha-nism (Darcy flow) upon detecting the De ≪ 1 regime. The diffusive dissipation arrests the stress reduction, stabilizing the path at a safe endpoint (p′ = 8 .9 MPa) well within the elas-tic envelope. This comparison highlights that the Agent’s mechanism completion is essential for preserving the qualitative physical correctness of the simulation. 
+
+15 Figure 6: Spatial verification of the fully coupled solution via field contours. Snap-shots of the system state at t = 175 s for the target Rothbach sandstone ( k = 10 −16 m2,
+
+Tbnd = 200 ◦C). a, Temperature distribution ( T ), showing the conductive heating front prop-agating from the boundary ( r = 25 mm) towards the core. b, Pore pressure distribution (uw ). The pressure field is nearly uniform at ≈ 41 .1 MPa, with a subtle gradient driving fluid from the center (Dark Red) to the drainage boundary (Light Yellow). This confirms that the Agent’s intrinsic mechanism ( ∇ · v) effectively dissipates the thermally induced pressure, preventing the unphysical accumulation predicted by the naive model. 
+
+16 AI agent to challenge and rectify the assumptions embedded in its training data. Standard Large Language Models (LLMs) often function as "stochastic parrots," retrieving the most probable continuation of a text. Had our Agent acted as a standard Copilot, it would have strictly followed the retrieved literature (Source II), adopting the "undrained" assumption to produce code that runs without errors but fails physically (as shown by the "Naive" path in Figure 5). By explicitly employing Dimensionless Scaling Analysis (the Deborah number) as a cognitive gatekeeper, the Agent transcends linguistic translation. It exhibits a form of "physical intuition," recognizing that the mathematical validity of a closed-system equation breaks down under the open-system boundary conditions (Tbnd active). This capability marks a paradigm shift from AI-as-Translator to AI-as-Physicist. 
+
+The Role of Intrinsic Priors as Safety Valves 
+
+The visualization of the latent knowledge graph (Figure 2) reveals why the Agent succeeds where rigid solvers fail. The "Intrinsic Priors"—specifically the connection between viscosity reduction and fluid flux (Darcy’s Law)—act as a latent safety net. While the retrieved skills (RAG) provide the specific consti-tutive parameters for the material (Rothbach sandstone), the intrinsic priors provide the universal conservation laws required to maintain thermodynamic consistency. This Neuro-Symbolic interplay allows the Agent to "hallucinate" in a controlled, constructive manner: it invents a missing mechanism (the Or-ange Path) not because it was explicitly told to, but because the conservation of mass in a "Drained" regime ( De ≪ 1) demanded it. This suggests that future AI-for-Science frameworks should focus on curating these intrinsic conservation priors to prevent physical violations in generative simulation. 
+
+Generalizability and Limitations 
+
+While demonstrated on a specific Thermal-Hydro-Mechanical (THM) prob-lem, the framework’s logic— Skill Encapsulation → Topological Pruning 
+
+→ Intrinsic Completion —is agnostic to the specific physics. It can theoreti-cally be generalized to other coupled domains, such as chemo-mechanics (battery degradation) or thermo-magnetism, provided the fundamental conservation laws 17 are present in the LLM’s latent space. However, the system’s reliance on a pre-defined "Skill Library" (even if autonomously ingested) introduces a dependency on the quality of the seed literature. If the source texts contain fundamental errors in the functional form of equations (not just applicability assumptions), the current verification layer (Unit Testing) might not suffice. Future work will focus on integrating Data-Driven Discovery (e.g., symbolic regression on raw experimental data) to allow the Agent to correct not just the topology of the graph, but the kernel functions themselves. 
+
+4. Methodology 
+
+We introduce a Neuro-Symbolic Generative Framework capable of autonomously formulating and solving multi-physics problems where the governing laws are not predefined but dynamically synthesized from literature. Unlike standard "Copi-lots" that translate natural language instructions into rigid scripts, our system functions as a reasoning kernel, bridging the semantic gap between unstructured physical knowledge and rigorous numerical execution. The workflow is orches-trated through three distinct phases: (1) Semantic Encapsulation, where raw equations are structured into functional units; (2) Physics-Informed Cognitive Reasoning, where the Large Language Model (LLM) implicitly filters and com-pletes mechanisms based on dimensionless scaling analysis; and (3) Automated Variational Synthesis, where the validated physics is compiled into executable finite element code. 
+
+4.1. Semantic Encapsulation of Constitutive Skills 
+
+The foundational unit of the framework is the "Constitutive Skill," S. Raw mathematical expressions extracted from literature (via RAG) are insufficient for autonomous reasoning as they lack context regarding their applicability and coupling requirements. To resolve this, we map each extracted law into a struc-tured schema, transforming static equations into connectable semantic opera-tors: 
+
+S = {F , Ωint , Cmeta } (2) 18 where: 
+
+• F (Functional Form): The symbolic representation of the governing equa-tion (e.g., ϵth = αT ∆T ). 
+
+• Ωint (Interaction Manifold): The set of physical fields required as inputs (prerequisites) and generated as outputs (targets), defining the node’s connectivity potential. 
+
+• Cmeta (Applicability Constraints): Semantic metadata defining the valid-ity domain. This includes phase assumptions (e.g., "Saturated Liquid"), material symmetry, and thermodynamic restrictions. This encapsulation allows the LLM to evaluate the utility of a skill not merely by keyword matching, but by logical compatibility with the simulation topology. 
+
+4.2. Physics-Informed Cognitive Reasoning 
+
+The core novelty lies in the Agent’s ability to perform implicit topologi-cal reasoning. Upon receiving the user-specified simulation scenario (geometry, boundary conditions Γ, and initial state u0), the Agent does not simply stack all retrieved skills. Instead, it executes a Chain-of-Thought (CoT) reasoning process to synthesize a valid constitutive graph, employing two specific cognitive mechanisms: 
+
+Deductive Logic: Constraint-Based Pruning 
+
+The Agent first evaluates the compatibility between the retrieved skills’ con-straints Cmeta and the scenario’s initial conditions u0. Mechanisms identified as mathematically redundant or physically inapplicable are autonomously pruned. Example: If a retrieved skill governs capillary pressure evolution ( Pc) but the scenario specifies a fully saturated domain ( Sr = 1 ), the Agent deduces the con-dition ∇Pc = 0 , thereby removing the corresponding term from the governing equations to prevent numerical singularities. 
+
+Inductive Logic: Regime Identification via Scaling Analysis 
+
+19 Beyond constraint satisfaction, the Agent validates the physical fidelity of the system using Dimensionless Scaling Analysis. Before formulation, the Agent estimates characteristic timescales (e.g., fluid diffusion τdiff vs. thermal loading 
+
+τload ) to compute key dimensionless numbers (such as the Deborah Number, 
+
+De ). 
+
+• Regime Detection: The Agent classifies the dominant physical regime (e.g., De ≪ 1 = ⇒ Drained; De ≫ 1 = ⇒ Undrained). 
+
+• Intrinsic Completion: If the literature-derived equations imply an as-sumption (e.g., "Undrained") that contradicts the identified regime, the Agent detects a mechanism deficit. To restore physical consistency, it activates Intrinsic Priors—fundamental laws stored within the LLM’s la-tent weights (e.g., Darcy’s Law for dissipation)—and injects the missing divergence terms ( ∇ · v) into the system. 
+
+4.3. Automated Variational Synthesis 
+
+Once the constitutive logic is finalized—pruned of redundancies and com-pleted with intrinsic physics—the Agent proceeds to Solver Synthesis. This phase translates the abstract physical graph into a weak-form variational for-mulation executable by the FEniCSx finite element solver. 1. Field Initialization: The Agent defines appropriate function spaces (e.g., Lagrange elements P2/P 1) for the active fields identified in Ωint .2. Weak Form Derivation: The Agent symbolically converts the strong form of the coupled PDEs into the residual weak form: R(u, v) = R 
+
+> Ω
+
+(. . . ) dΩ + 
+
+R 
+
+> Γ
+
+(. . . ) dΓ = 0 where v represents the test functions. This derivation explicitly handles the integration of the intrinsic dissipation terms injected during the reasoning phase. 3. Code Compilation: The finalized variational forms are compiled into a Python simulation script, encompassing mesh generation, time-stepping loops, and adaptive solver parameters tailored to the stiffness of the cou-pled system. 20 4.4. Visualization of Latent Physical Knowledge 
+
+To validate that the Agent possesses the necessary physical priors for the reasoning described in Section 2.2, we developed a Knowledge Extraction Probe to visualize the implicit constitutive logic embedded within the LLM. It is im-portant to note that the Agent’s runtime workflow (Section 2.1–2.3) operates directly on latent representations; the explicit knowledge graph G(V, E ) pre-sented in Figure 2 is a post-hoc reconstruction designed to verify the model’s internal consistency and coverage of multiphysics couplings. We implemented a Three-Stage Probing Protocol to systematically external-ize these latent dependencies: 
+
+1. Seed-Based Breadth-First Expansion (Local Topology) 
+
+Starting from a seed set of 11 fundamental state variables (e.g., Pore Pres-sure, Temperature), we query the LLM to identify the most critical immediate physical neighbors for each variable. This phase, analogous to a Breadth-First Search (BFS) with depth d = 2 , captures the primary constitutive laws (e.g., Terzaghi’s principle linking P to σ′). 
+
+2. Combinatorial Pairwise Interrogation (Global Connectivity) 
+
+To uncover indirect or long-range couplings that might be overlooked by local traversal, we generate all unique pairs from the seed set ( C211 = 55 pairs). The LLM acts as a discriminator for each pair, determining whether a physical pathway exists (either direct or mediated by an intermediate variable). This ensures that cross-disciplinary interactions (e.g., Temperature affecting Fluid Viscosity) are explicitly registered. 
+
+3. Domain-Level Coupling Synthesis (Systemic Consistency) 
+
+Finally, to verify the completeness of multi-physics interactions, we query the connectivity between entire physical sub-domains (T-H, H-M, T-M). This top-down pass ensures that macro-scale mechanisms, such as thermal pressurization, are correctly decomposed into valid edge attributes. Raw outputs from the probing process are normalized via a Canonicaliza-tion Layer to map synonymous terms (e.g., "PWP" vs. "Pore Pressure") to a standardized ontology. The resulting graph (Figure 2) confirms that the LLM’s 21 internal knowledge structure inherently contains both the Driving Forces (e.g., Thermal Expansion) and the Dissipation Mechanisms (e.g., Darcy’s Law) re-quired for the autonomous reasoning demonstrated in the Results. 
+
+4.5. Numerical Simulation Protocols 
+
+To validate the emergent validity of the Agent’s reasoning, we conducted comparative simulations of a cylindrical Rothbach sandstone specimen ( R = 25 
+
+mm, H = 50 mm) subjected to rapid thermal loading. The study contrasts two distinct formulation strategies: 1. Baseline "Naive" Model: A 0D representative elementary volume (REV) assuming strictly undrained conditions (derived from literature Source II[37]). 2. Agent-Synthesized Model: A 2D axisymmetric finite difference model in-corporating the intrinsic Darcy flow mechanism (derived from the Agent’s reasoning). 
+
+Governing Constitutive Laws (Agent-Synthesized) Mechanical Behavior (Modified Cam-Clay) 
+
+The rock skeleton is modeled as an elasto-plastic continuum governed by the Modified Cam-Clay (MCC) yield surface in p′ − q space: 
+
+f (p′, q ) = q2 + M 2p′(p′ − pc) = 0 (3) where M = 1 .2 is the critical state slope, and pc is the preconsolidation pressure evolving with plastic volumetric strain εpv :
+
+dp c
+
+pc
+
+= 1 + e0
+
+λ − κ dε pv (4) We incorporate a Tension Cutoff ( p′ ≥ 0) and a Hvorslev Surface on the dry side ( p′ < p c/2) to capture brittle failure modes typical of overconsolidated sandstone. 
+
+Thermal-Hydraulic Coupling 
+
+22 The pore pressure evolution is driven by the competition between thermal pressurization (source) and hydraulic diffusion (sink): 
+
+∂u w
+
+∂t = Λ ∂T ∂t | {z } 
+
+> Source
+
++ ∇ · 
+
+ kμf (T )Ss
+
+∇uw
+
+| {z }
+
+> Sink
+
+(5) 
+
+• Source Term ( Λ): The thermal pressurization coefficient Λ = ( αf −
+
+αs)/(cf + cϕ) is dynamically calculated based on temperature-dependent fluid properties. 
+
+• Sink Term (Darcy): The hydraulic diffusivity chyd = k/ (μf Ss) incorpo-rates the temperature-dependent viscosity μf (T ) following the Arrhenius law. 
+
+Boundary and Initial Conditions 
+
+The simulation initializes the specimen at geostatic equilibrium: 
+
+• Initial State: p′ 
+
+> 0
+
+= 46 MPa, q0 = 15 MPa, uw, 0 = 4 .0 MPa, T0 = 25 ◦C. 
+
+• Mechanical BCs: Constant total stress ( σradial = 45 MPa, σaxial = 60 
+
+MPa) is maintained, mimicking a triaxial creep test. 
+
+• Thermal BCs: A Dirichlet boundary condition T (t) = 25 + 1 .0 · t (◦C) is applied at the outer rim ( r = R), inducing a radial thermal gradient. 
+
+• Hydraulic BCs: The Agent’s model enforces a drainage boundary ( uw =
+
+uw, 0) at r = R, whereas the Naive model enforces a no-flux condition (∇uw · n = 0 ) everywhere. 
+
+Numerical Implementation via Operator Splitting 
+
+The coupled system is solved using a staggered Operator Splitting scheme with a time step ∆t = 0 .5 s: 1. Thermal Step: Solve the heat diffusion equation ∂tT = αth ∇2T explicitly. 2. Hydraulic Step: Update pore pressure uw by superimposing the local ther-mal pressurization increment ∆uT P = BΛ∆ T and solving the implicit Darcy diffusion equation. 23 3. Mechanical Step: Update effective stress σ′ = σtotal − uwI and perform the closest-point projection return mapping algorithm to enforce the MCC plasticity and tension constraints. This rigorous numerical setup ensures that the divergence in results (Figure 5) arises solely from the presence or absence of the Agent-identified dissipation mechanism, isolating the cognitive contribution of the framework. 
+
+5. Conclusion 
+
+We have introduced a Neuro-Symbolic Generative Agent capable of au-tonomously navigating the complexity of multi-physics simulation. By decou-pling physical knowledge into semantic "Constitutive Skills" and orchestrating them through a Chain-of-Thought reasoning process, the Agent bridges the gap between unstructured scientific literature and rigorous numerical execution. Three key conclusions emerge from this study: 1. Context-Aware Reasoning: The Agent successfully identified that the "undrained" assumption prevalent in literature was invalid for the spe-cific thermal loading rate applied to Rothbach sandstone, autonomously activating a Darcy dissipation mechanism to resolve the conflict. 2. Emergent Physical Validity: The fully coupled simulation, synthe-sized without human intervention, predicted a safe effective stress path (p′ ≈ 8.9 MPa), preventing the false positive failure prediction ( p′ → 0)characteristic of naive models. 3. Methodological Robustness: The rigorous element-wise verification and regime detection mechanisms ensure that the AI’s creativity is bounded by physical laws, effectively mitigating the risk of hallucination in scientific computing. This work demonstrates that AI can serve as more than a coding assistant; it can act as a reasoning partner, safeguarding simulations against the implicit cognitive biases and simplifications that often compromise manual modeling. 24 Table 1: Material parameters and simulation conditions for Rothbach sandstone. 
+
+> Parameters are categorized by physical domain: Mechanical (M), Hydraulic (H), and Thermal (T). The asterisk (*) denotes temperature-dependent properties updated dynamically during the simulation.
+
+Parameter Symbol Value Unit 
+
+Mechanical Properties (M) 
+
+Critical State Slope M 1.2 -Preconsolidation Pressure pc0 60.0 MPa Normal Compression Index λ 0.15 -Recompression Index κ 0.03 -Initial Void Ratio e0 0.3 -Poisson’s Ratio ν 0.3 -
+
+Hydraulic Properties (H) 
+
+Intrinsic Permeability k 1.0 × 10 −16 m2
+
+Fluid Viscosity* μf (T ) Arrhenius Pa ·sFluid Compressibility cf 4.0 × 10 −10 Pa −1
+
+Solid Compressibility cs 2.0 × 10 −11 Pa −1
+
+Specific Storage Ss 1.28 × 10 −10 Pa −1
+
+Thermal Properties (T) 
+
+Thermal Conductivity λT 2.0 W/(m ·K) Specific Heat Capacity Cp 1000 J/(kg ·K) Fluid Expansion Coeff.* αf (T ) ∼ 3.0 × 10 −4 K−1
+
+Solid Expansion Coeff. αs 3.3 × 10 −5 K−1
+
+Thermal Diffusivity αth 1.0 × 10 −6 m2/s 
+
+Initial & Boundary Conditions 
+
+Initial Confining Pressure σ′ 
+
+> 3
+
+41.0 MPa Initial Pore Pressure uw, 0 4.0 MPa Initial Temperature T0 25.0 ◦CHeating Rate ˙T 1.0 ◦C/s 25 Data availability 
+
+The datasets generated and/or analysed during the current study are avail-able in the GitHub repository at https://github.com/shuWuYue123/Neuro-Symbolic-Auto-Coupling .
+
+Code availability 
+
+The source code for the Neuro-Symbolic Generative Agent and the simu-lation scripts are available in the GitHub repository at https://github.com/ shuWuYue123/Neuro-Symbolic-Auto-Coupling .
+
+References 
+
+[1] J. Jumper, R. Evans, A. Pritzel, T. Green, M. Figurnov, O. Ronneberger, K. Tunyasuvunakool, R. Bates, A. Žídek, A. Potapenko, et al., Highly accurate protein structure prediction with alphafold, nature 596 (7873) (2021) 583–589. [2] A. Merchant, S. Batzner, S. S. Schoenholz, M. Aykol, G. Cheon, E. D. Cubuk, Scaling deep learning for materials discovery, Nature 624 (7990) (2023) 80–85. [3] M. Raissi, P. Perdikaris, G. E. Karniadakis, Physics-informed neural net-works: A deep learning framework for solving forward and inverse problems involving nonlinear partial differential equations, Journal of Computational physics 378 (2019) 686–707. [4] Z. Li, N. B. Kovachki, K. Azizzadenesheli, Burigede liu, kaushik bhat-tacharya, andrew stuart, and anima anandkumar. fourier neural operator for parametric partial differential equations, in: International Conference on Learning Representations, Vol. 2, 2021, p. 4. [5] L. Lu, P. Jin, G. Pang, Z. Zhang, G. E. Karniadakis, Learning nonlinear operators via deeponet based on the universal approximation theorem of operators, Nature machine intelligence 3 (3) (2021) 218–229. 26 [6] H. Wang, T. Fu, Y. Du, W. Gao, K. Huang, Z. Liu, P. Chandak, S. Liu, P. Van Katwyk, A. Deac, et al., Scientific discovery in the age of artificial intelligence, Nature 620 (7972) (2023) 47–60. [7] O. Zienkiewicz, R. Taylor, The Finite Element Method Set, Butterworth-Heinemann, Oxford, 2005. [8] H. K. Versteeg, An introduction to computational fluid dynamics the finite volume method, 2/E, Pearson Education India, New Delhi, 2007. [9] D. A. Boiko, R. MacKnight, B. Kline, G. Gomes, Autonomous chemical research with large language models, Nature 624 (7992) (2023) 570–578. [10] A. M. Bran, S. Cox, O. Schilter, C. Baldassari, A. D. White, P. Schwaller, Augmenting large language models with chemistry tools, Nature Machine Intelligence 6 (5) (2024) 525–535. [11] G. Wang, Y. Xie, Y. Jiang, A. Mandlekar, C. Xiao, Y. Zhu, L. Fan, A. Anandkumar, Voyager: An open-ended embodied agent with large lan-guage models, arXiv preprint arXiv:2305.16291 (2023). [12] J. S. Park, J. O’Brien, C. J. Cai, M. R. Morris, P. Liang, M. S. Bernstein, Generative agents: Interactive simulacra of human behavior, in: Proceed-ings of the 36th annual acm symposium on user interface software and technology, 2023, pp. 1–22. [13] A. Anthropic, The claude 3 model family: Opus, sonnet, haiku, Claude-3 Model Card 1 (1) (2024) 4. [14] G. Team, R. Anil, S. Borgeaud, J.-B. Alayrac, J. Yu, R. Soricut, J. Schalk-wyk, A. M. Dai, A. Hauth, K. Millican, et al., Gemini: a family of highly capable multimodal models, arXiv preprint arXiv:2312.11805 (2023). [15] J. Wei, Y. Tay, R. Bommasani, C. Raffel, B. Zoph, S. Borgeaud, D. Yo-gatama, M. Bosma, D. Zhou, D. Metzler, et al., Emergent abilities of large language models, arXiv preprint arXiv:2206.07682 (2022). 27 [16] S. Bubeck, V. Chandrasekaran, R. Eldan, J. Gehrke, E. Horvitz, E. Kamar, P. Lee, Y. T. Lee, Y. Li, S. Lundberg, et al., Sparks of artificial general in-telligence: Early experiments with gpt-4, arXiv preprint arXiv:2303.12712 (2023). [17] J. Wei, X. Wang, D. Schuurmans, M. Bosma, F. Xia, E. Chi, Q. V. Le, D. Zhou, et al., Chain-of-thought prompting elicits reasoning in large lan-guage models, Advances in neural information processing systems 35 (2022) 24824–24837. [18] S. Yao, D. Yu, J. Zhao, I. Shafran, T. Griffiths, Y. Cao, K. Narasimhan, Tree of thoughts: Deliberate problem solving with large language models, Advances in neural information processing systems 36 (2023) 11809–11822. [19] S. Yao, J. Zhao, D. Yu, N. Du, I. Shafran, K. R. Narasimhan, Y. Cao, React: Synergizing reasoning and acting in language models, in: The eleventh international conference on learning representations, 2022. [20] T. Schick, J. Dwivedi-Yu, R. Dessì, R. Raileanu, M. Lomeli, E. Hambro, L. Zettlemoyer, N. Cancedda, T. Scialom, Toolformer: Language models can teach themselves to use tools, Advances in Neural Information Process-ing Systems 36 (2023) 68539–68551. [21] Z. Xi, W. Chen, X. Guo, W. He, Y. Ding, B. Hong, M. Zhang, J. Wang, S. Jin, E. Zhou, et al., The rise and potential of large language model based agents: A survey, Science China Information Sciences 68 (2) (2025) 121101. [22] Y. Shen, K. Song, X. Tan, D. Li, W. Lu, Y. Zhuang, Hugginggpt: Solving ai tasks with chatgpt and its friends in hugging face, Advances in Neural Information Processing Systems 36 (2023) 38154–38180. [23] A. Brohan, Y. Chebotar, C. Finn, K. Hausman, A. Herzog, D. Ho, J. Ibarz, A. Irpan, E. Jang, R. Julian, et al., Do as i can, not as i say: Grounding language in robotic affordances, in: Conference on robot learning, PMLR, 2023, pp. 287–318. 28 [24] Y. J. Ma, W. Liang, G. Wang, D.-A. Huang, O. Bastani, D. Jayaraman, Y. Zhu, L. Fan, A. Anandkumar, Eureka: Human-level reward design via coding large language models, in: The Twelfth International Conference on Learning Representations, 2024. [25] Z. Ji, N. Lee, R. Frieske, T. Yu, D. Su, Y. Xu, E. Ishii, Y. J. Bang, A. Madotto, P. Fung, Survey of hallucination in natural language gen-eration, ACM computing surveys 55 (12) (2023) 1–38. [26] X. Wang, Z. Hu, P. Lu, Y. Zhu, J. Zhang, S. Subramaniam, A. R. Loomba, S. Zhang, Y. Sun, W. Wang, Scibench: Evaluating college-level scien-tific problem-solving abilities of large language models, arXiv preprint arXiv:2307.10635 (2023). [27] A. Lewkowycz, A. Andreassen, D. Dohan, E. Dyer, H. Michalewski, V. Ra-masesh, A. Slone, C. Anil, I. Schlag, T. Gutman-Solo, et al., Solving quan-titative reasoning problems with language models, Advances in neural in-formation processing systems 35 (2022) 3843–3857. [28] R. Taylor, M. Kardas, G. Cucurull, T. Scialom, A. Hartshorn, E. Saravia, A. Poulton, V. Kerkez, R. Stojnic, Galactica: A large language model for science, arXiv preprint arXiv:2211.09085 (2022). [29] D. Gaston, C. Newman, G. Hansen, D. Lebrun-Grandie, Moose: A par-allel computational framework for coupled systems of nonlinear equations, Nuclear Engineering and Design 239 (10) (2009) 1768–1778. [30] I. A. Baratta, J. P. Dean, J. S. Dokken, M. Habera, J. S. Hale, C. N. Richardson, M. E. Rognes, M. W. Scroggs, N. Sime, G. N. Wells, Dolfinx: The next generation fenics problem solving environment (Dec. 2025). doi:10.5281/zenodo.18101307. [31] T. Xue, S. Liao, Z. Gan, C. Park, X. Xie, W. K. Liu, J. Cao, Jax-fem: A differentiable gpu-accelerated 3d finite element solver for automatic inverse 29 design and mechanistic data science, Computer Physics Communications 291 (2023) 108802. [32] T. Belytschko, W. K. Liu, B. Moran, K. Elkhodary, Nonlinear finite ele-ments for continua and structures, John wiley & sons, Chichester, 2014. [33] S.-M. Udrescu, M. Tegmark, Ai feynman: A physics-inspired method for symbolic regression, Science advances 6 (16) (2020) eaay2631. [34] M. Krenn, R. Pollice, S. Y. Guo, M. Aldeghi, A. Cervera-Lierta, P. Friederich, G. dos Passos Gomes, F. Häse, A. Jinich, A. Nigam, et al., On scientific understanding with artificial intelligence, Nature Reviews Physics 4 (12) (2022) 761–769. [35] M. K. Sarker, L. Zhou, A. Eberhart, P. Hitzler, Neuro-symbolic artificial intelligence: Current trends, Ai Communications 34 (3) (2022) 197–209. [36] B. Sun, Singularity-free approximate analytical solution of capillary rise dynamics, Science China. Physics, Mechanics & Astronomy 61 (8) (2018) 084721. [37] S. Ghabezloo, J. Sulem, Stress dependent thermal pressurization of a fluid-saturated rock, Rock Mechanics and Rock Engineering 42 (1) (2009) 1–24. 30

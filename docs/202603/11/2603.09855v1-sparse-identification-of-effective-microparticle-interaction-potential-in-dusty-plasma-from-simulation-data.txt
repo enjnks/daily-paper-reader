@@ -1,0 +1,588 @@
+Title: Sparse identification of effective microparticle interaction potential in dusty plasma from simulation data
+
+URL Source: https://arxiv.org/pdf/2603.09855v1
+
+Published Time: Wed, 11 Mar 2026 01:18:59 GMT
+
+Number of Pages: 11
+
+Markdown Content:
+# Sparse identification of effective microparticle interaction potential in dusty plasma from simulation data 
+
+Z. B. Howe, 1 L. S. Matthews, 2 T. Hyde, 2 L. Guazzotto, 1 and E. G. Kostadinova 1
+
+> 1)
+
+Department of Physics, Auburn University, Auburn, AL, USA 
+
+> 2)
+
+Center for Astrophysics, Space Physics, and Engineering Research (CASPER), Baylor University, Waco, TX, USA 
+
+(*Electronic mail: zbrookshowe@auburn.edu) (Dated: 11 March 2026) 
+
+Identification of the particle interaction potential is a challenging and important task in dusty plasma, colloids, and smart materials as it allows the characterization of structure formation and helps predict phase transitions. With the advent of machine learning methods, this interaction can be extracted from particle position data, leading to a generalizable expression which is applicable in different systems. Methods such as sparse regression aim to provide a physically interpretable model that can generalize well, while avoiding unnecessary complexity due to overfitting. In this work, we present the use of the Sparse Identification of Nonlinear Dynamics (SINDy) with the weak formulation to learn equations of motion for noisy data from simple simulations of two dust particles interacting with a Yukawa (shielded Coulomb) potential. The application of these methods to experimental dusty plasma data is discussed, particularly in the case of simulation data and glass box experiments in RF discharge gravity environments and DC discharge microgravity environments, such as the Plasmakristall-4 (PK-4) experiment. 
+
+I. INTRODUCTION 
+
+Plasmas, and particularly dusty plasmas, are abundant on earth and in space. Dusty plasmas are a four-component sys-tem consisting of ions, electrons, neutral gas particles, and macroscopic “dust particles,” typically ranging from 10 −9 mto 10 −6 m in diameter for laboratory experiments. Funda-mentally, dusty plasmas represent a macroscopic model of strongly interacting complex systems as they have been shown to exhibit interesting collective effects, including structure for-mation, waves and instabilities, and turbulence 1.Dust particle flows provide a unique window into the study of nonlinear waves 2,3 , while the dynamic dust motion can give insight into the thermodynamics of the system and the prop-erties of the background plasma discharge 4–6 . Collections of dust particles can also exhibit lattice structures, which can un-dergo phase transitions 7–10 . Since the constituent particles are macroscopic and visible at the single particle (kinetic) level, dusty plasmas allow unique insight into these fluid dynamics and condensed matter phenomena. Generally, dusty plasma monolayer structures are studied with ground-based experi-ments whereas microgravity environments allow for the the generalization of such studies to three-dimensional structures. Of particular interest are the three-dimensional structures that can be observed in microgravity laboratory environments on board the International Space Station (ISS). The first of these, PKE-Nefedov, allowed the first observation of body-center cubic structures in the dust cloud 11 . The successor of this laboratory, PlasmaKristall-3 (PK-3) Plus 12 , offered the first insight into the so-called electrorheological (ER) plasma state 13,14 , which is characterized by the ability to tune in-terparticle potentials by applying an external electric field, which induces a dipole-like interaction between neighboring dust grains. This implies the existence of an anisotropy in the dust-dust interaction potential causing deviations from the spherically symmetric Yukawa (or shielded Coulomb) poten-tial, which normally leads to an isotropic dust structure with-out the presence of the external field. More recently, the Plasmakristall-4 (PK-4) experiment 15 (currently on board the ISS) has shown similar string-like dust structures reminiscent of those observed on PK-3 Plus, also implying the existence of an anisotropic potential. Owing to the different geometry and discharge type of PK-4 compared to PK-3, the dust-dust interaction potential and corresponding structure observed in the PK-4 experiment may differ from the aforementioned ER plasma state 16,17 . Namely, the observed string-like struc-tures in PK-4 exhibit anisotropic pair correlations and dif-fusion properties, suggesting crystalline-like coupling within filaments and liquid-like coupling across filaments 4,18–20 . In addition, these structures have been recently shown to exhibit anisotropic anomalous diffusion 4,20 .The physical phenomenon leading to the existence of these anisotropies in the dust-dust interaction is the presence of ion wakes that arise due to external electric fields in the plasma. The ion wakes can be thought of as regions of positive space charge forming downstream of the dust particle in the direc-tion of the electric-field-induced ion flow. These regions of positive charge attract neighboring negatively charged dust grains, competing with the repulsive dust-dust interaction. It has been proposed that the dust alignment in filamen-tary structures in PK-4 is further enabled by the presence of high-frequency discharge ionization waves that affect the ion streaming velocity and corresponding wakefield structure 21,22 .In addition to experimental observations, the effect of ion wakefields on dust-dust interactions has been modeled both analytically and computationally. An investigation using ki-netic theory, considering both collisions and ion drift, led to the derivation of an analytic form for the potential around a dust grain 23,24 
+
+ϕ = qd
+
+4πε 0r
+
+
+
+e−r/λDi − 0.43 M2λ 2
+
+> Di
+
+r2 (3 cos 2 ζ − 1)
+
+
+
+, (1) where qd is the dust charge, λDi is the ion Debye length, M
+
+> arXiv:2603.09855v1 [physics.plasm-ph] 10 Mar 2026
+
+2is the thermal Mach number of the ion drift velocity, and ζ
+
+is the angle between the external electric field and the vec-tor connecting two particles. The first term is the isotropic Yukawa potential and the second term is an effective dipole interaction. This expression has been applied in analysis of various experimental environments, including the PK-3 Plus experiment 14 as well as the PK-4 experiment 15–17,25 . While the form of the expression was found to predict the ER dust structure observed in PK-3 well, the model was not shown to be as predictive of structure formation in the dust cloud of PK-4 26,27 . The present project aims to build on previous an-alytical and numerical work by learning the functional form for the dust-dust interaction potential directly from data using a physics-informed machine learning approach. The remainder of this paper is organized as follows. In Sec. II we outline the relevant physics behind dust interac-tions in dusty plasma and outline the use of machine learn-ing or data-driven methods in plasma physics. In Sec. III, We present the Sparse Identification of Nonlinear Dynamics (SINDy) method in the weak formulation, explain the manner in which synthetic data are generated, and discuss the cross-validation used here. In Sec. IV, we show the results using weak SINDy with cross-validation to identify equations of motion from synthetic data. In Sec. V, the results are inter-preted and limitations and future applications are discussed, and finally in Sec. VI the conclusions are presented.   
+
+> II. THEORETICAL BACKGROUND A. Ion-wake-mediated interactions in dusty plasma
+
+The ion dynamics in PK-4 have also been investigated com-putationally through simulations of the relevant plasma dis-charge with and without dust. In Ref. 21, the presence of ion-ization waves in the PK-4 DC discharge was predicted from a Particle In Cell with Monte Carlo Collisions (PIC/MCC) sim-ulation and discovered experimentally using a ground-based version of PK-4 at Baylor University. Ionization waves are associated with large spikes in the electric field that occur at ~10 kHz, and further investigation has shown that this strongly influences the tendency of the dust cloud to form string-like structures 26,28 . Furthermore, it has been shown that the po-sition of dust particles with respect to neighboring particles affects the grain charge and shape of the ion wake 17,29 . This breaks the assumption of an isolated dust particle in a sheath made in the kinetic model described by Eq. 1 23 . Approaching this question with a bottom-up (data-driven) approach could provide new insights into the problem that can supplement the top-down (analytical, computational) approach. An important aspect of ion-wake-mediated interactions be-tween neighboring dust particles is that when the background ion flow is unidirectional, ion wakes appear only on one side of the particles. This leads to nonreciprocal dust-dust inter-actions, i.e. F12 ̸ = F21 , where Fi j is the force on particle i by particle j. This effect has been studied experimentally 30–32 ,computationally 29 , and theoretically 33 . In the PK-4 experi-ments, this effect is lessened by symmetric polarity switching of the external electric field, which leads to the formation of ion wakes on both sides of the dust particle along the direc-tion of the electric field. In these conditions, the interaction along the direction of the electric field is expected to be re-ciprocal. However, the 3D interaction potential is expected to be anisotropic—with measurable difference between the field-aligned versus cross-field interaction components.  
+
+> B. Data-driven discovery of equations
+
+Recent developments in the analysis of scientific data have jump-started a revolution in the investigation of natural pro-cesses, introducing the idea of the “data-driven discovery” of natural laws using optimization algorithms. This “learning” of governing equations directly from data can fall under the umbrellas of statistical or machine learning, whereas artifi-cial intelligence can be defined as the usage of these meth-ods to achieve the automation of scientific discovery. Data-driven discovery has been termed by some to be the “fourth paradigm of scientific investigation,” in addition to empiri-cal experimentation, analytical derivation, and computational investigation 34,35 . The key idea here is to use optimization to extract underlying patterns within scientific data to discover or construct a new description of the physical system of inter-est. This is contrasted against the aforementioned “first three” paradigms of scientific research, which seek to observe the natural system (experimentation) and use a first-principles ap-proach to predict or arrive at an understanding of the system (derivation and computation). Most of the works referenced in this article utilize one or multiple of these three approaches, but given the nature of data from experiments (video data of dust particles), dusty plasma lends itself well to the approach of deducing an equation describing the dynamics of the dust particles directly from data using optimization. Within the field of dusty plasma, data-driven approaches have begun to be applied in various contexts. Typically, this involves an artificial neural network (ANN) to measure some properties of the dust dynamics or background plasma. Refs. 36 and 37 use an ANN trained on Langevin simulation data of a two-dimensional dusty plasma to recover the dust particle screening length (Debye length) and Coulomb cou-pling parameter. Refs. 30 and 38 use a neural network ap-proach to learn non-reciprocal dust-dust interaction forces in a three-dimensional experimental dusty plasma system with up to 18 particles. From this, the authors are able to back out plasma parameters such as the relevant screening (De-bye) length of pairs of particles as well as particles’ mass and charge in situ . ANNs have also been used to perform particle tracking 39,40 and to characterize a phase transition between the string-like and isotropic dusty plasma states 41 . There have also been data-driven analyses conducted without the use of ANNs. For instance, Ref. 42 uses a Support Vector Machine to identify an interface between different sizes of dust parti-cles in a binary dusty plasma. In an approach similar to that which will be presented here, Ref. 43 uses a Bayesian regres-sion to learn the equation of motion of a single dust particle in a glass box. In this paper, however, the form of the equation 3was determined before the regression was performed, which is different than the sparse regression used here, where the algorithm itself determines the form of the equation. An alternative to the commonly used ANN approach is to use a linear regression to learn equations from data. This class of approaches has the distinct advantage of being much less computationally intensive, as well as being more inter-pretable. While the ANN is often referred to as a “black box,” regression methods are transparent in the way the solutions are determined. Recently, the idea of sparsity-promotion in optimization schemes has led to the more widespread use of “sparse re-gression”, which has found a place in many plasma physics applications. Sparse regression employs a linear least-squares regression with the presence of a sparsity prior, which forces the optimization scheme to balance minimizing the error with minimizing the complexity of the learned statistical model. This is related to Occam’s Razor, which can be stated as “the simplest explanation is usually the best one.” These ideas and others relating to data-driven approaches are discussed exten-sively in Ref. 34. Within plasma physics, sparsity-promoting algorithms have been used in three broad senses: system identification, sparse sensing, and gaussian process regression. A complete dis-cussion of the ways that sparse regression have been used for plasma can be found in Ref. 44 with an extensive list of works using these methods. In the present article, we focus on the Sparse Identification of Nonlinear Dynamics (SINDy) method 45 , described more fully in Sec. III. In plasma physics, SINDy has been used notably in stellarator optimization 46 ,to identify a predator-prey model for flows in a tokamak 47 ,to characterize anode glow oscillations in a low temperature discharge 48 , and to discover fluid closures and other reduced-order models from plasma simulations 49 , to name a few. To the best of our knowledge, the SINDy method has not been applied within the field of dusty plasma.  
+
+> III. METHODS
+
+In this article, we seek to validate the use of the Sparse Iden-tification of Nonlinear Dynamics (SINDy) method to identify an equation of motion from trajectories of interacting parti-cles, which is of particular interest to those who study dusty plasma. Since the dust grains in many experiments are of sufficient macroscopic size, their trajectories can be recov-ered using methods such as particle tracking or particle image velocimetry 50,51 . We show here that the use of particles’ in-dividual position and velocity measurements as a time series can be used in a linear regression problem that can uncover in-dividual particle equations of motion given a certain basis of nonlinear (not necessarily linearly indepedent) functions. The SINDy method picks only the most important terms from this basis, leading to a parsimonious and interpretable equation of motion that can provide insight into the physical mechanisms underlying the dynamics in a dusty plasma system. This section is organized as follows. In Sec. III A, the SINDy method is presented in its original formulation, along with the sparsity-promoting algorithm, the sequentially thresholded least squares (STLSQ), and the weak formulation of the problem. Then, a simple isotropic Yukawa simula-tion is presented in Sec. III B, with details about the equation of motion, the numerical solver used, and the generation of noisy data. Finally, Sec. III C discusses how a cross-validation scheme is implemented in this analysis.  
+
+> A. The Sparse Identification of Nonlinear Dynamics (SINDy)
+
+The SINDy method of Ref. 45 is a data-driven analysis method that exploits the fact that most naturally occurring laws which govern dynamical systems are parsimonious , or that they consist of relatively few terms. The method uses sparse regression to find a differential equation that describes the underlying dynamics in the fewest number of terms pos-sible. This sparse formulation has many advantages over pre-vious methods that were used, such as the genetic symbolic regression 52 , which is computationally expensive and does not scale well with system dimensionality. SINDy is formulated to discover dynamical equations of the very general form 
+
+dx(t)
+
+dt = f(x(t)) , (2) where the vector x(t) = ( x1(t) x2(t) . . . xn(t)) ⊤ is the state of the system at time t, {x1 . . . xn} are the user-defined features used to describe the system, and f(x(t)) is a function that de-scribes the system dynamics. Note that higher-order differ-ential equations can be encoded in this “first-order form” by introducing more equations with dummy variables. For ex-ample, the second-order harmonic oscillator equation ¨ x = ω2x
+
+can be represented by the first-order equations ˙ x = v, ˙v = ω2x
+
+so that x = ( x v )⊤ and f = ( v ω2x )⊤ from Eq. 2. Now, we further assume that the components of the function 
+
+f from Eq. 2 can be written in the form 
+
+fi(x(t)) = 
+
+> p
+
+# ∑
+
+> j=1
+
+ci j φ j(x(t)) , (3) where {φ j} j∈[1,p] is a set of p nonlinear basis functions mul-tiplied by constant coefficients ci j . This will allow us to per-form a linear regression to determine the values of the ci j and express f as a linear combination of nonlinear functions φ j.Since real data are sampled at discrete time intervals, we define the matrix X ∈ Rm×n,
+
+X =
+
+ | | |
+
+x1 x2 · · · xn
+
+| | |
+
+ , (4) in lieu of the continuous function x(t). Here, the ith column is populated by the full history of m discrete measurements of the system feature xi, and there are n number of such features. In a similar way, we define a “library of terms” Φ ∈ Rm×p,
+
+Φ(X) = 
+
+ | | |
+
+φ1(X) φ2(X) · · · φp(X)
+
+| | |
+
+ , (5) 4where the ith column is the function φi calculated at each time step using the data in X. Finally, we define a matrix of co-efficients C ∈ Rn×p. Thus, we may now re-express Eq. 2 in matrix form as 
+
+˙X = Φ(X)C⊤. (6) The SINDy regression seeks to minimize the loss L, which by construction balances minimizing error with minimizing the number of terms in the final equation. We define L as 
+
+L = ∥ ˙X − Φ(X)C⊤∥22 + λ R(C), (7) where the first term on the right hand side is the least squares loss according to Eq. 6 and the second term is referred to as the “sparsity prior.” The function R(C) imposes some con-straint on the matrix C in order to promote sparsity in the final solution, and λ is a hyperparameter which sets the strength of the sparsity promotion. In an ideal case R(C) = ∥C∥0, where 
+
+∥·∥ 0 is the l0-norm and is simply a count of the nonzero terms in the matrix. As it happens, however, the l0-norm is a non-convex function and therefore difficult to optimize. There-fore, R(C) can be replaced with a number of other norms such as the l1-norm (LASSO regression), the l2-norm (Tikhonov regularization or ridge regression), or L can be modified en-tirely to change the problem as in Sparse Relaxed Regularized Regression 53 .In this work, we use the Sequential Thresholded Least Squares (STLSQ) approach 45 . We chose this approach for its simplicity—it performs a normal least squares regression (R(C) = 0), sets to zero all least-squares coefficients which are below a predefined, fixed threshold, and performs the least squares again on the remaining coefficients. This process is repeated until no coefficients are below the threshold. In terms of Eq. 7, this amounts to using λ = 0 and adding the additional step of thresholding outside of the loss function. Note that the parameter λ is set to zero for all applications using STLSQ, and that the STLSQ threshold and λ are not the same. Here, the threshold is the hyperparameter, which is set by the user. In Sec. IV, we vary the threshold hyperparameter to see what kinds of models SINDy identifies for different thresholds. Here, we implement SINDy using the weak (or integral) formulation 54,55 . This approach leverages numerical integra-tion and product rule to express Eq. 2 in weak form. This is done by multiplying both sides of the equation by a differen-tiable test function ψ(t) such that ψ → 0 at the boundaries of the integration domain (or the total time interval T during which measurements were taken). Thus, we can write 
+
+− 
+
+> ZT
+> 0
+
+dψ(u)
+
+du x(u) du = 
+
+> ZT
+> 0
+
+ψ(u) f(x(t)) du , (8) where u is the integration variable. The loss function (Eq. 7) can now be written as an integral and solved numerically with-out having to differentiate the data matrix X. This approach drastically improves SINDy’s robustness to noisy data, since numerically differentiating noisy data can be a large source of error. In practice, this temporal integration is done by splitting the full time domain up into K subdomains centered at random                                         
+
+> TABLE I. Values used to calculate the scaling constant A(see Eq. 11). Values come from Ref. 15 or are approximate realistic val-ues for a PK-4 dusty plasma with 3.38 μm diameter particles. variable name unit value
+> kBTiion temperature eV 2.526 ×10 −2
+> niion density m−32.810 ×10 14
+> nddust density m−31.000 ×10 11
+> qddust charge e1.000 ×10 4
+> mddust mass kg 3.030 ×10 −14
+> λDi ion Debye length m7.048 ×10 −5
+> ωpd dust plasma frequency rad/s 9.781 ×10 2
+
+points ti. The integration is then performed on the interval 
+
+[ti − Ht ,ti + Ht ], where Ht is the half-width of the integration domain. More information on how this is done can be found in Ref. 54, and the specific choice of parameters used here is discussed in Sec. IV. Since the publication of Ref. 45, SINDy has been improved upon in many different ways and adapted for many differ-ent applications. For example, it has been used to discover partial differential equations 54,56 in fluid dynamics and La-grangians and Hamiltonians 57,58 for simple mechanical sys-tems like pendula. Many of these applications are readily im-plemented within the PySINDy code 59 , which we utilize here for all analysis.  
+
+> B. Isotropic Yukawa simulation
+
+As mentioned in Sec. II B, the SINDy method has not been applied within the field of dusty plasma to the best knowl-edge of the authors. Therefore, we seek to validate the use of SINDy for a dusty plasma-relevant system using the isotropic Yukawa (shielded Coulomb) interaction potential. For this, we choose a system of 2 particles in two-dimensional (2D) space interacting with a Yukawa interaction potential 
+
+ϕ(r) = 14πε 0
+
+qd
+
+r e−r/λDi , (9) where r is the distance from a dust particle (assumed to be a point particle) to a field point, and qd is the dust charge. Note that this formulation with one spatial dimension is fully general for particles in up to three spatial dimensions. This yields the following force between a pair of identical particles 
+
+Fi j = q2
+
+> d
+
+4πε 0
+
+"
+
+1
+
+λDi ri j 
+
+e−ri j /λDi + 1
+
+r2
+
+> i j
+
+e−ri j /λDi 
+
+#
+
+ˆeri j (10) where ri j is the magnitude of the vector ri j = ρi − ρ j, ρk is the position of the kth particle with respect to the origin, and ˆeri j = ri j /ri j is the unit vector pointing from particle j to par-ticle i. We can normalize the quantities in this equation as follows, using a “~” to indicate normalized values. We nor-malize the interparticle spacing ri j using the ion Debye length 
+
+λDi = ( ε0kBTi/nie2)1/2, yielding ˜ ri j = ri j /λDi and time us-5ing the dust plasma frequency ωpd = ( nd q2 
+
+> d
+
+/md ε0)1/2, yield-ing ˜ t = tωpd . To obtain the values of λDi and ωpd , we use Plasmakristall-4 (PK-4)-relevant parameters, shown in Tab. I. Using dimensionless quantities, the equation of motion of two dust particles (labeled i and j) interacting with the force Fi j 
+
+becomes 
+
+d2 ˜ri j 
+
+d˜t2 = A
+
+"
+
+1˜ri j 
+
+e−˜ri j + 1˜r2
+
+> i j
+
+e−˜ri j 
+
+#
+
+(11) where A is our “scaling constant” defined as A =
+
+2q2 
+
+> d
+
+/(4πε 0md λ 3
+
+> Di
+
+ω2 
+
+> pd
+
+). Note that the equation of motion here is scalar-valued, a simplification which is only possible in the case of two bodies. Synthetic data are generated by numerically solving Eq. 11 using the Livermore Solver for Ordinary Differential equa-tions with Automatic stiffness adjustment 60 (LSODA), im-plemented through the integrate.solve_ivp function in SciPy. Two hundred trajectories are generated in this way with randomly (Gaussian) distributed initial velocities and separa-tions. Gaussian-distributed noise is then added to the data with varying standard deviations σ to simulate different amounts of error in real experimental data. This approach comes from the PySINDy tutorial notebooks 59 and is adapted here for a dusty plasma system. In order to simulate and fit with PySINDy the second-order equation of motion seen in Eq. 11, we must first convert it to first order form. To do this, we introduce the simplified notation r as a stand-in for ˜ ri j and add an additional equation with the variable v ≡ ˙r, where we use the overdot no-tation to represent time derivatives with respect to ˜ t. We can now express Eq. 11 as ˙r = v (12a) ˙v = A
+
+ e−r
+
+r + e−r
+
+r2
+
+
+
+. (12b) The trajectories generated with this equation are then used as training data for SINDy to identify the equation of motion given in Eq. 11. To determine the SINDy library, we extrapolate based on the terms needed to form Eq. 12 and form a library Φ as given by Eq. 5. In particular, the basis used is 
+
+{φi} =
+
+
+
+r, v, e−r
+
+r , e−v
+
+v , e−r
+
+r2 , . . . , e−v
+
+v4
+
+
+
+, (13) where the unphysical v-dependent terms were included delib-erately to test if SINDy would ignore them in favor of the r-dependent terms, and the linear terms were included to be able to fit Eq. 12a. This custom library was used in all analysis for this two-body system.  
+
+> C. Cross-validation
+
+Cross-validation is an essential step in data-driven model generation, as it minimizes the possibility of outliers or ab-normal parts of the data causing inaccuracies in the learned     
+
+> FIG. 1. Visual representation of the k-fold cross-validation process (with k=10) used in the present analysis. The data (200 trajectories) are divided up into two groups: 150 (75%) are used as training data and 50 (25%) are used for testing. The training data are further di-vided into 10 “folds,” one of which is left out for each successive fit. Learned models can then be compared to the true model and evalu-ated on the test dataset.
+
+model. In the present study, we implement the 10-fold cross-validation scheme, which is depicted in Fig. 1 and can be de-scribed as follows. First, the 200 trajectories are broken up into two parts, 50 (25%) for testing and 150 (75%) for train-ing . Then, the training data is broken up into 10 groups of 15 trajectories each, referred to as “folds.” A SINDy model is trained using all but one fold, which is left out of training. This is repeated so that all of the training data has been left out of training at some point. Each of the 10 models generated during cross-validation are evaluated in two ways. First, the learned model coefficient matrix Clearned is compared to the coefficient matrix of the true model Ctrue , given by Eq. 11. This is done by calculating the “coefficient deviation” ∆c, which is written as 
+
+∆c = ∑ 
+
+> i,j
+
+|ci j learned − ci j true |, (14) where the constants ci j are the elements of the matrices C. In the case that the true model is not known, however, Eq. 14 cannot be used. Thus, we also compare the learned model’s prediction of the derivative ˙Xpred to the calculated finite-difference derivative using the test dataset ˙ Xcalc . This is done by simply calculating the root mean squared error ε,
+
+ε = || ˙Xpred − ˙Xcalc || 2. (15)  
+
+> IV. RESULTS
+
+In this section, we evaluate the ability of this approach to re-cover the known model given in Eq. 11. To do this, we sweep 6 
+
+> FIG. 2. Coefficient deviation of successive learned SINDy models (Eq. 14) plotted as a function of the STLSQ threshold parameter used during fitting. Data used here has a noise level of 0 .1λDi and each point is labeled with the number of terms in the model; note that the true model (Eq. 12) has three terms.
+
+through several threshold values and use the coefficient devi-ation metric ∆c defined in Eq. 14 to evaluate the effectiveness of SINDy to determine the true coefficients. First, the “strong” (no integral) SINDy approach is compared to the weak (in-tegral) formulation at two noise levels (see Sec. III A). The weak formulation is found to perform better with higher noise magnitude than the strong approach, as shown in Fig. 2. Next, the noise robustness of the weak approach is determined by testing the recovery of coefficients at higher noise levels, as shown in Fig. 3. To determine the effectiveness of the SINDy approach, the cross-validation routine described in Sec. III C is performed for a range of different STLSQ threshold param-eter values. For the remainder of the results presented here, this threshold parameter scan is used to choose an optimal threshold for a given level of noise. For low noise magnitudes (e.g. σ = 10 −4λDi ), strong-form SINDy is favorable to use since it is faster 61 and es-sentially performs as good as the weak approach. The two methods start to differ at higher levels of noise, for example, the σ = 0.1λDi case being shown in Fig. 2. Here, the coeffi-cient deviation ∆c of successive models is plotted against the STLSQ threshold used to generate the model and each point is labeled with the number of terms in the learned equations. Note that the true model, Eq. 12, has 3 terms after convert-ing it to first-order form. As evidenced by the high value of coefficient deviation in Fig. 2a, the models identified by the strong approach that have the same number of terms as the true model differ qualitatively and quantitatively from it. For example, the model discovered with a threshold of 0.06 is ˙r = 0.994 v (16a) ˙v = 0.017 A v + 0.586 A e−r
+
+r , (16b) where r is simplified notation for the ˜ ri j introduced in Eq. 11, the dot represents a derivative with respect to ˜ t, A is the scal-ing constant of Eq. 11, and the variable v is introduced to transform Eq. 11 into first-order form shown in Eq. 12. As we can see here, the model discovered includes a nonphysical velocity-dependent term in Eq. 16b and the value of the co-efficient on the correct rational term is off by ~50%. At the higher threshold of 0.08, the nonphysical velocity-dependent term is removed by the thresholding, yielding a model quali-tatively similar to the true model but quantitatively quite dif-ferent. This can be compared to the weak model at a threshold of 0.4, ˙r = 0.999 v (17a) ˙v = 0.967 A e−r
+
+r + 0.962 A e−r
+
+r2 , (17b) which recovers the true model to much higher accuracy. This result is in agreement with previous work utilizing weak SINDy 54,55,59 .For the weak method, two key parameters are at play: the number of temporal subdomains K and the subdomain half-width Ht , as mentioned in Sec. III. In general, the weak formulation performs better with higher K-values, as it adds points to the regression 59 . For our application, we used 
+
+K = 500, as that increased the noise robustness a signifi-cant amount while not increasing the computational time too 7much. We suspect that an even higher value would improve the performance, albeit marginally. For the subdomain half-width, we used the PySINDy default value of T /20, where T
+
+is the length of the total time domain. The noise robustness of the approach was also investigated by performing the weak-form SINDy analysis with datasets at four different noise levels, the results of which are shown in Fig. 3. These results were generated by first doing a threshold scan as shown in Fig. 2 to determine an optimal threshold to use at each noise level being tested. There is some degree of subjectivity in this process as the threshold is chosen based on plots such as Fig. 2. Once a threshold had been determined, cross-validation was performed on the same dataset of 200 trajectories with different levels of noise added 10 different times. The primary source of the differences in the learned models is the different random sampling of subdomains that weak SINDy uses each time the analysis is performed. For higher noise level, the accuracy of the learned coefficients is decreased, but the models are in qualitative agreement with the true model. In general, we found that the true model can be recovered for noise up to 0.2 λDi . One problem with many of the learned models using this method is that some extraneous terms with small coefficients are not effectively eliminated by the STLSQ optimizer and remain in the final solution. For example, in a case with σ = 0.1λDi , the following model is learned with a threshold of 0.4: ˙r = 0.998 v (18a) ˙v = 0.949 A e−r
+
+r + 0.943 A e−r
+
+r2 + 0.07319 A e−r
+
+r3 . (18b) This is inconsistent with the threshold used, since it is larger than the smallest coefficient in Eq. 18b. This is either due to the STLSQ optimizer reaching the max number of itera-tions or related to how the weak-form library interfaces with the optimizer. When this is the case, increasing the thresh-old eliminates the one remaining term in Eq. 18a before the small-magnitude extraneous term in Eq. 18b.   
+
+> V. DISCUSSION A. Interpretation of results
+
+These results show the determination of the equation of mo-tion of a two-body Yukawa system using data from a initial value problem solver with added Gaussian-distributed noise. Two formulations were compared, the strong form and the weak form of SINDy. The weak SINDy formulation was able to reproducibly determine the form of the equation with accu-racy of ∆c < 1 for noise levels of up to 0.1 λDi , or ≈ 7μm in the PK-4 experiment. Returning to the PK-4 experiment for refer-ence, the value of λDi ≈ 70 μm reported in Tab. I corresponds to approximately 5 pixels in the particle observation cameras of that experiment (pixel size ≈ 14 μm, typical dust diameter 
+
+d ≈ 3.8μm), which means that the noise level of 0 .1λDi corre-sponds to half a pixel. Commonplace particle tracking meth-ods which are frequently employed within the field of dusty    
+
+> FIG. 3. Coefficient deviations ∆cfor models determined from the synthetic data using the weak SINDy formulation described in Sec. III. Ten models were generated at each of the four noise levels tested here, each with a different random sampling of temporal data.
+
+plasma 62,63 are able to resolve particle motion to sub-pixel resolution given optimal parameters. This means that for rele-vant experimental conditions, the weak SINDy method could be used to probe experimental particle interaction potentials, opening the door to data-driven discovery of elusive mathe-matical forms for particles suspended in nonequilibrium plas-mas. Results using the weak SINDy approach vary largely be-cause of the random selection of a subset of time domains from the full time domain. Certain selections of subdomains perform better than others, which is in part why the cross-validation scheme is used, so the best of an ensemble of mod-els can be chosen. Results can be improved by using more subdomains sampled near the earlier time in the simulation, as this is when the particles have the greatest acceleration due to strongest interaction. Once particles are farther away from each other, the weaker interaction provides less informa-tion that the regression can exploit to deduce which terms are more important, since the acceleration approaches zero as the distance between the particles approaches infinity. Random points are more favorable for chaotic systems, however, which can only occur in systems of first-order differential equations if there are three or more equations. In that case, the accel-erations and velocities can vary wildly throughout the time domain and, thus, provide more information that would help deduce which terms from the library are the most important in describing the dynamics. For dusty plasma, this condition would be met by the characteristics of many common experi-ments, i.e. with many-body systems like a cloud of dust par-ticles suspended in plasma. In fact, the simple inclusion of a third particle causes the new system of equations to exhibit chaos. See Sec. V D for a more complete discussion on how this method can be applied to such a system. 8           
+
+> FIG. 4. The prediction error εplotted against the coefficient devi-ation ∆cof one hundred models generated during cross-validation. All the models shown here use an STLSQ threshold of 0.9, which corresponds to 0.19 A. There is no visible correlation between the two metrics ∆cand ε, a linear regression analysis returning an r2co-efficient of 10 −10 .
+> B. Model selection
+
+The metric ∆c of Eq. 14 relies on knowledge of the true model and was used to determine the effectiveness of the weak SINDy approach with cross-validation in Sec. IV. How-ever, in the case of an unknown model, when an attempt is being made to uncover a physical model directly from data, this metric cannot be used to select the best model during cross-validation. Instead, some other criterion must be used to select the model, the most obvious one being the error in Eq. 15. In Fig. 4, we plot the correlation between the coef-ficient deviation used in Sec. IV and the aforementioned er-ror for one hundred weak models generated from performing cross-validation ten times. The models plotted here all have a threshold of 0.9 λDi , which is on the higher end of thresholds that will generate the true model for this noise level, ensuring that outlier models with high ∆c-values occur seldom. From the figure, we see that there is no visible correlation between the model evaluation metrics, and linear regression analysis shows a Pearson correlation coefficients ( r2-value) on the or-der of 10 −10 .This means that the prediction accuracy as it is defined by Eq. 15 is not a good metric to use for model selection. This metric was selected because of its use in the PySINDy tuto-rial notebooks 59 to evaluate models, but for model selection in an unknown system this result does not give confidence that the actual “true” model could be determined from cross-validation. Future work should investigate other metrics, per-haps balancing sparsity with prediction power to provide a more reliable way to choose a model from the ensemble gen-erated by cross-validation.  
+
+> C. Limitations
+
+The present study has three major limitations. First, it is important to note that we examine the two-body case, which is trivial compared to the much more interesting many-body case in 2D or 3D that arises in most dusty plasma experiments. Another limitation of this study is that the dust interaction potential studied here is isotropic, whereas in many interest-ing research contexts we seek to learn an anisotropic poten-tial. For instance, as mentioned in Sec. I, the PlasmaKristall-4 (PK-4) experiment has shown the presence of string-like dust structures that imply a high degree of anisotropy in the ef-fective dust interaction potential. Finally, an important aspect of certain dusty plasma environments is the nonreciprocity of the effective dust interaction potential, which is not addressed here. This effect was addressed very nicely in Ref. 30 using an artificial neural network, albeit without the interpretability and speed offered by the present approach. Despite these limi-tations, through this proof-of-concept we aim to show that the SINDy method can be used to discover equations of motion directly from particle data, allowing for data-driven mathe-matical modeling of dusty plasma and paving the way for the analysis of many-body, anisotropic, and nonreciprocal cases using sparse regression to follow. Another consideration is that the terms in the model library are highly correlated with one another, which is clear from the obvious qualitative similarities between rational expres-sions of different order. This makes it difficult for the regres-sion to choose between library terms, especially for a very high level of noise. In order to improve the performance of the SINDy method, it is favorable to use orthogonal (linearly independent) functions, or at least functions with large qual-itative differences. For instance, to apply this analysis to the anisotropic case mentioned above, the Legendre Polynomials could be used to describe the angular dependence of the po-tential structure. These functions are of course orthonormal and have been used to describe the functional form of the dust interaction potential in Electrorheological plasmas 14,23 . 
+
+> D. Extensions and future work
+
+The next immediate application of this work is to investi-gate systems of two bodies in which the background plasma environment is more accurately simulated. This can be done with the Dynamics Response of Ions And Dust (DRIAD) code 28,29 . In this case, an angular dependence of the poten-tial can be learned, allowing for the discovery of the interac-tion potential in an anisotropic plasma environment. While there is a great deal of analytical derivation 14,23 , computa-tional simulation 17,22,26,28 , and experimental analysis 16,25 in-vestigating this anisotropy, our approach would be the first ap-proach to learn this kind of potential directly from data. This could offer unique insight into this system and aid in the dis-covery of new mathematical ways of describing the dynamics of dust grains in plasma. Another extension of this work is applying it to experi-mental data obtained from dusty plasma experiments with 9few particles. 36,64 . In these experiments, motion of one or a few dust particles are tracked and used to recover informa-tion about the background plasma such as the nature of the sheath electric field. With our method, it may be possible to recover an equation of motion for a dust particle in one of these environments and thus to better understand the physical mechanisms at play. As mentioned in Sec. V C, many-body systems are more commonly encountered within the field of dusty plasma than few-body systems. Indeed, the physics of these systems is harder to describe and, thus, less well-understood. One pos-sible approach to these systems is to use the mathematical machinery of mean field theory along with weak SINDy 65 .This direction looks at trajectories of many particles and in-fers an average equation of motion with separate terms for the pair potential, environmental potential, and stochastic effects, like Brownian motion. This approach could be coupled with the approach of Lagrangian SINDy 57,58 to learn an average Hamiltonian or Lagrangian for the dust cloud. Addressing the issue of non-reciprocity might also be pos-sible with an extension of our approach. Owing to the work of Ivlev et al. 33 , an analytical basis describing the nonreciprocity in dusty plasma systems has been set. Using weak SINDy to learn the pseudo-Hamiltonian 33 for nonreciprocal systems is perhaps a first direction to take here. 
+
+VI. CONCLUSION 
+
+The use of the Sparse Identification of Nonlinear Dynamics 45 using the weak form has been used to identify an equation of motion for two particles from synthetic data has been presented. Leveraging the use of cross-validation, the method is able to learn equations of motion which approx-imate the true model Eq. 11 from a library of terms Eq. 13 accurately but with the inclusion of extraneous terms which have small coefficients. With some improvements, this approach could be used to learn interaction potentials of particles in more realistic sim-ulations and experiments, possibly aiding in the identifica-tion of anisotropic potentials, non-reciprocal forces, or mean-field equations. As a non-neural-network machine learning method, using SINDy to discover equations from data rep-resents a novel perspective on the scientific investigation of dusty plasma and could offer new interpretable insights into the physical processes at play in the system. 
+
+VII. ACKNOWLEDGMENTS 
+
+Support for this work from NSF Grants 2308742, 2308743, EPSCoR FTPP OIA-2148653, and the US Department of En-ergy, Office of Science, Office of Fusion Energy Sciences un-der award number DE-SC0024547, DE-SC-0021334 is grate-fully acknowledged. 
+
+> 1
+
+J. Beckers, J. Berndt, D. Block, M. Bonitz, P. J. Bruggeman, L. Couëdel, G. L. Delzanno, Y. Feng, R. Gopalakrishnan, F. Greiner, et al. , “Physics and applications of dusty plasmas: The Perspectives 2023,” Physics of Plasmas 
+
+30 (2023), 10.1063/5.0168088, publisher: AIP Publishing. 
+
+> 2
+
+R. L. Merlino, J. R. Heinrich, S.-H. Hyun, and J. K. Meyer, “Nonlinear dust acoustic waves and shocks,” Physics of Plasmas 19 , 057301 (2012). 
+
+> 3
+
+P. K. Shukla, “Nonlinear waves and structures in dusty plasmas,” Physics of Plasmas 10 , 1619–1627 (2003). 
+
+> 4
+
+B. R. Andrew, L. Guazzotto, L. Matthews, T. Hyde, and E. G. Kostadi-nova, “Anisotropic anomalous diffusion in microgravity dusty plasma. I. Nonextensive statistical analysis,” Physics of Plasmas 32 , 103702 (2025). 
+
+> 5
+
+V. Land, A. Douglass, K. Qiao, Z. Zhang, L. Matthews, and T. Hyde, “Glow and Dust in Plasma Boundaries,” Plasma Science, IEEE Transac-tions on 41 , 799–803 (2013). 
+
+> 6
+
+L. Scott, N. Ellis, M. Chen, L. S. Matthews, and T. W. Hyde, “Mapping the Plasma Potential in a Glass Box,” IEEE Trans. Plasma Sci. 47 , 3079–3086 (2019). 
+
+> 7
+
+B. A. Klumov and G. E. Morfill, “Structural properties of complex (dusty) plasma upon crystallization and melting,” Jetp Lett. 90 , 444–448 (2009). 
+
+> 8
+
+S. Jaiswal and E. Thomas, “Melting transition of two-dimensional complex plasma crystal in the DC glow discharge,” Plasma Res. Express 1, 025014 (2019). 
+
+> 9
+
+P. Hartmann, A. Douglass, J. C. Reyes, L. S. Matthews, T. W. Hyde, A. Kovács, and Z. Donkó, “Crystallization Dynamics of a Single Layer Complex Plasma,” Phys. Rev. Lett. 105 , 115004 (2010). 
+
+> 10
+
+S. Singh, P. Bandyopadhyay, K. Kumar, and A. Sen, “Experimental inves-tigation of a triple point in a dusty plasma,” Physics of Plasmas 30 , 123701 (2023). 
+
+> 11
+
+A. P. Nefedov, G. E. Morfill, V. E. Fortov, H. M. Thomas, H. Rothermel, T. Hagl, A. V. Ivlev, M. Zuzic, B. A. Klumov, A. M. Lipaev, et al. , “PKE-Nefedov*: plasma crystal experiments on the International Space Station,” New J. Phys. 5, 33–33 (2003). 
+
+> 12
+
+H. M. Thomas, G. E. Morfill, V. E. Fortov, A. V. Ivlev, V. I. Molotkov, A. M. Lipaev, T. Hagl, H. Rothermel, S. A. Khrapak, R. K. Suetterlin, et al. ,“Complex plasma laboratory PK-3 Plus on the International Space Station,” New J. Phys. 10 , 033036 (2008). 
+
+> 13
+
+A. V. Ivlev, G. E. Morfill, H. M. Thomas, C. Räth, G. Joyce, P. Huber, R. Kompaneets, V. E. Fortov, A. M. Lipaev, V. I. Molotkov, et al. , “First Observation of Electrorheological Plasmas,” Phys. Rev. Lett. 100 , 095003 (2008). 
+
+> 14
+
+A. V. Ivlev, P. C. Brandt, G. E. Morfill, C. Rath, H. M. Thomas, G. Joyce, V. E. Fortov, A. M. Lipaev, V. I. Molotkov, and O. F. Petrov, “Electrorhe-ological Complex Plasmas,” IEEE Trans. Plasma Sci. 38 , 733–740 (2010), publisher: Institute of Electrical and Electronics Engineers (IEEE). 
+
+> 15
+
+M. Y. Pustylnik, M. A. Fink, V. Nosenko, T. Antonova, T. Hagl, H. M. Thomas, A. V. Zobnin, A. M. Lipaev, A. D. Usachev, V. I. Molotkov, et al. ,“Plasmakristall-4: New complex (dusty) plasma laboratory on board the International Space Station,” Review of Scientific Instruments 87 , 093505 (2016). 
+
+> 16
+
+S. Mitic, M. Y. Pustylnik, D. Erdle, A. M. Lipaev, A. D. Usachev, A. V. Zob-nin, M. H. Thoma, H. M. Thomas, O. F. Petrov, V. E. Fortov, et al. , “Long-term evolution of the three-dimensional structure of string-fluid complex plasmas in the PK-4 experiment,” Phys. Rev. E 103 (2021), 10.1103/phys-reve.103.063212, publisher: American Physical Society (APS). 
+
+> 17
+
+K. Vermillion, R. Banka, A. Mendoza, B. Wyatt, L. Matthews, and T. Hyde, “Interacting dust grains in complex plasmas: Ion wake formation and the electric potential,” Physics of Plasmas 31 , 073701 (2024). 
+
+> 18
+
+E. G. Kostadinova, E. Gehr, B. Andrew, L. S. Matthews, T. W. Hyde, and A. Terrell, “Liquid Plasma Crystals on the ISS,” in AIAA SCITECH 2023 Forum (American Institute of Aeronautics and Astronautics, National Har-bor, MD & Online, 2023). 
+
+> 19
+
+E. Gehr, A. Terrell, K. Vermillion, A. Mendoza, B. Andrew, D. J. Marti, E. Kostadinova, P. Hartmann, L. Matthews, and T. Hyde, “Structural States of Filamentary Microgravity Dusty Plasma,” (2025), version Number: 1. 
+
+> 20
+
+B. R. Andrew, L. Guazzotto, L. S. Matthews, T. W. Hyde, and E. G. Kostadinova, “Anisotropic anomalous diffusion and nonequilibrium in mi-crogravity dusty plasma. II. Spectral analysis,” Physics of Plasmas 32 ,103703 (2025). 
+
+> 21
+
+P. Hartmann, M. Rosenberg, Z. Juhasz, L. S. Matthews, D. L. Sanford, K. Vermillion, J. Carmona-Reyes, and T. W. Hyde, “Ionization waves in the PK-4 direct current neon discharge,” Plasma Sources Sci. Technol. 29 ,115014 (2020). 10 
+
+> 22
+
+L. Matthews, K. Vermillion, P. Hartmann, M. Rosenberg, S. Rostami, E. Kostadinova, T. Hyde, M. Pustylnik, A. Lipaev, A. Usachev, et al. , “Ef-fect of ionization waves on dust chain formation in a DC discharge,” J. Plasma Phys. 87 , 905870618 (2021). 
+
+> 23
+
+R. Kompaneets, U. Konopka, A. V. Ivlev, V. Tsytovich, and G. Morfill, “Potential around a charged dust particle in a collisional sheath,” Physics of Plasmas 14 , 052108 (2007). 
+
+> 24
+
+R. Kompaneets, G. E. Morfill, and A. V. Ivlev, “Wakes in complex plasmas: A self-consistent kinetic theory,” Phys. Rev. E 93 , 063201 (2016). 
+
+> 25
+
+M. Y. Pustylnik, B. Klumov, M. Rubin-Zuzic, A. M. Lipaev, V. Nosenko, D. Erdle, A. D. Usachev, A. V. Zobnin, V. I. Molotkov, G. Joyce, et al. ,“Three-dimensional structure of a string-fluid complex plasma,” Phys. Rev. Research 2, 033314 (2020). 
+
+> 26
+
+A. Mendoza, D. Jiménez Martí, L. S. Matthews, B. Rodríguez Saenz, P. Hartmann, E. Kostadinova, M. Rosenberg, and T. W. Hyde, “Ion den-sity waves driving the formation of filamentary dust structures,” Physics of Plasmas 32 , 023705 (2025). 
+
+> 27
+
+K. Vermillion, Modeling the Influence of Ion Wakes on the Self-organization of Dust in a Complex Plasma , Dissertation, Baylor University, Waco, TX (2022). 
+
+> 28
+
+K. Vermillion, D. Sanford, L. Matthews, P. Hartmann, M. Rosenberg, E. Kostadinova, J. Carmona-Reyes, T. Hyde, A. M. Lipaev, A. D. Usachev, 
+
+et al. , “Influence of temporal variations in plasma conditions on the electric potential near self-organized dust chains,” Physics of Plasmas 29 , 023701 (2022). 
+
+> 29
+
+L. S. Matthews, D. L. Sanford, E. G. Kostadinova, K. S. Ashrafi, E. Guay, and T. W. Hyde, “Dust charging in dynamic ion wakes,” Physics of Plasmas 
+
+27 , 023703 (2020). 
+
+> 30
+
+W. Yu, E. Abdelaleem, N. Ilya, and J. C. Burton, “Physics-tailored machine learning reveals unexpected physics in dusty plasmas,” Proceedings of the National Academy of Sciences 122 , e2505725122 (2025). 
+
+> 31
+
+E. A. Lisin, O. F. Petrov, E. A. Sametov, O. S. Vaulina, K. B. Statsenko, M. M. Vasiliev, J. Carmona-Reyes, and T. W. Hyde, “Experimental study of the nonreciprocal effective interactions between microparticles in an anisotropic plasma,” Sci Rep 10 , 13653 (2020). 
+
+> 32
+
+A. Melzer, “Dust Particle Interaction,” in Physics of Dusty Plasmas , Vol. 962 (Springer International Publishing, Cham, 2019) pp. 59–80, series Ti-tle: Lecture Notes in Physics. 
+
+> 33
+
+A. Ivlev, J. Bartnick, M. Heinen, C.-R. Du, V. Nosenko, and H. Löwen, “Statistical Mechanics where Newton’s Third Law is Broken,” Phys. Rev. X 5 (2015), 10.1103/physrevx.5.011035, publisher: American Physical So-ciety (APS). 
+
+> 34
+
+S. L. Brunton and J. N. Kutz, Data-Driven Science and Engineering: Ma-chine Learning, Dynamical Systems, and Control (Cambridge University Press, 2022). 
+
+> 35
+
+T. Hey, S. Tansley, K. Tolle, and J. Gray, The Fourth Paradigm: Data-Intensive Scientific Discovery (Microsoft Research, 2009). 
+
+> 36
+
+C. Liang, D. Huang, S. Lu, and Y. Feng, “Determining global property of dusty plasma from single particle dynamics using machine learning,” Phys. Rev. Research 5 (2023), 10.1103/physrevresearch.5.033086, pub-lisher: American Physical Society (APS). 
+
+> 37
+
+C. Liang, D. Huang, S. Lu, and Y. Feng, “Full information of system prop-erties inferred from individual particle dynamics,” Physics of Plasmas 31 
+
+(2024), 10.1063/5.0239733, publisher: AIP Publishing. 
+
+> 38
+
+W. Yu, J. Cho, and J. C. Burton, “Extracting forces from noisy dynamics in dusty plasmas,” Phys. Rev. E 106 , 035303 (2022). 
+
+> 39
+
+Z. Wang, J. Xu, Y. E. Kovach, B. T. Wolfe, E. Thomas, H. Guo, J. E. Foster, and H.-W. Shen, “Microparticle cloud imaging and tracking for data-driven plasma science,” Physics of Plasmas 27 (2020), 10.1063/1.5134787, pub-lisher: AIP Publishing. 
+
+> 40
+
+A. Melzer, C. Knapek, D. Maier, D. Mohr, and S. Schütt, “Three-dimensional finite-time Lyapunov-exponent analysis of fluid dusty plasmas under weightlessness using a machine-learning particle reconstruction tech-nique,” Phys. Rev. E 111 (2025), 10.1103/physreve.111.045214, publisher: American Physical Society (APS). 
+
+> 41
+
+C. Dietz, J. Budak, T. Kamprich, M. Kretschmer, and M. H. Thoma, “Phase transition in electrorheological plasmas,” Contributions to Plasma Physics 
+
+61 , e202100079 (2021). 
+
+> 42
+
+H. Huang, M. Schwabe, and C.-R. Du, “Identification of the Interface in a Binary Complex Plasma Using Machine Learning,” J. Imaging 5, 36 (2019). 
+
+> 43
+
+Z. Ding, L. S. Matthews, and T. W. Hyde, “A machine learning based Bayesian optimization solution to non-linear responses in dusty plasmas,” Mach. Learn.: Sci. Technol. 2, 035017 (2021). 
+
+> 44
+
+A. A. Kaptanoglu, C. Hansen, J. D. Lore, M. Landreman, and S. L. Brun-ton, “Sparse regression for plasma physics,” Physics of Plasmas 30 , 033906 (2023). 
+
+> 45
+
+S. L. Brunton, J. L. Proctor, and J. N. Kutz, “Discovering governing equa-tions from data by sparse identification of nonlinear dynamical systems,” Proceedings of the National Academy of Sciences 113 , 3932–3937 (2016), publisher: Proceedings of the National Academy of Sciences. 
+
+> 46
+
+A. A. Kaptanoglu, M. Landreman, and M. C. Zarnstorff, “Optimization of passive superconductors for shaping stellarator magnetic fields,” Phys. Rev. E 111 , 065202 (2025). 
+
+> 47
+
+M. Dam, M. Brøns, J. Juul Rasmussen, V. Naulin, and J. S. Hesthaven, “Sparse identification of a predator-prey system from simulation data of a convection model,” Physics of Plasmas 24 , 022310 (2017). 
+
+> 48
+
+B. Thakur, A. Sen, and N. Chaubey, “Data driven discovery of a model equation for anode-glow oscillations in a low pressure plasma discharge,” Physics of Plasmas 29 , 042112 (2022). 
+
+> 49
+
+E. P. Alves and F. Fiuza, “Data-driven discovery of reduced plasma physics models from fully kinetic simulations,” Phys. Rev. Research 4, 033192 (2022). 
+
+> 50
+
+E. Thomas, J. Williams, and C. Rath, “Benchmarking Particle Image Ve-locimetry Measurements Applied to Dusty Plasmas,” IEEE Trans. Plasma Sci. 38 , 892–896 (2010). 
+
+> 51
+
+J. Williams, “Application of tomographic particle image velocimetry to complex (dusty) plasmas,” in Dusty/Complex Plasmas: Basic and Inter-disciplinary Research , 1, Vol. 1378, edited by V. Y. Nosenko, P. K. Shukla, M. H. Thoma, and H. M. Thomas (AIP Conference Proceedings, Melville, New York, USA, 2011) pp. 126–129. 
+
+> 52
+
+M. Schmidt and H. Lipson, “Distilling Free-Form Natural Laws from Ex-perimental Data,” Science 324 , 81–85 (2009), publisher: American Asso-ciation for the Advancement of Science. 
+
+> 53
+
+P. Zheng, T. Askham, S. L. Brunton, J. N. Kutz, and A. Y. Aravkin, “A Uni-fied Framework for Sparse Relaxed Regularized Regression: SR3,” IEEE Access 7, 1404–1423 (2019). 
+
+> 54
+
+P. A. K. Reinbold, L. M. Kageorge, M. F. Schatz, and R. O. Grigoriev, “Ro-bust learning from noisy, incomplete, high-dimensional experimental data via physically constrained symbolic regression,” Nat Commun 12 , 3219 (2021). 
+
+> 55
+
+D. A. Messenger and D. M. Bortz, “Weak SINDy: Galerkin-Based Data-Driven Model Selection,” Multiscale Model. Simul. 19 , 1474–1497 (2021). 
+
+> 56
+
+S. H. Rudy, S. L. Brunton, J. L. Proctor, and J. N. Kutz, “Data-driven discovery of partial differential equations,” Sci. Adv. 3, e1602614 (2017). 
+
+> 57
+
+H. K. Chu and M. Hayashibe, “Discovering Interpretable Dynamics by Sparsity Promotion on Energy and the Lagrangian,” IEEE Robotics and Au-tomation Letters 5, 2154–2160 (2020), conference Name: IEEE Robotics and Automation Letters. 
+
+> 58
+
+A. Purnomo and M. Hayashibe, “Sparse identification of Lagrangian for nonlinear dynamical systems via proximal gradient method,” Sci Rep 13 ,7919 (2023), publisher: Nature Publishing Group. 
+
+> 59
+
+A. A. Kaptanoglu, B. M. d. Silva, U. Fasel, K. Kaheman, A. J. Goldschmidt, J. Callaham, C. B. Delahunt, Z. G. Nicolaou, K. Champion, J.-C. Loiseau, 
+
+et al. , “PySINDy: A comprehensive Python package for robust sparse sys-tem identification,” Journal of Open Source Software 7, 3994 (2022). 
+
+> 60
+
+L. Petzold, “Automatic Selection of Methods for Solving Stiff and Non-stiff Systems of Ordinary Differential Equations,” SIAM J. Sci. and Stat. Comput. 4, 136–148 (1983), publisher: Society for Industrial and Applied Mathematics. 
+
+> 61
+
+With these parameters and amount of data, the strong approach generally takes less than a minute while the weak approach can take up to two min-utes. 
+
+> 62
+
+J. C. Crocker and D. G. Grier, “Methods of Digital Video Microscopy for Colloidal Studies,” Journal of Colloid and Interface Science 179 , 298–310 (1996). 
+
+> 63
+
+I. Sbalzarini and P. Koumoutsakos, “Feature point tracking and trajectory analysis for video imaging in cell biology,” Journal of Structural Biology 
+
+151 , 182–195 (2005). 
+
+> 64
+
+J. C. A. Van Huijstee, L. S. Matthews, and T. W. Hyde, “Probing the plasma sheath confinement in a glass box with a microparticle,” Physics of Plasmas 11 
+
+32 , 113703 (2025). 
+
+> 65
+
+D. A. Messenger and D. M. Bortz, “Learning mean-field equations from particle data using WSINDy,” Physica D: Nonlinear Phenomena 439 ,133406 (2022).

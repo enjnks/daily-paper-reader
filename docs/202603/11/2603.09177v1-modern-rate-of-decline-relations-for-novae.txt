@@ -1,0 +1,74 @@
+Title: Modern Rate-of-Decline Relations for Novae
+
+URL Source: https://arxiv.org/pdf/2603.09177v1
+
+Published Time: Wed, 11 Mar 2026 00:31:34 GMT
+
+Number of Pages: 3
+
+Markdown Content:
+> Draft version March 11, 2026
+> Typeset using L ATEX default style in AASTeX7.0.1
+
+Modern Rate-of-Decline Relations for Novae 
+
+Allen W. Shafter 
+
+> Department of Astronomy and Mount Laguna Observatory, San Diego State University, San Diego, CA 92182, USA
+
+Submitted to Research Notes of the AAS ABSTRACT A large sample of t2 and t3 times from the recent compilation of nova properties given in Schae-fer (2025) have been analyzed to determine relationships between these two parameters. Fits were performed in both directions (from log t2 to log t3 and vice-versa) to account for the asymmetry in-herent in ordinary least-squares regression, which minimizes residuals only in the dependent variable. The following best-fit relations were found: log t3 = (0 .877 ± 0.019) log t2 + (0 .444 ± 0.027), and log t2 = (1 .018 ± 0.023) log t3 − (0 .316 ± 0.037), corresponding to t3 = (2 .78 ± 0.17) t(0 .877 ±0.019) 2 and 
+
+t2 = (0 .483 ± 0.041) t(1 .018 ±0.023) 3 , respectively. Within the uncertainties, the latter relation reduces to a simple proportionality: t2 ≃ 0.5 t3.
+
+Keywords: Cataclysmic Variable Stars (203) – Novae (1127) – Recurrent Novae (1366) 
+
+1. INTRODUCTION The peak luminosities of novae and their rates of decline from maximum light provide important observational constraints on fundamental system parameters such as the white dwarf mass and accretion rate (e.g., see O. Yaron et al. 2005; M. M. Shara et al. 2018; A. W. Shafter & K. Hornoch 2026). The custom has been to parameterize the decline rate of novae as either the t2 or t3 time – the time in days for a nova to decline by 2 and 3 mag from maximum light, respectively. The t3 parameter was first introduced by D. B. Mclaughlin (1945) in his seminal paper on the relation between a nova’s peak luminosity and its rate of decline (the MMRD relation). Roughly a decade later, H. C. Arp (1956) adopted t2 for analyzing novae in the Andromeda Galaxy (M31), as this was more practical for fainter, more distant novae that often could not be followed 3 mag below peak brightness. Transformations between t2 and t3 are often necessary when comparing the properties of novae where only one parameter has been measured, and for comparing nova properties with models that require a specific input parameters. Over the years, various empirical fits to available nova data have been undertaken. Most notably, in his classic text B. Warner (1995) used a sample of 52 Galactic novae to show that t3 ≃ 2.75 t0.88 2 . Another empirical relation was offered by M. Capaccioli et al. (1990) who found t3 = 1 .68 ( ±0.08) + 1 .9 ( ±1.5) for t3 < 80 d and t3 = 1 .68 ( ±0.04) + 2 .3 ( ±1.6) for t3 > 80 d. The number of nova light-curves available for study has increased significantly in the more than three decades that have elapsed since the publication of these relations. In this Research Note, I present modern re-determinations of the nova decline-rate relations, which incorporate the most recent nova light-curve data. 
+
+2. UPDATED RATE-OF-DECLINE RELATIONS FOR NOVAE In a series of papers, B.E. Schaefer has assembled an unprecedented wealth of observational data on Galactic novae (R. J. Strope et al. 2010; B. E. Schaefer 2022, 2025). In particular, Table 1 of B. E. Schaefer (2025) contains a wide range of observed and derived properties for a total of 402 Galactic novae. Among these properties include measurements for both the t2 and t3 times for 245 novae 2.   
+
+> Corresponding author: A. W. Shafter Email: ashafter@sdsu.edu
+> 2One system, MT Cen, which erroneously shows t2> t 3, has been omitted from the present analysis.
+> arXiv:2603.09177v1 [astro-ph.SR] 10 Mar 2026
+
+2 A. W. Shafter 0 0.5 1 1.5 2 2.5 
+
+log t 2 (d) 
+
+0.5 11.5 22.5 3    
+
+> log t 3 (d)
+> log t 3= (0.877 ± 0.019) log t 2+ (0.444 ± 0.027)
+
+0 0.5 1 1.5 2 2.5 3
+
+log t 3 (d) 
+
+00.5 11.5 22.5     
+
+> log t 2 (d)
+> log t 2= (1.018 ± 0.023) log t 3− (0.316 ± 0.037)
+> V2362 Cyg V2362 Cyg
+
+Figure 1. Top panel: The linear least-squares fit of log t3 as a function of log t2 for 244 novae included in the B. E. Schaefer (2025) nova sample. The best fitting linear relation is shown by the solid red line. Bottom Panel: The least-squares fit of log t2
+
+as a function of log t3 for the same sample of novae. Again, the best fitting linear relation is shown by the red line. In both panels, the dotted red lines show the ±1σ error bands to the fit, while the position of the unusual system, V2362 Cyg, is shown in blue. Decline Relations 3A key aspect of the analysis is performing independent least-squares regression fits in both directions: one treating log t2 as the independent variable to predict log t3, as was done by B. Warner (1995) and M. Capaccioli et al. (1990), and the other treating log t3 as independent variable to predict log t2. This approach is necessary because ordinary least-squares regression is inherently asymmetric. It minimizes the vertical residuals in the dependent variable only, leading to different fits when the axes are swapped. Consequently, the power-law exponents are not exact reciprocals, due to intrinsic scatter in both t2 and t3 arising from diverse light-curve morphologies (e.g., dust dips, plateaus, or oscillations) and observational uncertainties. The results of the study are shown in Figure 1. The top panel shows that log t3 = (0 .877 ±0.019) log t2+(0 .444 ±0.027), or t3 = (2 .78 ± 0.17) t(0 .877 ±0.019) 2 . The data fit a power-law relation remarkably well, with the exception of the unusual nova V2362 Cyg, which exhibited a rapid initial drop in brightness followed by a prolonged rebrightening phase (S. Kimeswenger et al. 2008). It is remarkable that the best-fitting relation is virtually identical to that found previously by B. Warner (1995) in his classic study of just 52 novae. The bottom panel shows that log t2 =(1 .018 ± 0.023) log t3 − (0 .316 ± 0.037), demonstrating that the best-fit solution is not simply the inverse of the previous fit. Instead, I find t2 = (0 .483 ± 0.041) t(1 .018 ±0.023) 3 , which, within the uncertainty in the fit, reduces to: t2 ≃ 0.5 t3.Simply inverting Warner’s relation ( t2 ≃ [t3/2.75] 1/0.88 ) would overestimate the exponent (1.14) compared to that for a direct fit (1.02), potentially introducing biases of ∼15% in the predicted t2 values for the fastest and slowest novae. 
+
+3. SUMMARY Least-squares fits of the t2 and t3 times for 244 novae listed in Table 1 of B. E. Schaefer (2025) have been performed. When estimating t3 from t2, the best-fit solution yields: 
+
+t3 = (2 .78 ± 0.17) t(0 .877 ±0.019) 2 , (1) which is equivalent (within the uncertainties) to the well-known relation found previously by B. Warner (1995). On the other hand, when transforming from t3 to t2, I find: 
+
+t2 = (0 .483 ± 0.041) t(1 .018 ±0.023) 3 , (2) which, within the uncertainties, can be approximated by a simple proportionality: t2 ≃ 0.5 t3.In cases where uncertainties in the inputs ( σt2,i , σ t3,i ) are known, standard propagation of errors yields: 
+
+σt3 = t3 ×
+
+q
+
+0.00387 + (0 .877 σt2,i /t 2)2 + (0 .0438 log t2)2, (3a) 
+
+σt2 = t2 ×
+
+q
+
+0.00726 + (1 .018 σt3,i /t 3)2 + (0 .0530 log t3)2. (3b) Finally, I note that even among S-type (smooth) novae, the forward and reverse slopes remain significantly different (though less pronounced), indicating that the directional dependence reflects intrinsic scatter and slight non-linearity, not only mixing of morphological classes. REFERENCES 
+
+Arp, H. C. 1956, AJ, 61, 15, doi: 10.1086/107284 Capaccioli, M., della Valle, M., D’Onofrio, M., & Rosino, L. 1990, ApJ, 360, 63, doi: 10.1086/169096 Kimeswenger, S., Dalnodar, S., Knapp, A., et al. 2008, A&A, 479, L51, doi: 10.1051/0004-6361:20078821 Mclaughlin, D. B. 1945, PASP, 57, 69, doi: 10.1086/125689 Schaefer, B. E. 2022, MNRAS, 517, 6150, doi: 10.1093/mnras/stac2900 Schaefer, B. E. 2025, ApJ, 993, 232, doi: 10.3847/1538-4357/ae0616 Shafter, A. W., & Hornoch, K. 2026, ApJS, 283, 24, doi: 10.3847/1538-4365/ae3a86 Shara, M. M., Prialnik, D., Hillman, Y., & Kovetz, A. 2018, ApJ, 860, 110, doi: 10.3847/1538-4357/aabfbd Strope, R. J., Schaefer, B. E., & Henden, A. A. 2010, AJ, 140, 34, doi: 10.1088/0004-6256/140/1/34 Warner, B. 1995, Cataclysmic variable stars, Vol. 28 (Cambridge Univ. Press) Yaron, O., Prialnik, D., Shara, M. M., & Kovetz, A. 2005, The Astrophysical Journal, 623, 398, doi: 10.1086/428436

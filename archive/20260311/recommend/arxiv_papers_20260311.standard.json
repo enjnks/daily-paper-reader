@@ -1,0 +1,214 @@
+{
+  "mode": "standard",
+  "generated_at": "2026-03-11T04:32:42.429034+00:00",
+  "stats": {
+    "mode": "standard",
+    "tag_count": 1,
+    "deep_divecandidates": 4,
+    "deep_cap": 6,
+    "deep_selected": 4,
+    "quick_candidates": 2,
+    "quick_skim_target": 11,
+    "quick_selected": 2
+  },
+  "deep_dive": [
+    {
+      "id": "2603.09597v1",
+      "title": "Symbolic Discovery of Stochastic Differential Equations with Genetic Programming",
+      "abstract": "Automated scientific discovery aims to improve scientific understanding through machine learning. A central approach in this field is symbolic regression, which uses genetic programming or sparse regression to learn interpretable mathematical expressions to explain observed data. Conventionally, the focus of symbolic regression is on identifying ordinary differential equations. The general view is that noise only complicates the recovery of deterministic dynamics. However, explicitly learning a symbolic function of the noise component in stochastic differential equations enhances modelling capacity, increases knowledge gain and enables generative sampling. We introduce a method for symbolic discovery of stochastic differential equations based on genetic programming, jointly optimizing drift and diffusion functions via the maximum likelihood estimate. Our results demonstrate accurate recovery of governing equations, efficient scaling to higher-dimensional systems, robustness to sparsely sampled problems and generalization to stochastic partial differential equations. This work extends symbolic regression toward interpretable discovery of stochastic dynamical systems, contributing to the automation of science in a noisy and dynamic world.",
+      "authors": [
+        "Sigur de Vries",
+        "Sander W. Keemink",
+        "Marcel A. J. van Gerven"
+      ],
+      "primary_category": "cs.NE",
+      "categories": [
+        "cs.NE",
+        "cs.SC"
+      ],
+      "published": "2026-03-10 12:43:02+00:00",
+      "link": "https://arxiv.org/pdf/2603.09597v1",
+      "tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "llm_score": 10.0,
+      "llm_evidence_en": "Directly applies symbolic regression and genetic programming to discover stochastic differential equations.",
+      "llm_evidence_cn": "直接应用符号回归和遗传规划来发现随机微分方程。",
+      "llm_evidence": "直接应用符号回归和遗传规划来发现随机微分方程。",
+      "llm_tldr_en": "Introduces a genetic programming method for symbolic discovery of stochastic differential equations from noisy data.",
+      "llm_tldr_cn": "引入一种基于遗传规划的方法，从噪声数据中符号化发现随机微分方程。",
+      "llm_tldr": "引入一种基于遗传规划的方法，从噪声数据中符号化发现随机微分方程。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    },
+    {
+      "id": "2603.08863v1",
+      "title": "Adaptive SINDy: Residual Force System Identification Based UAV Disturbance Rejection",
+      "abstract": "The stability and control of Unmanned Aerial Vehicles (UAVs) in a turbulent environment is a matter of great concern. Devising a robust control algorithm to reject disturbances is challenging due to the highly nonlinear nature of wind dynamics, and modeling the dynamics using analytical techniques is not straightforward. While traditional techniques using disturbance observers and classical adaptive control have shown some progress, they are mostly limited to relatively non-complex environments. On the other hand, learning based approaches are increasingly being used for modeling of residual forces and disturbance rejection; however, their generalization and interpretability is a factor of concern. To this end, we propose a novel integration of data-driven system identification using Sparse Identification of Non-Linear Dynamics (SINDy) with a Recursive Least Square (RLS) adaptive control to adapt and reject wind disturbances in a turbulent environment. We tested and validated our approach on Gazebo harmonic environment and on real flights with wind speeds of up to 2 m/s from four directions, creating a highly dynamic and turbulent environment. Adaptive SINDy outperformed the baseline PID and INDI controllers on several trajectory tracking error metrics without crashing. A root mean square error (RMSE) of up to 12.2 cm and 17.6 cm, and a mean absolute error (MAE) of 13.7 cm and 10.5 cm were achieved on circular and lemniscate trajectories, respectively. The validation was performed on a very lightweight Crazyflie drone under a highly dynamic environment for complex trajectory tracking.",
+      "authors": [
+        "Fawad Mehboob",
+        "Amir Atef Habel",
+        "Roohan Ahmed Khan",
+        "Mikhail Derevianchenko",
+        "Clement Fortin",
+        "Dzmitry Tsetserukou"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-03-09 19:26:13+00:00",
+      "link": "https://arxiv.org/pdf/2603.08863v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "SINDy is a core algorithm in the symbolic regression family for identifying governing equations.",
+      "llm_evidence_cn": "SINDy是符号回归家族中用于识别控制方程的核心算法。",
+      "llm_evidence": "SINDy是符号回归家族中用于识别控制方程的核心算法。",
+      "llm_tldr_en": "Proposes Adaptive SINDy for UAV disturbance rejection, enhancing interpretability in system identification.",
+      "llm_tldr_cn": "提出自适应SINDy算法用于无人机扰动抑制，增强了系统辨识的可解释性。",
+      "llm_tldr": "提出自适应SINDy算法用于无人机扰动抑制，增强了系统辨识的可解释性。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    },
+    {
+      "id": "2603.09855v1",
+      "title": "Sparse identification of effective microparticle interaction potential in dusty plasma from simulation data",
+      "abstract": "Identification of the particle interaction potential is a challenging and important task in dusty plasma, colloids, and smart materials as it allows the characterization of structure formation and helps predict phase transitions. With the advent of machine learning methods, this interaction can be extracted from particle position data, leading to a generalizable expression which is applicable in different systems. Methods such as sparse regression aim to provide a physically interpretable model that can generalize well, while avoiding unnecessary complexity due to overfitting. In this work, we present the use of the Sparse Identification of Nonlinear Dynamics (SINDy) with the weak formulation to learn equations of motion for noisy data from simple simulations of two dust particles interacting with a Yukawa (shielded Coulomb) potential. The application of these methods to experimental dusty plasma data is discussed, particularly in the case of simulation data and glass box experiments in RF discharge gravity environments and DC discharge microgravity environments, such as the Plasmakristall-4 (PK-4) experiment.",
+      "authors": [
+        "Zachary Brooks Howe",
+        "Lorin Swint Matthews",
+        "Truell Hyde",
+        "Luca Guazzotto",
+        "Evdokiya Kostadinova"
+      ],
+      "primary_category": "physics.plasm-ph",
+      "categories": [
+        "physics.plasm-ph"
+      ],
+      "published": "2026-03-10 16:15:54+00:00",
+      "link": "https://arxiv.org/pdf/2603.09855v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 9.0,
+      "llm_evidence_en": "Uses sparse regression (SINDy) for symbolic identification of physical laws in plasma physics.",
+      "llm_evidence_cn": "使用稀疏回归（SINDy）在等离子体物理中进行物理定律的符号化识别。",
+      "llm_evidence": "使用稀疏回归（SINDy）在等离子体物理中进行物理定律的符号化识别。",
+      "llm_tldr_en": "Applies SINDy to learn interpretable interaction potentials in dusty plasma from simulation data.",
+      "llm_tldr_cn": "应用SINDy从模拟数据中学习等离子体中可解释的相互作用势能方程。",
+      "llm_tldr": "应用SINDy从模拟数据中学习等离子体中可解释的相互作用势能方程。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    },
+    {
+      "id": "2603.09756v1",
+      "title": "Epistemic Closure: Autonomous Mechanism Completion for Physically Consistent Simulation",
+      "abstract": "The integration of Large Language Models (LLMs) into scientific discovery is currently hindered by the Implicit Context problem, where governing equations extracted from literature contain invisible thermodynamic assumptions (e.g., undrained conditions) that standard generative models fail to recognize. This leads to Physical Hallucination: the generation of syntactically correct solvers that faithfully execute physically invalid laws. Here, we introduce a Neuro-Symbolic Generative Agent that functions as a cognitive supervisor atop traditional numerical engines. By encapsulating physical laws into modular Constitutive Skills and leveraging latent intrinsic priors, the Agent employs a Chain-of-Thought reasoning workflow to autonomously validate, prune, and complete physical mechanisms. We demonstrate this capability on the challenge of thermal pressurization in low-permeability sandstone. While a standard literature-retrieval baseline erroneously predicts catastrophic material failure by blindly adopting a rigid \"undrained\" simplification, our Agent autonomously identifies the system as operating in a drained regime (Deborah number De << 1) via dimensionless scaling analysis. Consequently, it inductively completes the missing dissipation mechanism (Darcy flow) required to satisfy boundary constraints, predicting a stable stress path consistent with experimental reality. This work establishes a paradigm where AI agents transcend the role of coding assistants to act as epistemic partners, capable of reasoning about and correcting the theoretical assumptions embedded in scientific data.",
+      "authors": [
+        "Yue Wua",
+        "Tianhao Su",
+        "Rui Hu",
+        "Mingchuan Zhao",
+        "Shunbo Hu",
+        "Deng Pan",
+        "Jizhong Huang"
+      ],
+      "primary_category": "cs.DB",
+      "categories": [
+        "cs.DB"
+      ],
+      "published": "2026-03-10 14:56:36+00:00",
+      "link": "https://arxiv.org/pdf/2603.09756v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 8.0,
+      "llm_evidence_en": "neuro-symbolic generation of physical laws",
+      "llm_evidence_cn": "物理定律的神经符号生成",
+      "llm_evidence": "物理定律的神经符号生成",
+      "llm_tldr_en": "A neuro-symbolic agent that extracts and completes governing equations for physically consistent simulation.",
+      "llm_tldr_cn": "一种神经符号智能体，可提取并补全控制方程以进行物理一致性模拟。",
+      "llm_tldr": "一种神经符号智能体，可提取并补全控制方程以进行物理一致性模拟。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ]
+    }
+  ],
+  "quick_skim": [
+    {
+      "id": "2603.09177v1",
+      "title": "Modern Rate-of-Decline Relations for Novae",
+      "abstract": "A large sample of $t_2$ and $t_3$ times from the recent compilation of nova properties given in Schaefer (2025) have been analyzed to determine relationships between these two parameters. Fits were performed in both directions (from $\\log t_2$ to $\\log t_3$ and vice-versa) to account for the asymmetry inherent in ordinary least-squares regression, which minimizes residuals only in the dependent variable. The following best-fit relations were found: $\\log t_3 = (0.877\\pm0.019) \\log t_2 + (0.444\\pm0.027)$, and $\\log t_2 = (1.018\\pm0.023) \\log t_3 - (0.316\\pm0.037)$, corresponding to $t_3 = (2.78\\pm0.17)~t_2^{(0.877\\pm0.019)}$ and $t_2 = (0.483\\pm0.041)~t_3^{(1.018\\pm0.023)}$, respectively. Within the uncertainties, the latter relation reduces to a simple proportionality: $t_2 \\simeq 0.5~t_3$.",
+      "authors": [
+        "Allen W. Shafter"
+      ],
+      "primary_category": "astro-ph.SR",
+      "categories": [
+        "astro-ph.SR"
+      ],
+      "published": "2026-03-10 04:28:41+00:00",
+      "link": "https://arxiv.org/pdf/2603.09177v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Applies regression to find power-law relations in astronomy, a classic use case for symbolic regression.",
+      "llm_evidence_cn": "应用回归寻找天文学中的幂律关系，这是符号回归的一个经典用例。",
+      "llm_evidence": "应用回归寻找天文学中的幂律关系，这是符号回归的一个经典用例。",
+      "llm_tldr_en": "Analyzes nova properties to establish modern rate-of-decline power-law relationships using regression.",
+      "llm_tldr_cn": "分析新星属性，利用回归建立现代衰减率幂律关系。",
+      "llm_tldr": "分析新星属性，利用回归建立现代衰减率幂律关系。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    },
+    {
+      "id": "2603.09542v1",
+      "title": "NS-VLA: Towards Neuro-Symbolic Vision-Language-Action Models",
+      "abstract": "Vision-Language-Action (VLA) models are formulated to ground instructions in visual context and generate action sequences for robotic manipulation. Despite recent progress, VLA models still face challenges in learning related and reusable primitives, reducing reliance on large-scale data and complex architectures, and enabling exploration beyond demonstrations. To address these challenges, we propose a novel Neuro-Symbolic Vision-Language-Action (NS-VLA) framework via online reinforcement learning (RL). It introduces a symbolic encoder to embedding vision and language features and extract structured primitives, utilizes a symbolic solver for data-efficient action sequencing, and leverages online RL to optimize generation via expansive exploration. Experiments on robotic manipulation benchmarks demonstrate that NS-VLA outperforms previous methods in both one-shot training and data-perturbed settings, while simultaneously exhibiting superior zero-shot generalizability, high data efficiency and expanded exploration space. Our code is available.",
+      "authors": [
+        "Ziyue Zhu",
+        "Shangyang Wu",
+        "Shuai Zhao",
+        "Zhiqiu Zhao",
+        "Shengjie Li",
+        "Yi Wang",
+        "Fang Li",
+        "Haoran Luo"
+      ],
+      "primary_category": "cs.RO",
+      "categories": [
+        "cs.RO"
+      ],
+      "published": "2026-03-10 11:51:54+00:00",
+      "link": "https://arxiv.org/pdf/2603.09542v1",
+      "tags": [
+        "keyword:SR"
+      ],
+      "llm_score": 6.0,
+      "llm_evidence_en": "Neuro-symbolic framework for structured primitives",
+      "llm_evidence_cn": "用于结构化原语的神经符号框架",
+      "llm_evidence": "用于结构化原语的神经符号框架",
+      "llm_tldr_en": "Introduces a neuro-symbolic VLA framework that uses symbolic encoders and solvers for robotic manipulation.",
+      "llm_tldr_cn": "引入了一种神经符号 VLA 框架，利用符号编码器和求解器进行机器人操作。",
+      "llm_tldr": "引入了一种神经符号 VLA 框架，利用符号编码器和求解器进行机器人操作。",
+      "llm_tags": [
+        "keyword:SR",
+        "query:SR"
+      ],
+      "quick_tier": "6"
+    }
+  ]
+}

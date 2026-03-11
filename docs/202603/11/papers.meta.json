@@ -1,0 +1,87 @@
+{
+  "label": "2026-03-11",
+  "date": "2026-03-11",
+  "generated_at": "2026-03-11T04:41:46",
+  "count": 6,
+  "papers": [
+    {
+      "paper_id": "202603/11/2603.09597v1-symbolic-discovery-of-stochastic-differential-equations-with-genetic-programming",
+      "section": "deep",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Automated scientific discovery aims to improve scientific understanding through machine learning. A central approach in this field is symbolic regression, which uses genetic programming or sparse regression to learn interpretable mathematical expressions to explain observed data. Conventionally, the focus of symbolic regression is on identifying ordinary differential equations. The general view is that noise only complicates the recovery of deterministic dynamics. However, explicitly learning a symbolic function of the noise component in stochastic differential equations enhances modelling capacity, increases knowledge gain and enables generative sampling. We introduce a method for symbolic discovery of stochastic differential equations based on genetic programming, jointly optimizing drift and diffusion functions via the maximum likelihood estimate. Our results demonstrate accurate recovery of governing equations, efficient scaling to higher-dimensional systems, robustness to sparsely sampled problems and generalization to stochastic partial differential equations. This work extends symbolic regression toward interpretable discovery of stochastic dynamical systems, contributing to the automation of science in a noisy and dynamic world.\n\n---"
+    },
+    {
+      "paper_id": "202603/11/2603.08863v1-adaptive-sindy-residual-force-system-identification-based-uav-disturbance-rejection",
+      "section": "deep",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "The stability and control of Unmanned Aerial Vehicles (UAVs) in a turbulent environment is a matter of great concern. Devising a robust control algorithm to reject disturbances is challenging due to the highly nonlinear nature of wind dynamics, and modeling the dynamics using analytical techniques is not straightforward. While traditional techniques using disturbance observers and classical adaptive control have shown some progress, they are mostly limited to relatively non-complex environments. On the other hand, learning based approaches are increasingly being used for modeling of residual forces and disturbance rejection; however, their generalization and interpretability is a factor of concern. To this end, we propose a novel integration of data-driven system identification using Sparse Identification of Non-Linear Dynamics (SINDy) with a Recursive Least Square (RLS) adaptive control to adapt and reject wind disturbances in a turbulent environment. We tested and validated our approach on Gazebo harmonic environment and on real flights with wind speeds of up to 2 m/s from four directions, creating a highly dynamic and turbulent environment. Adaptive SINDy outperformed the baseline PID and INDI controllers on several trajectory tracking error metrics without crashing. A root mean square error (RMSE) of up to 12.2 cm and 17.6 cm, and a mean absolute error (MAE) of 13.7 cm and 10.5 cm were achieved on circular and lemniscate trajectories, respectively. The validation was performed on a very lightweight Crazyflie drone under a highly dynamic environment for complex trajectory tracking.\n\n---"
+    },
+    {
+      "paper_id": "202603/11/2603.09855v1-sparse-identification-of-effective-microparticle-interaction-potential-in-dusty-plasma-from-simulation-data",
+      "section": "deep",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Identification of the particle interaction potential is a challenging and important task in dusty plasma, colloids, and smart materials as it allows the characterization of structure formation and helps predict phase transitions. With the advent of machine learning methods, this interaction can be extracted from particle position data, leading to a generalizable expression which is applicable in different systems. Methods such as sparse regression aim to provide a physically interpretable model that can generalize well, while avoiding unnecessary complexity due to overfitting. In this work, we present the use of the Sparse Identification of Nonlinear Dynamics (SINDy) with the weak formulation to learn equations of motion for noisy data from simple simulations of two dust particles interacting with a Yukawa (shielded Coulomb) potential. The application of these methods to experimental dusty plasma data is discussed, particularly in the case of simulation data and glass box experiments in RF discharge gravity environments and DC discharge microgravity environments, such as the Plasmakristall-4 (PK-4) experiment.\n\n---"
+    },
+    {
+      "paper_id": "202603/11/2603.09756v1-epistemic-closure-autonomous-mechanism-completion-for-physically-consistent-simulation",
+      "section": "deep",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "The integration of Large Language Models (LLMs) into scientific discovery is currently hindered by the Implicit Context problem, where governing equations extracted from literature contain invisible thermodynamic assumptions (e.g., undrained conditions) that standard generative models fail to recognize. This leads to Physical Hallucination: the generation of syntactically correct solvers that faithfully execute physically invalid laws. Here, we introduce a Neuro-Symbolic Generative Agent that functions as a cognitive supervisor atop traditional numerical engines. By encapsulating physical laws into modular Constitutive Skills and leveraging latent intrinsic priors, the Agent employs a Chain-of-Thought reasoning workflow to autonomously validate, prune, and complete physical mechanisms. We demonstrate this capability on the challenge of thermal pressurization in low-permeability sandstone. While a standard literature-retrieval baseline erroneously predicts catastrophic material failure by blindly adopting a rigid \"undrained\" simplification, our Agent autonomously identifies the system as operating in a drained regime (Deborah number De << 1) via dimensionless scaling analysis. Consequently, it inductively completes the missing dissipation mechanism (Darcy flow) required to satisfy boundary constraints, predicting a stable stress path consistent with experimental reality. This work establishes a paradigm where AI agents transcend the role of coding assistants to act as epistemic partners, capable of reasoning about and correcting the theoretical assumptions embedded in scientific data.\n\n---"
+    },
+    {
+      "paper_id": "202603/11/2603.09177v1-modern-rate-of-decline-relations-for-novae",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "A large sample of $t_2$ and $t_3$ times from the recent compilation of nova properties given in Schaefer (2025) have been analyzed to determine relationships between these two parameters. Fits were performed in both directions (from $\\log t_2$ to $\\log t_3$ and vice-versa) to account for the asymmetry inherent in ordinary least-squares regression, which minimizes residuals only in the dependent variable. The following best-fit relations were found: $\\log t_3 = (0.877\\pm0.019) \\log t_2 + (0.444\\pm0.027)$, and $\\log t_2 = (1.018\\pm0.023) \\log t_3 - (0.316\\pm0.037)$, corresponding to $t_3 = (2.78\\pm0.17)~t_2^{(0.877\\pm0.019)}$ and $t_2 = (0.483\\pm0.041)~t_3^{(1.018\\pm0.023)}$, respectively. Within the uncertainties, the latter relation reduces to a simple proportionality: $t_2 \\simeq 0.5~t_3$."
+    },
+    {
+      "paper_id": "202603/11/2603.09542v1-ns-vla-towards-neuro-symbolic-vision-language-action-models",
+      "section": "quick",
+      "title_en": "",
+      "authors": "",
+      "date": "",
+      "pdf": "",
+      "score": "",
+      "evidence": "",
+      "tldr": "",
+      "tags": "",
+      "abstract_en": "Vision-Language-Action (VLA) models are formulated to ground instructions in visual context and generate action sequences for robotic manipulation. Despite recent progress, VLA models still face challenges in learning related and reusable primitives, reducing reliance on large-scale data and complex architectures, and enabling exploration beyond demonstrations. To address these challenges, we propose a novel Neuro-Symbolic Vision-Language-Action (NS-VLA) framework via online reinforcement learning (RL). It introduces a symbolic encoder to embedding vision and language features and extract structured primitives, utilizes a symbolic solver for data-efficient action sequencing, and leverages online RL to optimize generation via expansive exploration. Experiments on robotic manipulation benchmarks demonstrate that NS-VLA outperforms previous methods in both one-shot training and data-perturbed settings, while simultaneously exhibiting superior zero-shot generalizability, high data efficiency and expanded exploration space. Our code is available."
+    }
+  ],
+  "errors": []
+}
