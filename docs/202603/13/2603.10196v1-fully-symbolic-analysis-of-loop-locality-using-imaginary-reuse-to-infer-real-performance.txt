@@ -1,0 +1,927 @@
+Title: Fully Symbolic Analysis of Loop Locality: Using Imaginary Reuse to Infer Real Performance
+
+URL Source: https://arxiv.org/pdf/2603.10196v1
+
+Published Time: Thu, 12 Mar 2026 00:15:55 GMT
+
+Number of Pages: 23
+
+Markdown Content:
+# Fully Symbolic Analysis of Loop Locality 
+
+Using Imaginary Reuse to Infer Real Performance 
+
+YIFAN ZHU, University of Rochester, USA 
+
+YEKAI PAN, University of Rochester, USA 
+
+CHEN DING, University of Rochester, USA 
+
+YANGHUI WU, University of Rochester, USA This paper presents a new theory of locality and its compiler support. The theory is fully symbolic and derives locality as polynomials, and the compiler analysis supports affine loop nests. They derive cache-performance scaling in quadratic and reciprocal expressions and are more general and precise than empirical scaling rules. Evaluated on a benchmark suite of 41 scientific kernels and tensor operations, the compiler requires an average of 41 seconds to derive the locality polynomials. After derivation, predicting the cache miss count for any given input size and cache configuration takes less than a millisecond. Across all tests–with and without loop fusion–the accuracy in the data movement prediction is 99.6%, compared to simulated set-associative L1 data cache. 
+
+1 Introduction 
+
+Locality, in Denning’s sense, is the tendency for memory references to cluster within small regions of the address space over time [ 13 ]. It is a fundamental property of program behavior and a determinant of performance for data-intensive applications. Locality optimization is important in modern compilers [ 1 – 3, 57 ], transformation frameworks [ 39 , 63 ], domain-specific language and compiler for image processing [ 42 ] and tensor operations [ 27 , 30 , 48 ]. A complete characterization should quantify the locality by both machine and program parameters. This paper presents a fully symbolic technique to analyze loop locality. Given symbolic loop bounds, our method derives two types of polynomials: the first computes the cache size, and the second the miss count or the miss ratio. We call these formulas algebraic locality because these are algebraic expressions that capture how locality changes with various parameters. For example, in a single traversal of an 𝑛 × 𝑛 matrix, the miss-ratio polynomial is 1 
+
+> 𝑏
+
+, where 𝑏 is the cache block size. The new analysis is based on a measure called the reuse interval (RI). A reuse interval (RI) is defined as the time between two consecutive accesses to the same memory location. We solve mainly two problems. The first is a theory on using RI polynomials to derive cache miss polynomials and its correctness. The second is compiler analysis of RIs in affine loops. The formal derivation is iterative and takes time linear to the number of symbolic RI values. The compiler analysis has two passes and uses integer set programming. What is new and necessary to algebraic theory is the introduction of imaginary reuses. Tradition-ally, the RI of a first-touch access is treated as infinite. However, an infinite RI poses a problem for symbolic analysis. Imaginary reuse is introduced to assign a finite RI value to first-touch accesses. Previous techniques are symbolic but not algebraic. Affine loops can be symbolically analyzed by solving integer-set equations [4, 6, 19, 26, 40]. Unlike polynomials, these integer equations are linear and cannot have quadratic or reciprocal terms. As a result, they cannot be fully symbolic. For example, they model spatial locality for only constant, not symbolic, cache block size. In addition, their solution time is exponential in the worst case. In comparison, the derivation has a linear-time cost in the new theory. The main contributions of the paper are as follows:  
+
+> Authors’ Contact Information: Yifan Zhu, University of Rochester, Rochester, New York, USA; Yekai Pan, University of Rochester, Rochester, New York, USA; Chen Ding, University of Rochester, Rochester, New York, USA; Yanghui Wu, University of Rochester, Rochester, New York, USA.
+> arXiv:2603.10196v1 [cs.PL] 10 Mar 2026 2Yifan Zhu, Yekai Pan, Chen Ding, and Yanghui Wu
+
+• Algebraic locality theory , which uses imaginary reuses and an iterative method to derive cache polynomials in linear time. The theory proves two formal properties: Working-set Correctness and RI Sum Invariance. 
+
+• Affine-loop compiler analysis , which translates the affine dialect of MLIR into parametric polytopes, uses a two-pass algorithm to count all possible lengths of reuse intervals and their counts as polynomials. 
+
+• Implementation and evaluation , including 30 scientific kernels [ 41 ] and 11 common tensor operations [ 8 ], before and after loop fusion optimization, for both analysis speed and accuracy compared against cache simulation and hardware counters. One use of cache polynomials is scaling analysis. For example, the √2 rule is well known for database systems (scaling buffer pool sizes), file system caches, and Web caching [ 22 ]. Cache polynomials show cache scaling for affine loops and have a greater precision than scaling rules. Section 5.5 shows two cache scalings both follow the √2 rule, but their miss ratio differ by a factor of two. The locality property determines data movement, i.e., the miss count, but does not fully determine the running time, which significantly depends on latency hiding techniques like out-of-order execution and data prefetching. Latency tolerance, however, does not decrease the amount of data movement. In addition, we consider sequential programs only and focus on the miss ratio of a single-level cache, where we consider set associativity and the actual hardware cache. While locality analysis enables program optimizations, this paper focuses on analysis, not optimization, except that we evaluate the analysis with and without optimization, in particular, loop fusion. 
+
+2 The Theory of Algebraic Locality 
+
+This section describes the theory and its new concept called imaginary reuses. The flow chart in Figure 1 shows the structure of the subsections: infinite repeat (Section 2.2) produces imaginary reuses which are used in deriving locality polynomials (Sections 2.1 and 2.3) and symbolic testing (Section 2.4). Section 2.5 describes LRU approximation. Finally, Section 2.6 
+
+> Infinite Repeat
+> Imaginary Reuses
+> Cache Size and Miss Polynomials
+> Symbolic Testing
+> Denning Recursion[14, 64]
+> RI Sum Invariance
+> Fig. 1. Infinite repeat creates imaginary reuses which are used in symbolic locality analysis
+
+2.1 Background: Reuse Intervals and Denning Recursion 
+
+In the view of the memory system, a program execution is a sequence of memory accesses. Each consecutive pair of accesses to the same data item is a data reuse. The reuse interval (RI) is the number of other accesses between the reuse itself. In this paper, we use the logical time, where each access increases the time by one. The RI value between two accesses is the difference in their logical time. Let 𝑃 (ri ) be a RI distribution, where 𝑃 (ri = 𝑥 ) is the portion of RIs whose value is equal to 𝑥 .Denning Recursion [ 14 ] is a pair of equations to calculate the time-window miss ratio and the Fully Symbolic Analysis of Loop Locality 3
+
+average working-set size from the RI distribution as follows: 
+
+𝑚 (𝑥 ) = 𝑃 (ri > 𝑥 )
+
+𝑠 (𝑥 + 1) = 𝑠 (𝑥 ) + 𝑚 (𝑥 )
+
+where 𝑚 (𝑥 ) is the miss ratio, and 𝑠 (𝑥 ) the working-set size. The two equations are defined for all integers 𝑥 ≥ 0, with an initial value of 𝑠 (0) = 0 and 𝑚 (0) = 𝑃 (ri > 0) = 1. To compute all results 
+
+𝑚, 𝑠 , Denning Recursion iterates all RI values 𝑥 in increasing order. At each step, the miss ratio is the portion of reuses with RI greater than 𝑥 , and the working-set size increases by the miss ratio. The time-window miss ratio 𝑚 (𝑥 ) is a function of time. The working-set size is an average value, which is usually fractional. As described in Section 2.3, the new theory will use these to approximate the LRU cache size and miss ratio. 
+
+2.2 Infinite Repeat and Imaginary Reuses 
+
+In a program, data access may be using an item for the first time, which is a first-touch access ;otherwise, it is a data reuse. 1
+
+A first-touch access is a cold-start miss in any cache [ 23 ]. For Denning Recursion, however, first-touch accesses present a fundamental dilemma. If we assign infinite reuse intervals to first-touch accesses, then 𝑃 (ri = ∞) > 0 causes the working-set size to diverge to infinity ( 𝑠 (∞) = ∞), making the analysis meaningless. On the other hand, if we exclude first-touch accesses from the analysis entirely, the working-set size remains bounded but we fail to account for cold-start misses. We call this the cold-start miss dilemma. The algebraic theory resolves the dilemma by introducing Infinite Repeat , where a program repeats an infinite number of times. A first-touch access is still so in the first run, but it is a reuse in the second run and all other repeats. We call these reuses Imaginary Reuses . The RI of an imaginary reuse is an Imaginary RI . Each data item’s imaginary reuse interval spans from its last access in one run to its next access in the following run. If the item is not reused within a run, this interval equals the program length 𝑛 . Otherwise, it is the gap between the last access in the previous run and the first access in the current run, which can be at most 𝑛 − 1. Hence, the largest possible imaginary reuse interval is 𝑛 .Figure 2 illustrates the technique. Let a simple program be a series of five accesses. The figure shows the first run and two repeats of the program: the second run and the 𝑟 th run. The first, second and fourth of the five accesses are first-touch accesses in the first run, colored red. After the first run, they become imaginary reuses, colored green. The arrows connect the source and the sink of imaginary reuses between the first two program runs. The largest imaginary RI value is 5 for the access to ‘B’, which is its sole access in a run. To distinguish, we refer to data reuses before Infinite Repeat as real reuses . Their values and portions are not changed by Infinite Repeat. In Figure 2, they are third and fifth accesses in each run (colored blue). Imaginary reuses have no direct effect on real reuses. However, to produce a correct model of cache behavior, Denning Recursion requires that all accesses have a finite RI value. Imaginary RIs are an “additive.” Intuitively, their inclusion is necessary as the context of real reuses, enabling the correct computation of whether real reuses result in cache hits or misses. The next two sections first formalize this correctness property and then show how to convert imaginary reuses back to first-time accesses.  
+
+> 1The attribute of a reuse can be associated with either the start or the end of the reuse window. If it is the former, it is a forward use; otherwise, it is a backward reuse Beyls and D’Hollander [6]. In this paper, all RIs are backward RIs. 4Yifan Zhu, Yekai Pan, Chen Ding, and Yanghui Wu
+
+Program Run 1 
+
+Program Run 2 
+
+Program Run 𝑟 
+
+A B A C C
+
+A B A C C
+
+. . . 
+
+A B A C C
+
+First-touch access Imaginary reuse Real reuse 
+
+Fig. 2. An example of Infinite Repeat, with first-touch accesses (red), real reuses (blue), and imaginary reuses (green) 
+
+2.3 Working-set Correctness 
+
+Denning Recursion was derived as a stochastic property, assuming an unending sequence, a stationary process, and a third property that “guarantees that the time average converges to the stochastic average” [ 14 ]. For deterministic sequences, Xiang et al . [60] defined the footprint function, fp (𝑥 ), which is the average working-set size of a time window of length 𝑥 . We use both the working-set theory and the footprint theory to establish the correctness of Denning Recursion when using imaginary reuses. We prove working-set correctness under Infinite Repeat: 𝑐 (𝑥 ) computed in the Denning Recursion is the footprint fp (𝑥 ), that is, the average working-set size of a deterministic sequence. This means that Denning Recursion is correct for any program under Infinite Repeat and does not require any stochastic assumption about such cases. Given a finite-length sequence, the Xiang formula computes the footprint fp (𝑥 ), the average working-set size of all windows of length 𝑥 [ 59 ]. Let the set {𝑟 𝑖 } be the values of all RIs and the sets 
+
+{𝑓 𝑑 }, {𝑙 𝑑 } the first- and last-access times for all data 𝑑 . We slightly change the representation of the Xiang formula to refer to all boundary accesses as {𝑏 𝑑 }, which includes both the first and last access. Each data item 𝑑 has two 𝑏 𝑑 s. Let 𝑛 be the number of accesses (the length of a trace), and 𝑚 
+
+be the number of distinct data (the size of the data). The Xiang formula computes the footprint as follows 
+
+fp (𝑥 ) =𝑚 −
+
+Í𝑟 𝑖 >𝑥 (𝑟𝑖 − 𝑥 ) − Í𝑏 𝑑 >𝑥 (𝑏 𝑑 − 𝑥 )
+
+𝑛 − 𝑥 + 1
+
+where 𝑥 = 0, . . . , 𝑛 . We further define the reuse-term footprint by 2
+
+rtfp (𝑥 ) = 𝑚 −
+
+> 𝑛
+
+∑︁ 
+
+> 𝑖 =𝑥 +1
+
+(𝑖 − 𝑥 )𝑃 (ri = 𝑖 )
+
+Intuitively, rtfp (𝑐 ) counts how many RI values exceed the cache size 𝑐 , weighted by their frequency. Under infinite repeat, this footprint converges to zero because every access eventually becomes a reuse. The following theorem formalizes this property and shows that the working-set size correctly accounts for all distinct data items accessed. 
+
+Theorem 2.1 (Working-set Correctness). Under Infinite Repeat, Denning Recursion computes the average working-set size correctly.       
+
+> 2In a sequence of length 𝑛 , the largest possible RI value is 𝑛 −1. With Infinite Repeat, the largest possible value is 𝑛 ,that is, when a symbol appears only once in the sequence (before repeating and becomes an imaginary reuse afterward). An example is B in Figure 2. Fully Symbolic Analysis of Loop Locality 5
+
+Proof. Let 𝑛 be the length of a program and 𝑟 be the number of repeats. We first prove rtfp (𝑥 )
+
+correctness . As 𝑟 becomes infinite, the boundary terms in the Xiang formula have a finite value and can be removed because the denominator, 𝑟𝑛 − 𝑥 + 1, becomes infinite. Furthermore, each RI has a finite value at most 𝑛 , its contribution is exactly 1 
+
+> 𝑛
+
+. Hence, the reuse-term footprint is correct because it converges to the Xiang footprint. Furthermore, Denning Recursion is equivalent to the reuse-term footprint, 𝑠 (𝑥 ) = fp (𝑥 ). We prove it inductively. In the base case, 𝑠 (0) = fp (0) = 0 (see also the following lemma). Assuming 𝑠 (𝑥 ) = fp (𝑥 ), it is straightforward to verify fp (𝑥 + 1) − fp (𝑥 ) =
+
+𝑠 (𝑥 + 1) − 𝑠 (𝑥 ) = 𝑃 (ri > 𝑥 ). Combining it with rtfp (𝑥 ) correctness, we have 
+
+𝑠 (𝑥 ) = rtfp (𝑥 ) = lim   
+
+> 𝑟 →∞
+
+fp (𝑥 )
+
+□
+
+Under Infinite Repeat, the average working-set size is the same whether it is computed using Denning Recursion or using the footprint. In other words, imaginary reuses guaranty the correctness of Denning Recursion when used on a finite-length program. Omitted for lack of space, we can also prove that when the working-set (cache) size equals or exceeds the data size, the miss ratio drops to 0. A reader may question that in real executions, cold-start misses are inherent and not zero. Next, we consider the LRU cache and cold-start misses. 
+
+2.4 RI Sum Invariance and Symbolic Testing 
+
+From Working-set Correctness (Theorem 2.1), we can derive the following lemma by taking the timescale parameter at 𝑥 = 0. When 𝑥 = 0, a zero-length window contains no data access, the working-set size or footprint is therefore zero. We call it the Zero Footprint lemma. 
+
+Lemma 2.2 (Zero Footprint). Under Infinite Repeat, rtfp (0) = 𝑚 − Í𝑛  
+
+> ri =0
+
+ri 𝑃 (ri ) = 0, where 𝑚 is the data size, 𝑃 (ri ) are the portions of all 𝑛 distinct RI values ri. 
+
+Re-arranging the terms, we have Í𝑛  
+
+> ri =0
+
+ri 𝑃 (ri ) = 𝑚 . If we view the 𝑛 RI values and 𝑛 RI portions as vectors, the left-hand side is their dot product. We call the equation RI Sum Invariance . The invariance states that the dot product of the value vector and the portion vector must equal the data size, or v · p = 𝑚 .The invariance provides a Symbolic RI Test for checking for errors in symbolic RI values or portions. From the dot-product rule: all product terms must cancel each other . For any program under Infinite Repeat, this check must pass; otherwise, there must be an error in one of the RI values or one of their portions. The symbolic RI test is not a proof of RI correctness. It checks that a set of symbolic terms must all cancel each other. It rules out single-term errors, but multiple errors can cancel each other out and still pass the test. Statistically, the test provides greater assurance of correctness as the number of symbolic RI values increases. The more complex a program is, the more RI values it has, and the more likely an error may occur. Though imperfect, this test offers a practical safeguard, whether the analysis is done manually or automated by a compiler. 
+
+2.5 LRU Approximation 
+
+Our work approximates the LRU cache size with the average working-set size 𝑐 (𝑥 ).
+
+Assumption 1 (LRU Approximation) . The miss ratio of the LRU cache can be approximated by the miss ratio of the working-set cache by: 
+
+mr (𝑐 (𝑥 )) ≈ 𝑚 (𝑠 (𝑥 )) 
+
+where 𝑐 (𝑥 ) = 𝑠 (𝑥 ).6 Yifan Zhu, Yekai Pan, Chen Ding, and Yanghui Wu 
+
+Since 𝑠 (𝑥 ) is fractional, the approximated LRU cache size 𝑐 (𝑥 ) may also be fractional. To interpret fractional cache sizes, note that 𝑠 (𝑥 ) is monotone and increases by at most one at each step (𝑠 (𝑥 + 1) − 𝑠 (𝑥 ) ≤ 1 for 𝑥 > 0). Therefore, every integer cache size 𝑘 is either exactly 𝑠 (𝑥 ) for some 𝑥 , or it lies between two consecutive values 𝑠 (𝑥 ) and 𝑠 (𝑥 + 1) that differ by less than one. By monotonicity, the miss ratio for integer cache size 𝑘 can be bounded by the miss ratios at the surrounding fractional cache sizes. Hence, the approximation effectively computes miss ratios for 
+
+consecutive cache sizes , allowing interpolation to any integer value. Many past techniques use the LRU approximation, including time-to-RD conversion in program analysis [ 45 ], Featherlight RD using hardware counters [ 52 ], StatStack [ 17 ], Average Eviction Time (AET) for storage caches [38] (as reviewed in Section 6). They showed generally high accuracy in large-scale traces. Unlike these studies, we use the approximation for loop kernels. 
+
+Moving-cliff Error. Loop kernels were studied by Chen et al . [10] . They found mainly one type of error and its cause. If a kernel has phases , i.e., multiple loop nests, the prediction is often inaccurate. The error manifests itself as a “moving cliff”: when comparing the prediction with the LRU simulation, the predicted drop in miss ratio occurs earlier. The miss ratio, both before and after the drop, is predicted correctly, but the predicted cache size is an underestimate. 
+
+Cold-start Misses. To recover the actual miss ratio, we “undo” the effect of Infinite Repeat. Denning Recursion produces both cache size and miss ratio. The computed cache size is correct because it accounts for all distinct data items, whether accessed via real reuses or imaginary reuses. The miss ratio, however, treats first-time accesses as imaginary reuses (hits from the prior iteration). In reality, first-time accesses in a single program execution should be cold misses [ 23 ]. Therefore, we adjust the miss ratio by converting imaginary reuse hits back to misses. The hit portion attributed to imaginary reuses represents the cold-start miss ratio of the original single-execution program. 
+
+2.6 Example Derivations: Naive Matrix Multiplication 
+
+In this section, we use naive matrix multiplication as a concrete example to illustrate how symbolic RI distributions are derived and transformed via Denning Recursion into cache-miss polynomials. Matrix multiplication is a fundamental operation in scientific computing and serves as an accessible example for locality analysis. We consider the standard triply nested loop for multiplying two 𝑛 × 𝑛 matrices 𝐴 , 𝐵 , and 𝐶 . To simplify the analysis, we assume that each cache block stores 8 data elements (block size 𝑏 = 8).                                
+
+> for (int i=0; i<n; i ++)
+> for (int j=0; j<n; j ++)
+> for (int k=0; k<n; k ++) C[i ][ j] += A[i ][ k] *B[k ][ j ];
+
+Each innermost loop iteration is modeled as four memory accesses in the order C, A, B, C: the value 𝐶 [𝑖 ] [ 𝑗 ] is first read, then 𝐴 [𝑖 ] [ 𝑘 ] and 𝐵 [𝑘 ] [ 𝑗 ] are accessed, and eventually 𝐶 [𝑖 ] [ 𝑗 ] is written back. This matches the typical memory behavior of a naive implementation, resulting in a total of 
+
+4𝑛 3 accesses. We applied the imaginary RI value under infinite repeat to ensure that every access is associated with an RI, as described in Section 2.2, including those corresponding to cold misses or the first access to a data block. After constructing the complete algebraic miss ratio table using all symbolic RI values (including the imaginary RI), we remove the portion corresponding to the imaginary RI when reporting the final miss ratio. This adjustment ensures that the reported miss ratio reflects all the cache misses (including cold misses). Fully Symbolic Analysis of Loop Locality 7
+
+Table 1. Analysis of Naive Matrix Multiplication (* containing imaginary RIs) 
+
+RI P (ri) m (ri) Cold Miss Ratio c (ri) 
+
+0 − − 1 − 0
+
+1 1 1434 − 1
+
+2 3 14 − 132 𝑛  
+
+> 12
+
++ 132 𝑛 − 3
+
+3 4 732 932 + 132 𝑛 − 5
+
+4 4𝑛 − 28 132 − 132 𝑛  
+
+> 14
+
++ 116 𝑛 − 9𝑛  
+
+> 8
+
+− 47 8 − 31 32 𝑛 
+
+5 4𝑛 732 132 + 116 𝑛 − 9𝑛  
+
+> 8
+
++ 98 + 25 32 𝑛 
+
+6* 4𝑛 2 − 28 𝑛 132 332 𝑛  
+
+> 132 𝑛 𝑛 2
+> 8
+
++ 3𝑛  
+
+> 8
+
+− 78 + 25 32 𝑛 
+
+7* 4𝑛 3 − 4𝑛 2 + 4𝑛 − 28 332 𝑛  
+
+> 332 𝑛
+> 232 𝑛
+> 3𝑛 2
+> 8
+
+− 𝑛  
+
+> 8
+
++ 98 − 31 32 𝑛 
+
+8* 4𝑛 3 − 32 𝑛 + 3 132 𝑛 
+
+> 332 𝑛
+> 332 𝑛
+> 3𝑛 2
+> 8
+
+The RI distribution and the derived cache-miss polynomials are shown in Table 1. The table marks the row index of imaginary reuses with a ∗. The sum of their RI portions is the cold-start miss ratio. 
+
+The RI Sum Invariance. The second and third columns of Table 1 list eight RI values and their corresponding portions. By the RI Sum Invariance, their dot product must equal the total data size, or formally, v · p = 𝑚 , where both the RI values ( v) and portions ( p) are polynomials in 𝑛 .Computing this dot product yields a polynomial with almost 20 terms, most of which are non-constant. Upon summation, all constant terms sum to zero, all linear terms cancel, and all reciprocal terms likewise vanish. The only surviving terms are quadratic, and they collectively sum to 3𝑛 2 
+
+> 8
+
+—exactly the total number of data blocks across the three 𝑛 × 𝑛 matrices (8 elements per block). Thus, the RI Sum Invariance holds, and the test passes. 
+
+3 Compiler Design and Implementation 
+
+Our framework leverages MLIR [ 29 ] as a flexible intermediate representation bridge. By using the MLIR Affine dialect, our Symbolic Locality Compiler can be integrated into existing workflows—such as the Polygeist pipeline [ 34 ]—without requiring changes to the frontend or backend. This design allows us to improve locality analysis and optimization across various programming languages and tools that utilize the MLIR infrastructure. 
+
+Existing Polygeist Pipeline 
+
+Symbolic Locality Compiler 
+
+.c programs MLIR Scf 
+
+MLIR Affine 
+
+MLIR Scf 
+
+LLVM/ Objects 
+
+> Raise
+> Optimize& Lower
+
+MLIR Affine 
+
+Parametric Polytopes 
+
+Symbolic RI Distribution  
+
+> ISP/ Barvinok
+
+Miss Count/ Locality 
+
+> Denning Recursion
+
+Fig. 3. Workflow diagram showing the existing Polygeist pipeline and our Symbolic Locality Compiler, interconnected via MLIR Affine representation. 8 Yifan Zhu, Yekai Pan, Chen Ding, and Yanghui Wu 
+
+3.1 Affine Program Definition 
+
+We define the following program structure as our analysis target, simplified from MLIR’s affine 
+
+dialect. Our framework does not permit symbols as coefficients within affine expressions. Table 2 presents the syntax in two parts: the left column defines core program constructs (loops, conditionals, blocks, and memory accesses), while the right column defines auxiliary constructs for affine expressions and constraint sets. Here S is the symbol set, array identifies disjoint memory objects, 
+
+constant denotes integer literals, and ivar = 𝑖 𝑙𝑒𝑣𝑒𝑙 denotes loop index variables at a given nesting level.                                                                          
+
+> Table 2. Affine program syntax
+> Core Syntax Auxiliary Definitions
+> prog =(S ,stmt )
+> stmt =loop |block |if |access loop =for expr to expr step constant
+> do stmt endfor
+> block =stmt (;stmt )+
+> if =if set then stmt
+> else stmt endif
+> access =access array [expr (,expr )∗]
+> atom =constant |ivar |𝑠 ∈ S
+> expr =atom |expr ±expr
+> |constant ×expr
+> |expr constant
+> |expr constant
+> 
+> constraint =expr =0|expr <0
+> conj =constraint (∧ constraint )∗
+> set =conj (∨ conj )∗
+
+3.2 Affine Representation of Timestamp and Memory Access 
+
+To analyze reuse intervals, we need to obtain the set of access timestamps. This differs from the iteration space, as timestamps are associated with each memory access and do not necessarily describe the values of loop index variables. We demonstrate a translation that converts an affine program into an integer vector space, summarizing the formal semantics of the algorithm in Figure 4 and providing a concrete example in Figure 5. We define an operation J·K(M ; ℓ) to convert the program representation 𝑝 ∈ P into the desired space T ⊆ Z𝑛 for some 𝑛 , under context M and ℓ. The following concepts are used in the translation: 
+
+• M maps index variables (by loop level) to vector components, where |M| equals the number of in-scope index variables. It normalizes strided loop indices into continuous iteration space. 
+
+• ℓ counts the timestamp vector dimensions used up to the current construct, incremented when entering loops or statement blocks to distinguish memory accesses. 
+
+• L( 𝑠 ) denotes the vector dimension of space 𝑠 .
+
+• 𝑥 |M denotes substituting index variables in expression 𝑥 (or constraint expressions when 𝑥 
+
+is a set) with M.
+
+• 𝑎 ∪↑ 𝑏 and 𝑎 ∩↑ 𝑏 denote standard set union and intersection when L( 𝑎 ) = L( 𝑏 ); otherwise, the lower-dimensional space is lifted by adding unconstrained trailing dimensions. We may use corresponding ⊔, ⊓ variants to illustrate operations on disjoint subsets. Figure 4 defines the translation algorithm inductively. The base cases involve memory accesses, where the algorithm returns an unconstrained set. In other cases, the algorithm applies recursively onto substatements, aligning space dimensions and adding constraints imposed at parent to refine the space. Fully Symbolic Analysis of Loop Locality 9
+
+J·K(M ; ℓ) : P → 
+
+Ø
+
+> 𝑛 ∈N
+
+Pow (Z𝑛 )
+
+J(S , s)K(M ; ℓ) = JsK(M ; ℓ)
+
+Jaccess 𝐴 [𝑒 0, ..., 𝑒 𝑛 ]K(M ; ℓ) = Zℓ
+
+Jfor l to u step c do b endfor K(M ; ℓ) = let M′ = M ∪ {|M| ↦ → ( 𝑙 |M +𝑐 × 𝑣 [ℓ])} ; 𝑠 = JbK(M ′; ℓ + 1)
+
+in 𝑠 ∩↑
+
+
+
+𝑣 ∈ ZL ( 𝑠 ) :  𝑣 [ℓ] ≥ 0 ∧
+
+
+
+𝑣 [ℓ] <
+
+𝑢 |M −𝑙 |M
+
+𝑐 
+
+ 
+
+J𝑠 0; 𝑠 1; ... ; 𝑠 𝑛 K(M ; ℓ) = let 𝑛 
+
+∀ 
+
+> 𝑖 =0
+
+𝑠 ′ 
+
+> 𝑖
+
+= J𝑠 𝑖 K(M ; ℓ + 1) ; L∗ = max  
+
+> 𝑖 =0...𝑛
+
+L( 𝑠 𝑖 )
+
+in 
+
+> 𝑛
+
+Ä 
+
+> 𝑖 =0
+> ↑
+
+©«
+
+𝑠 ′ 
+
+> 𝑖
+
+∩↑
+
+
+
+𝑣 ∈ ZL∗
+
+: (𝑣 [ℓ] = 𝑖 )∧ ©« 
+
+> L∗−1
+
+Û 
+
+> 𝑗 =L ( 𝑠 ′
+> 𝑖 )
+
+𝑣 [ 𝑗 ] = 0ª®®¬ª®®¬
+
+Jif 𝑐 then 𝑡 else 𝑒 endif K(M ; ℓ) = let 𝑡 ′ = J𝑡 K(M ; ℓ) ; 𝑒 ′ = J𝑒 K(M ; ℓ) ; L∗ = max {L( 𝑡 ′), L( 𝑒 ′)} 
+
+in ©«
+
+𝑡 ′∩↑
+
+
+
+𝑣 ∈ ZL∗
+
+: 𝑐 |M ∧©« 
+
+> L∗−1
+
+Û  
+
+> 𝑗 =L ( 𝑡 ′)
+
+𝑣 [ 𝑗 ] = 0ª®¬ª®¬
+
+⊔ ©«
+
+𝑒 ′∩↑
+
+
+
+𝑣 ∈ ZL∗
+
+: ¬𝑐 |M ∧©« 
+
+> L∗−1
+
+Û 
+
+> 𝑗 =L ( 𝑒 ′)
+
+𝑣 [ 𝑗 ] = 0ª®¬ª®¬
+
+Fig. 4. Formal Semantics of Timestamp Space Construction 
+
+The timestamp space is ordered lexicographically. An order-preserving bijection can be formed between the memory access trace of the original program 𝑝 and the timestamp space T = J𝑝 K(∅ , 0).The size of the timestamp space matches the length of the program’s access trace. 
+
+Example 3.1. Consider the program shown on the left in Figure 5. We use 𝑠 𝑖 to denote the single statement at line 𝑖 and 𝑏 𝑖 to denote the entire block starting at line 𝑖 . The table on the right summarizes the local input context and output for each 𝑠 𝑖 and 𝑏 𝑖 . Notably, 𝑠 2, 𝑠 5, 𝑠 8, and 𝑠 9 are leaf statements. The top-level result 𝑠 1 is derived step by step from these inner results. The second mapping 1 ↦ → 𝑑 0 + 4𝑑 2 − 512 in the context M at 𝑠 5 is not used here but will become important when constructing the access map in later sections. 
+
+1: for 0 to 2026 step 1 do 
+
+2: access 𝐴 [𝑖 0];
+
+3: if 𝑖 0 > 1024 then 
+
+4: for 𝑖 0 - 512 to 𝑖 0 + 512 step 4 do 
+
+5: access 𝐵 [𝑖 0, 𝑖 1]
+
+6: end for 
+
+7: else 
+
+8: access 𝐴 [𝑖 0 + 512 ];
+
+9: access 𝐶 [2𝑖 0 + 1]
+
+10: end if 
+
+11: end for                                                                        
+
+> Stmt ℓResult
+> 𝑠 10𝑑 0∈ [ 0,2026 ), 𝑑 1=0, 𝑑 2=0
+> ∨𝑑 0∈ [ 0,1024 ), 𝑑 1=1, 𝑑 2∈ [ 0,256 )∨𝑑 0∈ [ 1024 ,2026 ), 𝑑 1=1, 𝑑 2∈ [ 0,2)
+> 𝑏 21𝑑 1=0, 𝑑 2=0
+> ∨𝑑 0<1024 , 𝑑 1=1, 𝑑 2∈ [ 0,256 )∨𝑑 0≥1024 , 𝑑 1=1, 𝑑 2∈ [ 0,2)
+> 𝑠 22Z2
+> 𝑠 32𝑑 0<1024 , 𝑑 2∈ [ 0,256 )∨𝑑 0≥1024 , 𝑑 2∈ [ 0,2)
+> 𝑠 42𝑑 2∈ [ 0,256 )
+> 𝑠 53Z3
+> 𝑏 82𝑑 2∈ [ 0,2)
+> 𝑠 83Z3
+> 𝑠 93Z3
+
+Fig. 5. Example Timestamp Space Derivation (Symbols are explained in Example 3.1). 10 Yifan Zhu, Yekai Pan, Chen Ding, and Yanghui Wu 
+
+After constructing the timestamp space, we attach an affine access map that connects each timestamp to the data item it accesses. Let R∗ 
+
+> 𝑝
+
+be the largest rank among all arrays in program 𝑝 .The access map A𝑝 : T → ZR∗  
+
+> 𝑝 +1
+
+associates each timestamp 𝑡 ∈ T with a data vector 𝑚 ∈ ZR∗ 
+
+> 𝑝 +1
+
+,where the first component encodes the array identifier and the following 𝑟 components represent its indices. An additional affine transformation F can be applied to these indices to model layout transfor-mations or block-level reuse. For example, if array elements are grouped into blocks of size B along the last dimension, the following transform adjusts the access granularity: 
+
+FB ([ 𝑥 0, . . . , 𝑥 𝑟 −1, 𝑥 𝑟 ]) = [𝑥 0, . . . , 𝑥 𝑟 −1, ⌊𝑥 𝑟 /B⌋] .
+
+During translation, the access map shares most operations with the timestamp space, except that in access statements its range is explicitly defined: 
+
+Jaccess 𝐴 [𝑒 0, . . . , 𝑒 𝑛 ]K(M ; ℓ; F ) = {𝑣 ↦ → F ([ 𝐴, 0, . . . , 0, 𝑒 0 |M, . . . , 𝑒 𝑛 |M ]) : 𝑣 ∈ Zℓ }.
+
+This construction effectively augments the timestamp space with affine mappings that capture data access behavior. 
+
+3.3 Counting RI Distribution as Piecewise Quasi-polynomials 
+
+We formulate the reuse interval distribution as a counting problem solved via Barvinok decomposi-tion and reparametrization. We first introduce Integer Set Programming and Barvinok counting, then derive the symbolic RI representation and compute the complete distribution. 
+
+3.3.1 Background: Integer Set Programming and Barvinok Counting. Integer Set Programming provides the algebraic framework for manipulating affine sets and relations. We use the Integer Set Library (ISL) [49] for affine structures and the Barvinok library [50] for cardinality. ISL maps represent multi-valued functions between domain and codomain via affine transfor-mations. When a map 𝑅 has identical domain and codomain 𝑋 , it defines a binary relation R on 
+
+𝑋 where (𝑥, 𝑥 ′) ∈ R ⇐⇒ 𝑥 ′ ∈ 𝑅 (𝑥 ). We use the following operations (all closed under affine integer sets and maps): 𝐴 −1 (inverse), 𝐴 ≻ 𝐵 (lexicographic order linking 𝑎 ∈ 𝐴 to all lesser 𝑏 ∈ 𝐵 ), 
+
+𝐴 ⪰ 𝐵, 𝐴 ≺ 𝐵, 𝐴 ⪯ 𝐵 (similar orderings), lexmax 𝐴 (lexicographic maximum of each image), 𝐴 ∩ 𝐵 
+
+(intersection), 𝐴 ◦ 𝐵 (composition). The Barvinok method counts integer points in parametric polytopes of the form {𝑥 ∈ Q𝑑 |
+
+𝐴𝑥 ≥ 𝐵𝑝 + 𝑐 }, where 𝐴 ∈ Z𝑚 ×𝑑 , 𝐵 ∈ Z𝑚 ×𝑛 , 𝑐 ∈ Z𝑚 . It outputs piecewise quasi-polynomials ,where each piece associates a region with a quasi-polynomial (extending ordinary polynomials with ceiling division and modulo operations) counting its integer points. 
+
+Definition 3.2 (Backward Reuse Interval). Let T [ 𝑡 ] denote the data item accessed at timestamp 𝑡 .Define 𝑡 ′ = max  𝑠 | 0 ≤ 𝑠 < 𝑡, T [ 𝑠 ] = T [ 𝑡 ] as the most recent prior timestamp accessing the same data item. The backward reuse interval at time 𝑡 is ri 𝑡 := 𝑡 − 𝑡 ′ =
+
+n
+
+𝑖 𝑡 ′ < 𝑖 ≤ 𝑡 
+
+o
+
+.
+
+If no such 𝑡 ′ exists, ri 𝑡 := ∞ (cold miss). We call the corresponding set 
+
+n
+
+𝑖 𝑡 ′ < 𝑖 ≤ 𝑡 
+
+o
+
+the ri-set 
+
+at 𝑡 , denoted ri-set (𝑡 ), with ri 𝑡 = |ri-set (𝑡 )| .
+
+3.3.2 Symbolic RI Analysis. We construct ri-set as an intersection of affine relations using fiber partitioning. A single-valued map 𝐴 : 𝑋 → 𝑌 induces the fiber relation 𝐾 𝐴 := {( 𝑥, 𝑥 ′) ∈ 𝑋 × 𝑋 |
+
+𝐴 (𝑥 ) = 𝐴 (𝑥 ′)} = 𝐴 −1 ◦ 𝐴 , which partitions 𝑋 into equivalence classes (fibers) of equal image. Intersecting 𝐾 𝐴 with another binary relation 𝑅 yields timestamps that satisfy both constraints. Fully Symbolic Analysis of Loop Locality 11    
+
+> Fiber
+> Order
+> Pred
+> Timestamp Space Data Access Space
+> Fig. 6. Diagram of the prev map construction.
+
+Let T be the timestamp space and A : T → D map each timestamp to its accessed data item. The predecessor set is 
+
+prev (A , T ) =
+
+
+
+A−1 ◦ A 
+
+
+
+∩ (T ≻ T ) ,
+
+intersecting the fiber relation with lexicographic order (see Figure 6). The ri-set is then 
+
+ri-set (A , T ) =  lexmax prev (A , T ) ◦ (T ≺ T )  ∩ (T ⪰ T ) .
+
+Since ri-set is an affine map, we compute each RI value via Barvinok as ri 𝑡 = |ri-set (𝑡 )| .
+
+3.3.3 Re-count RI Distribution with Re-parametrization. Computing all RI values as quasi-polynomials is not enough; we must also count the occurrences of each value. Enumerating all RI values is not feasible for symbolic parameters. All hope is not lost – we can exploit the piecewise structure of the domain to count efficiently, aggregating occurrences within each affine region instead of iterating over individual timestamps. Algorithm 1 takes piecewise quasi-polynomial input {( 𝑆 𝑖 , QP 𝑖 )} , where 𝑆 𝑖 is a subset of times-tamps and QP 𝑖 is its RI formula. Since disjoint subsets may share RI values, we group them by value and sum their cardinalities. The algorithm operates in two phases: (1) Reparameterization (lines 4–13): For constraints 𝐴𝑥 ≥ 𝐵𝑝 + 𝑐 with dimension vector 𝑥 and parameter vector 𝑝 , we move any dimension 𝑥 𝑖 appearing in QP 𝑖 from 𝑥 to 𝑝 , resulting in 𝑥 ′ and 𝑝 ′. The transformed constraints 
+
+𝐴 ′𝑥 ′ ≥ 𝐵 ′𝑝 ′ +𝑐 preserve the polytope structure, normalizing quasi-polynomials to group subsets by RI value in map 𝑇 . (2) Counting (lines 14–17): We compute cardinality 𝑐 𝑞 for each grouped subset to obtain occurrence counts, outputting distribution pairs (𝑆 𝑗 , 𝑐 𝑗 ) with symbolic counts 𝑐 𝑗 .
+
+3.3.4 Infinite Repeat. To model infinite repeat, we add a repetition dimension 𝑟 ∈ [ 0, 𝑅 ) where 𝑅 
+
+is a symbolic parameter representing the number of iterations. This makes both the timestamp space and RI counts grow linearly with 𝑅 . To compute the limiting RI portions as 𝑅 → ∞ , we apply L’Hôpital’s rule: since both the numerator (RI count) and denominator (total access count) are polynomials in 𝑅 , the limit equals the ratio of their leading coefficients. This allows efficient symbolic computation of infinite-repeat RI portions without explicit limit evaluation. 
+
+4 Hardness of Reuse Interval Distribution Derivation 
+
+Having established our algorithmic framework, we now examine the inherent computational complexity of RI distribution derivation before evaluating our implementation. This analysis motivates why even efficient tools face fundamental limits on certain program classes. We demonstrate that deriving RI distributions for affine programs is computationally hard. While one might expect hardness only for programs with complex control flows, we show that the problem remains intractable even for surprisingly simple structures: branch-free 3 nested loops with polynomial-bounded memory . 
+
+> 3By “branch-free”, we mean there are no if–else statements. 12 Yifan Zhu, Yekai Pan, Chen Ding, and Yanghui Wu
+
+Algorithm 1 Re-parameterization for computing RI distribution 
+
+Require: Piecewise quasi-polynomial {( 𝑆 𝑖 , QP 𝑖 )} 𝑛 𝑖 =1 where 𝑆 𝑖 is a domain subset and QP 𝑖 is a quasi-polynomial 
+
+Ensure: Distribution Dist as {( 𝑆 𝑗 , 𝑐 𝑗 )} where 𝑐 𝑗 is the cardinality formula  
+
+> 1:
+
+Initialize map 𝑇 with default value ∅ for each entry  
+
+> 2:
+
+for each 𝑖 ∈ { 1, . . . , 𝑛 } do  
+
+> 3:
+
+Let 𝐷 𝑖 , 𝑃 𝑖 be the dimension and parameter domains of 𝑆 𝑖  
+
+> 4:
+
+𝐷 ′ ← ∅ , 𝑃 ′ ← 𝑃 𝑖  
+
+> 5:
+
+for each 𝑑 ∈ 𝐷 𝑖 do  
+
+> 6:
+
+if 𝑑 ∈ var (QP 𝑖 ) then  
+
+> 7:
+
+𝑃 ′ ← 𝑃 ′ ∪ { 𝑑 } ⊲ Move dimension to parameters  
+
+> 8:
+
+else  
+
+> 9:
+
+𝐷 ′ ← 𝐷 ′ ∪ { 𝑑 } 
+
+> 10:
+
+end if  
+
+> 11:
+
+end for  
+
+> 12:
+
+Let 𝑆 ′ 
+
+> 𝑖
+
+be the reprojection of 𝑆 𝑖 onto (𝐷 ′, 𝑃 ′) 
+
+> 13:
+
+Let QP ′ 
+
+> 𝑖
+
+be the normalized QP 𝑖 on 𝑆 ′ 
+
+> 𝑖
+> 14:
+
+𝑇 [QP ′ 
+
+> 𝑖
+
+] ← 𝑇 [QP ′ 
+
+> 𝑖
+
+] ∪ 𝑆 ′ 
+
+> 𝑖
+
+⊲ Group subsets by RI value  
+
+> 15:
+
+end for  
+
+> 16:
+
+Dist ← ∅  
+
+> 17:
+
+for each 𝑞 ∈ keys (𝑇 ) do  
+
+> 18:
+
+Compute 𝑐 𝑞 ← cardinality (𝑇 [𝑞 ]) ⊲ Count occurrences of RI value 𝑞  
+
+> 19:
+
+Dist ← Dist ∪ {( 𝑇 [𝑞 ], 𝑐 𝑞 )}  
+
+> 20:
+
+end for  
+
+> 21:
+
+return Dist 
+
+Our reductions exploit a fundamental property: accessing a memory location intercepts the original trace, splitting long reuse intervals into shorter ones . This interception mechanism allows us to encode computational problems into RI distributions: a satisfying assignment induces strategic memory accesses that produce short RIs, while unsatisfiable formulas yield only long intervals. We establish hardness by reducing 3-SAT to RI queries. For a 3-SAT formula 
+
+𝜙 = 𝐶 1 ∧ 𝐶 2 ∧ · · · ∧ 𝐶 𝑚 ,
+
+where 𝐶 𝑖 = 𝑙 𝑖 1 ∨ 𝑙 𝑖 2 ∨ 𝑙 𝑖 3 and each literal is over variables 𝑥 𝑘 (𝑘 ∈ [ 𝑛 ]), we encode each clause by 
+
+𝑣 𝑖 1 + 𝑣 𝑖 2 + 𝑣 𝑖 3
+
+3
+
+
+
+, 𝑣 𝑖 𝑗 :=
+
+(
+
+𝑥 𝑘 𝑙 𝑖 𝑗 = 𝑥 𝑘 ,
+
+1 − 𝑥 𝑘 𝑙 𝑖 𝑗 = ¬𝑥 𝑘 .
+
+The value is 1 when the clause is satisfied and 0 otherwise. Since 𝑚 ≤ 𝑂 (𝑛 3), we require only polynomial memory. 
+
+Theorem 4.1. Determining whether a specific RI value appears in a branch-free affine program with polynomial-bounded memory is NP-complete. 
+
+Proof. We reduce 3-SAT to RI detection using the program in Figure 7a. The nested loops enumerate all 2𝑛 truth assignments. If 𝜙 is satisfiable, at least one iteration evaluates Í 𝐶 𝑖 = 𝑚 , so the program accesses 𝐴 [𝑚 ] inside the loop. This intercepts the trace, producing an RI value < 2𝑛 + 1.If unsatisfiable, every iteration accesses a distinct location, so the only RI between the boundary accesses is exactly 2𝑛 + 1. Thus RI-detection is NP-complete. □
+
+Theorem 4.2. Counting the number of occurrences of a specific RI value in a branch-free affine program is #P-complete. Fully Symbolic Analysis of Loop Locality 13                                                                      
+
+> access (A[m ]);
+> for (int i1 =0; i1 <= 1; i1 ++)
+> for (int i2 =0; i2 <= 1; i2 ++) ...
+> for (int in =0; in <= 1; in ++) access (A[ C1 +C2 +... +Cm ]); access (A[m ]);
+> (a) Program used in the NP-completeness reduction.
+> for (int i1 =0; i1 <= 1; i1 ++)
+> for (int i2 =0; i2 <= 1; i2 ++) ...
+> for (int in =0; in <= 1; in ++) {access (A[m ]); access (A[ C1 +C2 +... +Cm ]); access (A[m +1]); }
+> (b) Program used in the #P-completeness reduction. Fig. 7. Side-by-side programs for the hardness reductions.
+
+Proof. We reduce #3-SAT to RI counting using the program in Figure 7b. For each satisfying assignment ( Í 𝐶 𝑖 = 𝑚 ), the two consecutive accesses to 𝐴 [𝑚 ] produce exactly one RI of value 1.For unsatisfying assignments, all three accesses touch different addresses, producing no RI of value 1. Thus the number of RIs of value 1 equals the number of satisfying assignments, proving #P-completeness. □
+
+These results indicate that deriving the full RI distribution is fundamentally difficult—even in branch-free affine programs with polynomial memory. The trace-interception mechanism has enough expressive power to encode NP- and #P-complete problems, implying that the hardness arises from the expressive loop-and-access structure itself rather than from control-flow complexity or unbounded memory. As shown in Section 5, although the general problem is NP-hard, our compiler achieves practical performance because (1) affine structure yields low-dimensional polytopes, (2) Barvinok’s algorithm performs well in such settings, and (3) most benchmarks exhibit few distinct RI values. The hardness primarily affects extreme cases with high loop dimensionality or adversarially constructed access patterns. 
+
+5 Evaluation 
+
+This section evaluates the time cost of the new theory and its compiler implementation, as well as the accuracy in approximating the miss ratio of LRU caches. 
+
+5.1 Experimental Setup 
+
+We evaluate our approach using two benchmark suites: a collection of 11 Einsum loop kernels [ 8]and 30 programs from the Polybench suite [ 41 ]. The Einsum loops are commonly used in machine learning kernels and quantum circuit (tensor-network) simulation [ 16 , 20 , 25 , 28 , 54 , 55 ]. We omit 6 out of 17 example kernels of the Einsum benchmark because their data reuse pattern is trivial to analyze, e.g., cache-block reuse only. Instead of using a full loop, we split the Einsum loops and cache intermediate results that are repeatedly used, as suggested in [ 20 ]. An input program is compiled and analyzed as described in Section 3. In addition to the original code, we apply first loop fusion transformations and then the analysis. We use mlir-opt to apply the affine-loop-fusion 
+
+pass [ 31 ]. It works specifically on loops expressed in the MLIR affine dialect. Due to a known bug in the fusion cost model in previous versions, we require LLVM version 21 or higher. We use cache simulations by Cachegrind [ 47 ]. Execution time data is collected from a 64-core AMD EPYC 7773X processor. Hardware counter experiments are run on a 20-core Nvidia GB10 4. 
+
+> 4We bind test programs to GB10’s most capable Cortex-X925 core. 14 Yifan Zhu, Yekai Pan, Chen Ding, and Yanghui Wu
+> Fig. 8. Tensor Contraction Kernel Miss Count Curves
+
+All programs are compiled with the -O3 flag to reduce stack spilling and other removable memory accesses. We apply array padding manually in all programs to avoid conflict misses. The innermost (contiguous) dimension is padded to 8𝑝 , where 8 is the cache block size in number of data elements, and 𝑝 is the smallest prime number such that 8𝑝 is greater or equal than the original array dimension. The satisfies the alignment that the last dimension is a multiple of block size. For all outer dimensions except for the outermost, we round up to the nearest prime number greater than or equal to the dimension size. 
+
+5.2 Miss Count and Miss Ratio Accuracy 
+
+We first compare our prediction with Cachegrind’s simulation. Figure 8 presents a comparison across cache sizes by miss ratio curves. For Einsum loops, the predicted miss ratio curve matches that of simulated fully associative cache, especially for cache sizes over a hundred bytes, for 10 of the 11 tests. The exception is weighted_model_counting_pattern , which shows a moving-cliff error, where it correctly predicts miss ratios but underestimates the cache size at which the drop occurs (see Section 2.5). Due to space limits, we use three cache sizes, 6KB, 12KB, and 48KB, for the 30 Polybench tests and show the results together in one table in Figure 9. For each cache size, we compare fully assocativity and 12-way set associativity. For each cache configuration, the table shows two miss ratios: the Fully Symbolic Analysis of Loop Locality 15 
+
+simulation and the prediction. The last four columns show the comparison of the averages across three cache size. 
+
+> Fig. 9. Prediction error across 30 Polybench benchmarks under varying cache configurations. Columns represent fully associative (FA) and 12-way associative (12WA) caches at different sizes. The cell color reflects the amount of prediction error, while the digits in each cell indicate the simulated miss ratio value.
+
+The table is color coded by the error in prediction, which is the absolute difference between the number of predicted and simulated misses over the total access count. Across all 180 comparisons, the maximal error is 14%, which is the top value of the color bar on the right. The majority, 60%, is less than 1%, and most of these, 45%, is less than 0.1%. Only 13 comparisons, 7.2% of tests, have an error 5% or greater, and they all happen at the 12KB cache size. On average across three cache sizes, the prediction is highly accurate for full associativity, less than 0.01% in 12 tests, between 0.01% and 1% in 9 tests, and between 1% and 5% in the remaining 9 tests. The average error across all 30 tests is 1.1%. In comparison, the average miss ratio is 16%. 
+
+Set-associative Cache. Set conflicts can significantly increase the miss count. In a 12-way set-associative cache, if the stride of array accesses aligns such that the contiguous dimension of the array shares a common factor with 12, the array data may have a biased mapping that only utilize a small portion of the sets. Our padding scheme (Section 5.1) effectively removes conflict misses such that the set-associative cache performs the same as fully associative cache. This is shown by the miss count curves for the 11 Einsum tests in Figure 8, where the miss ratios of set-associative caches, marked by ×, fall on the miss ratio curve of the fully associative cache. Polybench is tested on three sizes of set-associative caches, shown in color-coded Figure 9, with the last two columns showing the average across three cache sizes. Overall in average, the miss ratio is similar, 15.6% in 12-way vs 16.1% in fully associative cache. The accuracy is also similar, with less than 0.01% error in 10 tests, between 0.01% and 1% in 12 tests, and between 1% and 5% in the remaining 9 tests. The average error is 1.3%. Statistical techniques have been developed to model set-associative cache. Smith [ 46 ] gave the classic formula for using reuse distances to estimate conflict errors in set-associative caches, which is used in later tools, including the HPCToolkit [ 33 ]. There are two other models: Set-RD [ 36 , 44 ] and 16 Yifan Zhu, Yekai Pan, Chen Ding, and Yanghui Wu 
+
+mapped footprint [ 32 ]. For regular loop code and the high associativity used by modern processors, we found that array padding is sufficient for it to perform similarly to a fully associative cache. 
+
+Loop Fusion Optimization. Loop fusion is widely studied, for example, in [ 11 , 15 ]. We test our programs after MLIR’s affine-loop-fusion , which has two fusion strategies 5: producer-consumer fusion and sibling fusion. Producer-consumer fusion focuses on merging loop pairs in which the producer loop writes to a memory reference that the consumer loop subsequently reads. Sibling fusion addresses loop pairs with not necessarily data dependence but those that have the same iteration. We use the default computation overhead threshold ( 30% ) for producer-consumer fusion as shipped in LLVM 21. Over 86% of errors in Figure 10 are less than 2% , and all are less than 4% except lu and ludcmp .In these two programs, loop bounds depend on induction variables. We note another case, adi .Before loop fusion, it has a moving-cliff error up to 12% caused by having multiple loop nests. The prediction is completely accurate after loop fusion. 
+
+> Fig. 10. Prediction error across 12 programs affected by MLIR affine loop fusion, under varying cache configurations. Columns represent fully associative (FA) and 12-way associative (12WA) caches at different sizes. The cell color reflects the amount of prediction error, while the digits in each cell indicate the simulated miss ratio value.
+
+48KB 12-way Set Associative Cache. This particular configuration, with 64-byte blocks (8 double-precision floating point numbers) is found on the performance cores of Intel Core processors from the 10th to the 14th generation, from Sunny Cove (in Ice Lake processors) through Golden Cove and Redwood Cove (in Alder Lake and Raptor Lake). In addition, AMD’s Zen5 cores use the same associativity and size for its L1 data cache. The actual cache replacement policy is not public. Our simulation uses LRU (while Section 5.4 will show actual miss counts). The comparisons are shown in Figures 9 and 10. Before loop fusion, the average miss ratio is 4.1%, and the prediction error is 0.5%. After loop fusion (12 tests), the average miss ratio is 7%, while the error is 0.4%, with all but one less than 1%. The average error is 0.43% cross all 41 tests of this cache configuration. 
+
+> 5Descriptions were summarized from MLIR’s document (https://mlir.llvm.org/docs/Passes/#-affine-loop-fusion)
+
+Fully Symbolic Analysis of Loop Locality 17 
+
+Data Movement Prediction Accuracy. In standard definition, 𝑥 % accuracy means that 𝑥 % memory accesses are predicted correctly whether it is a hit or a miss. For data movement analysis, the aggregate is required, while the order of hits and misses does not matter. Thus, we transform a trace of accesses into a sequence of hits and misses and then permute it so all hits precede all misses. Given a predicted miss ratio, we generate a predicted sequence with hits followed by misses at that ratio. We define data movement prediction accuracy as the fraction of elements, including both hits and misses, that match between the permuted sequence and the predicted sequence. When the miss ratio error is 0.4%, the predictions align with 99.6% of the permuted sequence. The accuracy of data movement prediction is therefore 99.6%. In our tests, the miss ratio may differ by orders of magnitude. The average accuracy, when defined on the miss ratio or the hit ratio, can be made unfair by one test, for example, a low relative accuracy but on a very small miss ratio. In comparison, the data movement accuracy is normalized the same way across all tests, regardless of their hit or miss ratio. 
+
+The Real Effect of Imaginary Reuses. Imaginary reuses are crucial for accuracy. In an early, incomplete evaluation including 23 PolyBench kernels tested against simulation on 32KB fully associative cache, without Imaginary Reuses, the prediction error is up to 19.88% in the worst case and 2.15% on average. With Imaginary Reuses, the maximum error is reduced to 1.53%, and the average error drops to 0.18% — a more than tenfold improvement in accuracy. 
+
+5.3 Analysis and Prediction Costs 
+
+Figure 11 shows the time takes an EPYC 7773X to derive cache polynomials and to use them in prediction. It labels the former as construction and latter as prediction .Einsum 
+
+> (no fusion)
+> Polybench
+> (no fusion)
+> Einsum
+> (fusion)
+> Polybench
+> (fusion)
+> 0
+> 100
+> 200
+> 300
+> 400
+> 500
+> 600
+> Construction Time (seconds)
+> Model Construction Time
+> Einsum
+> (no fusion)
+> Polybench
+> (no fusion)
+> Einsum
+> (fusion)
+> Polybench
+> (fusion)
+> 0.00
+> 0.01
+> 0.02
+> 0.03
+> 0.04
+> 0.05
+> 0.06
+> Prediction Time (seconds)
+> Cache Miss Prediction Time
+
+Fig. 11. Violin plots of timing distributions for the model construction and prediction phases. The scales differ significantly between the two phases, hence they are plotted separately for clarity. 
+
+For derivation, most programs without fusion run under 50 seconds, with its median around 
+
+65 seconds. Long derivation times occur in maxcut_quantum_network_pattern , with 12 nesting depth, and tensor_regression_network_pattern with 11 -nested loops, due to the high dimen-sionality of their timestamp spaces. Programs with loop fusion generally show an increase in 
+
+construction time, as producer-consumer fusion may make the program more complex. Once the polynomials are derived, prediction is instantaneous —- all programs complete within 65 milliseconds. The prediction time is independent of the complexity of the program itself but correlates with the number of symbolic terms. We observe that loop fusion has minimal effects on 
+
+prediction time. 18 Yifan Zhu, Yekai Pan, Chen Ding, and Yanghui Wu 
+
+5.4 Comparison with Hardware Counters 
+
+We validate our prediction methodology by comparing simulation results against hardware perfor-mance counters on Nvidia GB10’s Cortex-X925. We collect measurements using ARM PMU events 
+
+l1d_cache_refill and l1d_cache . The Cortex-X925 employs a 64KiB 4-way set-associative L1d cache. To reduce measurement noise inherent in hardware counters for small workloads, we limit our analysis to test cases with refill counts exceeding 600,000. All experiments use the padding configuration described in Section 5.1. Figure 12 demonstrates strong agreement between simulation and hardware counter measure-ments. While fdtd-2d , correlation , and covariance exhibit slightly higher relative differences, the absolute discrepancies remain small. In heat-3d , prediction is lower simulation because of the moving-cliff error (Section 2.5), but the simulation matches with the hardware counter result. In all other cases, our predictions are accurate compared to both the simulation and the hardware measurements. 
+
+> Fig. 12. Comparing hardware-counter result with prediction and simulation
+
+5.5 Cache Min-Max Scaling 
+
+In analyzing cache demand, a well-known rule-of-thumb is the √2 rule , which states that if you double the problem size, you need to multiply the cache size by √2 to maintain the same cache hit ratio [ 22 ]. This rule has been empirically validated across workloads in database systems (scaling buffer pool sizes), file system caches, and Web caching. Cache polynomials can be used to derive the cache scaling like the √2 rule. We define the cache min-max scaling as: the minimal cache size required to bound the maximum miss ratio below a given threshold. For a program, its min-max scaling gives the smallest cache size that guarantees the miss ratio never exceeds a specified upper bound. Table 3 shows the scaling for naive matrix multiplication. The two data columns show the maximal miss ratio on the left and the minimal cache size on the right. They are copied from Table 1, where the cache size and miss ratio polynomials are directly copied here to give the min-max scaling. Since the cache size must be integral, we take the ceiling of the constant terms when copied from Table 1. The top row shows the starting point: no cache, no hits. With just 1 block, we bound the max miss ratio to 0.75. As we increase the cache size to 3 and then 4 blocks, the miss ratio drops to at most 12 + 132 ≈ 0.53 and then to 10/32 ( 0.31). When the required cache size scales linearly with 𝑛 ,Fully Symbolic Analysis of Loop Locality 19 
+
+> Table 3. Cache Min-Max Scaling of Naive Matrix Multiplication
+
+Index min cache size max miss ratio 0 0 1
+
+1 1 34
+
+2 3 12 + 132 𝑛 
+
+3 4 932 + 132 𝑛 
+
+4 9𝑛  
+
+> 8
+
+− 9 14 + 116 𝑛 
+
+5 9𝑛  
+
+> 8
+
++ 2 132 + 116 𝑛 
+
+6 𝑛 2 
+
+> 8
+
++ 3𝑛  
+
+> 8
+
+− 2 332 𝑛 
+
+the miss ratio is bounded as low as 3/32 ( 0.09). This is the √2 rule. Finally, the minimal cache size is precisely 𝑛 2 
+
+> 8
+
++ 3𝑛  
+
+> 8
+
+− 2 to capture all data reuses, that is, all cache misses are cold-start misses. Row 4 and 5 both scale by the √2 rule. To maintain the maximal miss ratio, the cache size increases linearly with 𝑛 , while the data size is quadratic in 𝑛 . Each time the data size doubles, the minimal cache size increases by √2.Compared to √2 rule, the min-max scaling is fully precise in the exact cache size and miss ratio. The precision shows important differences. First, the miss ratio may not be unqiue. For example, Row 4 and 5 both scale by the same √2 rule, but the miss ratio differs by a factor of two. Second, the miss ratio may not be constant. At Row 5, the miss ratio is 132 + 116 𝑛 , which decreases by a factor of three from 332 to 131 as 𝑛 increases from 1 to infinity. 
+
+6 Related Work 
+
+Trace-based Locality Characterization. The iterative method to compute locality comes originally from the working-set theory. It targets unending stochastic processes. Denning and Schwartz [14] made three assumptions: (1) the sequence is infinite, (2) the underlying stochastic mechanism is stationary, and (3) the events become uncorrelated as they are far apart. The working-set theory computes the limit of the working-set size. For example, a nonrecurrent page is referenced at most a finite number of times. They make no contribution to the limit working-set size. As we refer to as the cold-miss dilemma (Section 2.2), this assumption does not hold in program analysis where there is a nonzero portion of infinite RIs. For a finite-length execution trace, the Higher Order Theory of Locality (HOTL) [ 60 ] defined the footprint as the average working-set size of all windows of the same length (which can be computed in linear time for all window lengths). The effect of first-touch accesses is included in the footprint as computed by the Xiang formula [ 59 ], which uses first- and last-access times but not infinite RIs. The fastest techniques in practice are based on RIs, because RIs can be efficiently sampled [ 5,53 , 60 ]. Yuan et al . [64 , §3.3 ] showed that these models are mathematically equivalent to Denning Recursion. These include the time-to-RD conversion by the Shen-Shaw formula [ 45 ] and its uses in the programming tool SLO [ 7 ] and Featherlight RD using hardware counters [ 52 ], StatStack [ 17 ], and Average Eviction Time (AET) based analysis of storage caches [ 24 , 38 , 61 ], and multi-level caches [ 62 ]. While the Shen-Shaw formula and StatStack are based on statistical reasoning, and AET is based on a kinetic model of cache eviction, they are all fundamentally variations of Denning Recursion. 20 Yifan Zhu, Yekai Pan, Chen Ding, and Yanghui Wu 
+
+Problem Size Scaling. By profiling results for a number of program inputs, a common approach is to extrapolate and predict the effect of other program inputs. Such techniques have been developed for both program analysis [ 18 , 33 , 66 ] and architecture or cache scaling analysis [ 58 ]. Profiling reuse distance incurs a high runtime cost, which can be reduced by approximation [ 9, 37 , 56 , 66 ], sampling [ 43 , 65 ] and parallelization [ 12 , 35 , 43 ]. These techniques model LRU directly and do not have moving-cliff errors. Being data driven, they are not limited to loop code. 
+
+Affine Loop Analysis. Harper et al . [21] presented an analytical approach to modeling for both set-associative and fully-associative caches. They targeted perfectly nested loops with constant loop bounds and affine array references. Their approach represents each array reference’s physical memory location (with the addition of offset between the arrays) as an affine expression and uses modulo arithmetic to determine how memory accesses map into cache sets, characterizing interfer-ence through an overlap metric that counts cache lines competing for each set. Their approach achieves an accurate prediction, typically within 15% of the simulation result. In comparison, our approach provides comparable accuracy while handling symbolic loop bounds, imperfectly nested loops, branches, and variable cache block sizes. Prior techniques [ 4 , 6, 19 , 26 , 40 , 51 ] have shown that the reuse distance (LRU stack distance) computation problem for certain affine programs can be converted into a counting problem involving integer points in the union or intersection of parametric polytopes. The range of consecutive accesses can be modeled as an affine constrained set, and reuse distance values can be computed as the cardinality of this set. This work also uses integer set for affine loops, but the purpose is reuse intervals rather than cache behavior. We have shown that the problem is NP-hard, so there is no polynomial-time solution unless P=NP. Our solution takes a similar approach as previous techniques to identify data reuse. For a data reuse, it is simple to obtain its RI as the length of the reuse window. Previous work on PolyCache [ 4] reports runtime performance across Polybench kernels. On their system, the mean time is 76.2 seconds, median 37.0 seconds, minimum 1 second ( jacobi-1D ,
+
+seidel ), and maximum 323 seconds ( symm ). In comparison, our compiler takes 65 seconds on average for derivation and less than 0.1 second for prediction. PolyCache requires numerical loop bounds, cache size, and cache block size. It does not have a symbolic derivation phase as our method does. Finally, previous techniques do not express locality in polynomial form. The min-max scaling in Table 3 is the first demonstration of automatically deriving cache-performance scaling expressed through quadratic and reciprocal functions. In contrast to traditional approaches that rely on empirical rules such as the √2 rule for capacity scaling [ 22 ], min-max scaling captures the exact miss ratio, which can be inherently non-constant. 
+
+7 Summary 
+
+This paper introduces algebraic locality, a theory that derives cache size and miss polynomials from symbolic RI distributions. It uses Infinite Repeat and converts first-touch accesses into imaginary reuses, yielding a complete RI distribution. Applying Denning Recursion then produces cache-size and miss-ratio polynomials in closed-form expressions that capture locality as algebraic functions of both program and cache parameters. In addition, we build a compiler for the affine MLIR dialect that converts loop nests into parametric polytopes and computes symbolic RI distributions using integer-set methods and Barvinok decomposition. On 41 scientific kernels and tensor operations from PolyBench and Einsum suites, deriving cache polynomials takes 41 seconds on average for all test before loop fusion and 224 seconds for 12 fused kernels. After derivation, predicting cache misses for any program input and cache configuration Fully Symbolic Analysis of Loop Locality 21 
+
+takes under 1 ms. The approach achieves an average accuracy of 99.6% for the typical L1D set-associative cache. In addition, the paper shows the first compiler analysis for cache-performance scaling expressed symbolically in quadratic and reciprocal expressions. The min-max scaling for affine loops is fully precise, unlike traditional scaling rules such as the √2 rule, well known for database systems (scaling buffer pool sizes), file system caches, and Web caching. 
+
+Acknowledgments 
+
+The authors wish to thank Jack Cashman for early participation in the project and Sree Pai for help with the presentation of the paper. 
+
+References 
+
+[1] Aravind Acharya, Uday Bondhugula, and Albert Cohen. 2018. Polyhedral auto-transformation with no integer linear programming. In Proceedings of the ACM SIGPLAN Conference on Programming Language Design and Implementation ,Jeffrey S. Foster and Dan Grossman (Eds.). ACM, 529–542. [2] Alfred V. Aho, Monica S. Lam, Ravi Sethi, and Jeffrey D. Ullman. 2006. Compilers: Principles, Techniques, and Tools (2nd ed.). Addison-Wesley. [3] Randy Allen and Ken Kennedy. 2001. Optimizing Compilers for Modern Architectures: A Dependence-based Approach .Morgan Kaufmann Publishers. [4] Wenlei Bao, Sriram Krishnamoorthy, Louis-Noël Pouchet, and P. Sadayappan. 2018. Analytical modeling of cache behavior for affine programs. Proceedings of the ACM on Programming Languages 2, POPL (2018), 32:1–32:26. [5] Kristof Beyls and Erik D‘Hollander. 2004. Platform-independent cache optimization by pinpointing low-locality reuse. In Proceedings of the International Conference on Computational Science , M. Bubak, G.D. van Albada, P.M.A. Sloot, and J.J. Dongarra (Eds.), Vol. 3038. Springer-Verlag Heidelberg, Krakow, 448–455. [6] Kristof Beyls and Erik H. D’Hollander. 2005. Generating cache hints for improved program efficiency. Journal of Systems Architecture 51, 4 (2005), 223–250. [7] Kristof Beyls and Erik H. D’Hollander. 2006. Discovery of locality-improving refactoring by reuse path analysis. In 
+
+Proceedings of High Performance Computing and Communications. Springer. Lecture Notes in Computer Science , Vol. 4208. 220–229. [8] Mark Blacher, Christoph Staudt, Julien Klaus, Maurice Wenig, Niklas Merk, Alexander Breuer, Max Engel, Sören Laue, and Joachim Giesen. 2024. Einsum Benchmark: Enabling the Development of Next-Generation Tensor Execution Engines. In The Thirty-eight Conference on Neural Information Processing Systems Datasets and Benchmarks Track .https://openreview.net/forum?id=tllpLtt14h [9] Calin Cascaval and David A. Padua. 2003. Estimating cache misses and locality using stack distances. In Proceedings of the International Conference on Supercomputing . 150–159. [10] Dong Chen, Chen Ding, Fangzhou Liu, Benjamin Reber, Wesley Smith, and Pengcheng Li. 2021. Uniform lease vs. LRU cache: analysis and evaluation. In ISMM ’21: 2021 ACM SIGPLAN International Symposium on Memory Management, Virtual Event, Canada, 22 June 2021 , Zhenlin Wang and Tobias Wrigstad (Eds.). ACM, 15–27. [11] D. Cociorva, G. Baumgartner, C. Lam, P. Sadayappan, J. Ramanujam, M. Nooijen, D. E. Bernholdt, and R. Harrison. 2002. Space-Time Trade-Off Optimization for a Class of Electronic Structure Calculations. In Proceedings of the ACM SIGPLAN Conference on Programming Language Design and Implementation . Berlin, Germany. [12] Huimin Cui, Qing Yi, Jingling Xue, Lei Wang, Yang Yang, and Xiaobing Feng. 2012. A Highly Parallel Reuse Distance Analysis Algorithm on GPUs. In Proceedings of the International Parallel and Distributed Processing Symposium .[13] Peter J. Denning. 2021. Working Set Analytics. ACM Computing Survey 53, 6 (2021), 113:1–113:36. doi:10.1145/3399709 [14] Peter J. Denning and Stuart C. Schwartz. 1972. Properties of the working set model. Commun. ACM 15, 3 (1972), 191–198. [15] C. Ding and K. Kennedy. 2004. Improving effective bandwidth through compiler enhancement of global cache reuse. J. Parallel and Distrib. Comput. 64, 1 (2004), 108–134. [16] Aditya Dubey, Zeki Zeybek, and Peter Schmelcher. 2025. Simulating quantum circuits with tree tensor networks using density-matrix renormalization group algorithm. Phys. Rev. B 112 (Sep 2025), 104312. Issue 10. doi:10.1103/64hd-q4z5 [17] David Eklov and Erik Hagersten. 2010. StatStack: Efficient modeling of LRU caches. In Proceedings of the IEEE International Symposium on Performance Analysis of Systems and Software . 55–65. [18] Changpeng Fang, Steve Carr, Soner Önder, and Zhenlin Wang. 2005. Instruction Based Memory Distance Analysis and its Application. In Proceedings of the International Conference on Parallel Architecture and Compilation Techniques .27–37. 22 Yifan Zhu, Yekai Pan, Chen Ding, and Yanghui Wu 
+
+[19] S. Ghosh, M. Martonosi, and S. Malik. 1999. Cache Miss Equations: A Compiler Framework for Analyzing and Tuning Memory Behavior. ACM Transactions on Programming Languages and Systems 21, 4 (1999). [20] Johnnie Gray and Garnet Kin-Lic Chan. 2024. Hyper-optimized approximate contraction of tensor networks with arbitrary geometry. Phys. Rev. X 14 (2024), 011009. doi:10.1103/PhysRevX.14.011009 [21] J.S. Harper, D.J. Kerbyson, and G.R. Nudd. 1999. Analytical modeling of set-associative cache behavior. IEEE Trans. Comput. 48, 10 (1999), 1009–1024. doi:10.1109/12.805152 [22] Allan Hartstein, Vijayalakshmi Srinivasan, Thomas R. Puzak, and Philip G. Emma. 2008. On the Nature of Cache Miss Behavior: Is It √2? J. Instr. Level Parallelism 10 (2008). [23] M. D. Hill. 1987. Aspects of cache memory and instruction buffer performance . Ph. D. Dissertation. University of California, Berkeley. [24] Xiameng Hu, Xiaolin Wang, Lan Zhou, Yingwei Luo, Zhenlin Wang, Chen Ding, and Chencheng Ye. 2018. Fast Miss Ratio Curve Modeling for Storage Cache. ACM Transactions on Storage 14, 2 (2018), 12:1–12:34. doi:10.1145/3185751 [25] Cameron Ibrahim, Danylo Lykov, Zichang He, Yuri Alexeev, and Ilya Safro. 2022. Constructing Optimal Contraction Trees for Tensor Network Quantum Circuit Simulation. In 2022 IEEE High Performance Extreme Computing Conference (HPEC) . IEEE. doi:10.1109/HPEC5821.2022.9926353 [26] William Kelly, Vadim Maslov, William Pugh, Evan Rosser, and Tatiana Shpeisman. 1999. Loop Tiling for Parallelism. In Proceedings of the Workshop on Languages and Compilers for Parallel Computing (Lecture Notes in Computer Science, Vol. 1656) . Springer, Berlin, Heidelberg, 295–308. [27] Fredrik Kjolstad, Shoaib Kamil, Stephen Chou, David Lugato, and Saman P. Amarasinghe. 2017. The tensor algebra compiler. Proc. ACM Program. Lang. 1, OOPSLA (2017), 77:1–77:29. http://tensor-compiler.org/codegen.html [28] Arthur M. Krause, Paulo C. Santos, Arthur F. Lorenzon, and Philippe O. A. Navaux. 2024. HBPB: Applying Reuse Distance to Improve Cache Efficiency Proactively. J. Parallel and Distrib. Comput. 188 (2024), 104919. doi:10.1016/j.jp dc.2024.104919 [29] Chris Lattner, Mehdi Amini, Uday Bondhugula, Albert Cohen, Andy Davis, Jacques Pienaar, River Riddle, Tatiana Shpeisman, Nicolas Vasilache, and Oleksandr Zinenko. 2021. MLIR: scaling compiler infrastructure for domain specific computation. In Proceedings of the 2021 IEEE/ACM International Symposium on Code Generation and Optimization 
+
+(Virtual Event, Republic of Korea) (CGO ’21) . IEEE Press, 2–14. doi:10.1109/CGO51591.2021.9370308 [30] Rui Li, Aravind Sukumaran-Rajam, Richard Veras, Tze Meng Low, Fabrice Rastello, Atanas Rountev, and P. Sadayappan. 2019. Analytical cache modeling and tilesize optimization for tensor contractions. In Proceedings of the International Conference for High Performance Computing, Networking, Storage and Analysis (SC) , Michela Taufer, Pavan Balaji, and Antonio J. Peña (Eds.). ACM, 74:1–74:13. [31] LLVM Project. 2025. Passes. https://mlir.llvm.org/docs/Passes/. Accessed: 2025-11-11. [32] Hao Luo, Guoyang Chen, Fangzhou Liu, Pengcheng Li, Chen Ding, and Xipeng Shen. 2018. Footprint modeling of cache associativity and granularity. In Proceedings of the International Symposium on Memory Systems (MEMSYS) .232–242. doi:10.1145/3240302.3240419 [33] G. Marin and J. Mellor-Crummey. 2004. Cross architecture performance predictions for scientific applications using parameterized models. In Proceedings of the International Conference on Measurement and Modeling of Computer Systems .2–13. [34] William S. Moses, Lorenzo Chelini, Ruizhe Zhao, and Oleksandr Zinenko. 2021. Polygeist: Raising C to Polyhedral MLIR. In Proceedings of the ACM International Conference on Parallel Architectures and Compilation Techniques (Virtual Event) (PACT ’21) . Association for Computing Machinery, New York, NY, USA, 12 pages. [35] Qingpeng Niu, James Dinan, Qingda Lu, and P. Sadayappan. 2012. PARDA: A Fast Parallel Reuse Distance Analysis Algorithm. In Proceedings of the International Parallel and Distributed Processing Symposium .[36] Cedric Nugteren, Gert-Jan van den Braak, Henk Corporaal, and Henri E. Bal. 2014. A detailed GPU cache model based on reuse distance theory. In Proceedings of the International Symposium on High-Performance Computer Architecture .[37] F. Olken. 1981. Efficient methods for calculating the success function of fixed space replacement policies . Technical Report LBL-12370. Lawrence Berkeley Laboratory. [38] Cheng Pan, Xiaolin Wang, Yingwei Luo, and Zhenlin Wang. 2021. Penalty- and Locality-aware Memory Allocation in Redis Using Enhanced AET. ACM Transactions on Storage 17, 2 (2021), 15:1–15:45. [39] Tharindu Rusira Patabandi and Mary W. Hall. 2023. Efficiently Learning Locality Optimizations by Decomposing Transformation Domains. In Proceedings of the International Conference on Compiler Construction , Clark Verbrugge, Ondrej Lhoták, and Xipeng Shen (Eds.). ACM, 37–49. [40] Arjun Pitchanathan, Kunwar Grover, and Tobias Grosser. 2024. Falcon: A Scalable Analytical Cache Model. Proc. ACM Program. Lang. 8, PLDI, Article 222 (jun 2024), 25 pages. doi:10.1145/3656452 [41] Louis-Noël Pouchet. [n. d.]. PolyBench/C 4.0. http://polybench.sourceforge.net. [42] Jonathan Ragan-Kelley, Connelly Barnes, Andrew Adams, Sylvain Paris, Frédo Durand, and Saman P. Amarasinghe. 2013. Halide: a language and compiler for optimizing parallelism, locality, and recomputation in image processing Fully Symbolic Analysis of Loop Locality 23 
+
+pipelines. In Proceedings of the ACM SIGPLAN Conference on Programming Language Design and Implementation .519–530. doi:10.1145/2491956.2462176 [43] Derek L. Schuff, Milind Kulkarni, and Vijay S. Pai. 2010. Accelerating multicore reuse distance analysis with sampling and parallelization. In Proceedings of the International Conference on Parallel Architecture and Compilation Techniques .53–64. [44] Rathijit Sen and David A. Wood. 2013. Reuse-based online models for caches. In Proceedings of the International Conference on Measurement and Modeling of Computer Systems . 279–292. [45] Xipeng Shen, Jonathan Shaw, Brian Meeker, and Chen Ding. 2007. Locality approximation using time. In Proceedings of the ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages . 55–61. [46] A. J. Smith. 1976. On the Effectiveness of Set Associative Page Mapping and Its Applications in Main Memory Management. In Proceedings of the International Conference on Software Engineering .[47] Valgrind [n. d.]. Valgrind Documentation, release 3.2.0, June 2006. http://valgrind.org/docs/manual/index.html. [48] Nicolas Vasilache, Oleksandr Zinenko, Theodoros Theodoridis, Priya Goyal, Zachary DeVito, William S. Moses, Sven Verdoolaege, Andrew Adams, and Albert Cohen. 2020. The Next 700 Accelerated Layers: From Mathematical Expressions of Network Computation Graphs to Accelerated GPU Kernels, Automatically. ACM Transactions on Architecture and Code Optimization 16, 4 (2020), 38:1–38:26. [49] Sven Verdoolaege. 2010. isl: An Integer Set Library for the Polyhedral Model. In Mathematical Software - ICMS 2010 ,Komei Fukuda, Joris Hoeven, Michael Joswig, and Nobuki Takayama (Eds.). Lecture Notes in Computer Science, Vol. 6327. Springer, 299–302. [50] Sven Verdoolaege et al . 2024. Barvinok: A Library for Counting the Number of Integer Points in Parametric and Non-Parametric Polytopes. https://barvinok.sourceforge.io/. Version 0.41.8, accessed March 12, 2026. [51] Sven Verdoolaege, Rachid Seghir, Kristof Beyls, Vincent Loechner, and Maurice Bruynooghe. 2007. Counting Integer Points in Parametric Polytopes Using Barvinok’s Rational Functions. Algorithmica 48, 1 (March 2007), 37–66. doi:10.1 007/s00453-006-1231-0 [52] Qingsen Wang, Xu Liu, and Milind Chabbi. 2019. Featherlight Reuse-Distance Measurement. In Proceedings of the International Symposium on High-Performance Computer Architecture . IEEE, 440–453. doi:10.1109/HPCA.2019.00056 [53] Wang et al. 2015. Optimal Program Symbiosis in Shared Cache. In Proceedings of the IEEE International Symposium on Cluster Computing and the Grid .[54] J. Weinberg, M.O. McCracken, E. Strohmaier, and A. Snavely. 2005. Quantifying Locality In The Memory Access Patterns of HPC Applications. In SC ’05: Proceedings of the 2005 ACM/IEEE Conference on Supercomputing . 50–50. doi:10.1109/SC.2005.59 [55] Greg Weirs, Vikram Dwarkadas, Tomek Plewa, Chris Tomkins, and Mark Marr-Lyon. 2005. Validating the Flash Code: Vortex-Dominated Flows. Astrophysics and Space Science 298, 1-2 (2005), 341–346. [56] Jake Wires, Stephen Ingram, Zachary Drudi, Nicholas JA Harvey, Andrew Warfield, and Coho Data. 2014. Charac-terizing storage workloads with counter stacks. In Proceedings of the Symposium on Operating Systems Design and Implementation . USENIX Association, 335–349. [57] M. J. Wolfe. 1996. High Performance Compilers for Parallel Computing . Addison-Wesley, Redwood City, CA. [58] Meng-Ju Wu, Minshu Zhao, and Donald Yeung. 2013. Studying multicore processor scaling via reuse distance analysis. In Proceedings of the International Symposium on Computer Architecture . 499–510. [59] Xiaoya Xiang, Bin Bao, Chen Ding, and Yaoqing Gao. 2011. Linear-time Modeling of Program Working Set in Shared Cache. In Proceedings of the International Conference on Parallel Architecture and Compilation Techniques . 350–360. [60] Xiaoya Xiang, Chen Ding, Hao Luo, and Bin Bao. 2013. HOTL: a higher order theory of locality. In Proceedings of the International Conference on Architectural Support for Programming Languages and Operating Systems . 343–356. [61] Jun Xiao, Yaocheng Xiang, Xiaolin Wang, Yingwei Luo, Andy D. Pimentel, and Zhenlin Wang. 2023. FLORIA: A Fast and Featherlight Approach for Predicting Cache Performance. In Proceedings of the International Conference on Supercomputing , Kyle A. Gallivan, Efstratios Gallopoulos, Dimitrios S. Nikolopoulos, and Ramón Beivide (Eds.). ACM, 25–36. [62] Chencheng Ye, Chen Ding, Hao Luo, Jacob Brock, Dong Chen, and Hai Jin. 2017. Cache Exclusivity and Sharing: Theory and Optimization. ACM Transactions on Architecture and Code Optimization 14, 4, 34:1–34:26. doi:10.1145/3134437 [63] Qing Yi. 2012. POET: a scripting language for applying parameterized source-to-source program transformations. 
+
+Softw. Pract. Exp. 42, 6 (2012), 675–706. [64] Liang Yuan, Chen Ding, Wesley Smith, Peter J. Denning, and Yunquan Zhang. 2019. A Relational Theory of Locality. 
+
+ACM Transactions on Architecture and Code Optimization 16, 3 (2019), 33:1–33:26. [65] Yutao Zhong and Wentao Chang. 2008. Sampling-based program locality approximation. In Proceedings of the International Symposium on Memory Management (Tucson, AZ, USA). 91–100. doi:10.1145/1375634.1375648 [66] Yutao Zhong, Xipeng Shen, and Chen Ding. 2009. Program locality analysis using reuse distance. ACM Transactions on Programming Languages and Systems 31, 6 (2009), 20:1–20:39.
